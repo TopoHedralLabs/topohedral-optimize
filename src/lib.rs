@@ -1,14 +1,19 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
+//! Short Description of module
+//!
+//! Longer description of module
+//--------------------------------------------------------------------------------------------------
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+//{{{ crate imports 
+//}}}
+//{{{ std imports 
+//}}}
+//{{{ dep imports 
+//}}}
+//--------------------------------------------------------------------------------------------------
+#![feature(generic_const_exprs)]
+#![allow(incomplete_features)]
+#![feature(impl_trait_in_assoc_type)]
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}
+mod common;
+pub use common::{RealFn, RealFn1};
+pub mod line_search;
