@@ -10,9 +10,10 @@
 //{{{ dep imports 
 //}}}
 //--------------------------------------------------------------------------------------------------
-#![feature(generic_const_exprs)]
-#![allow(incomplete_features)]
-#![feature(impl_trait_in_assoc_type)]
 
-mod common;
-pub use common::{RealFn, RealFn1};
+
+pub trait LineSearcher {
+    type Returns;
+    type Error;
+    fn search(&mut self, phi0: f64, dphi0: f64) ->  Result<Self::Returns, Self::Error>;
+}
