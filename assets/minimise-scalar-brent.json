@@ -1,0 +1,72 @@
+{
+    "minimise_scalar_brent_test1": {
+        "description": "Test minimisation of exp(x) - 4x on [0,3]",
+        "values": {
+            "bracket": [
+                0.0,
+                1.5,
+                3.0
+            ],
+            "xmin": 1.3862943662240732,
+            "fmin": -1.5451774444795623,
+            "niter": 10,
+            "nfeval": 13
+        }
+    },
+    "minimise_scalar_brent_test2": {
+        "description": "Test minimisation of 1e-8x^2 on [-10000,10000]",
+        "values": {
+            "bracket": [
+                -10000,
+                0.0,
+                10000
+            ],
+            "xmin": 0.0,
+            "fmin": 0.0,
+            "niter": 4,
+            "nfeval": 7
+        }
+    },
+    "minimise_scalar_brent_test3": {
+        "description": "Test minimisation of x^2 + 0.1sin(50x) on [-2,2]",
+        "values": {
+            "bracket": [
+                -2.0,
+                0.0,
+                2.0
+            ],
+            "xmin": -0.031166587051800206,
+            "fmin": -0.09902087267990524,
+            "niter": 14,
+            "nfeval": 17
+        }
+    },
+    "minimise_scalar_brent_test4": {
+        "description": "Test minimisation of abs(x - 2) + 1 on [0,4]",
+        "values": {
+            "bracket": [
+                0.0,
+                2.0,
+                4.0
+            ],
+            "xmin": 2.0,
+            "fmin": 1.0,
+            "niter": 16,
+            "nfeval": 19
+        }
+    },
+    "minimise_scalar_brent_test5": {
+        "description": "Test minimisation of (x^2 - 4)^2 on [-3,5]",
+        "values": {
+            "bracket": [
+                -3,
+                1.0,
+                5
+            ],
+            "xmin": 1.9999999986906025,
+            "fmin": 2.7432348142100932e-17,
+            "niter": 13,
+            "nfeval": 16
+        }
+    }
+}

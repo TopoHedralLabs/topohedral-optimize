@@ -1,0 +1,82 @@
+{
+    "bracket_test1": {
+        "description": "Test of the bracket function for x^2-2 where a = -1 and b = 1",
+        "values": {
+            "a": -1.0,
+            "b": 1.0,
+            "results": [
+                -1.0,
+                1.0,
+                4.2360679999999995,
+                -1.0,
+                -1.0,
+                15.944272100623994,
+                3
+            ]
+        }
+    },
+    "bracket_test2": {
+        "description": "Test of the bracket function for x^2-2 where a = 0 and b = 1",
+        "values": {
+            "a": 0.0,
+            "b": 1.0,
+            "results": [
+                1.0,
+                0.0,
+                -1.618034,
+                -1.0,
+                -2.0,
+                0.6180340251559997,
+                3
+            ]
+        }
+    },
+    "bracket_test3": {
+        "description": "Test of the bracket function for x^2-2 where a = -1 and b = 0",
+        "values": {
+            "a": -1.0,
+            "b": 0.0,
+            "results": [
+                -1.0,
+                0.0,
+                1.618034,
+                -1.0,
+                -2.0,
+                0.6180340251559997,
+                3
+            ]
+        }
+    },
+    "bracket_test4": {
+        "description": "Test of the bracket function for x^2-2 where a = 100 and b = 100.001",
+        "values": {
+            "a": 100,
+            "b": 100.001,
+            "results": [
+                80.59815430595951,
+                -4.831690603168681e-12,
+                -130.41055400430153,
+                6494.06247752726,
+                -2.0,
+                17004.912595708847,
+                7
+            ]
+        }
+    },
+    "bracket_test5": {
+        "description": "Test of the bracket function for x^2-2 where a = -100.001 and b = -100",
+        "values": {
+            "a": -100.001,
+            "b": -100,
+            "results": [
+                -80.59815430595951,
+                4.831690603168681e-12,
+                130.41055400430153,
+                6494.06247752726,
+                -2.0,
+                17004.912595708847,
+                7
+            ]
+        }
+    }
+}

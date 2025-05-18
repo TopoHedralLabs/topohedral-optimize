@@ -1,0 +1,132 @@
+{
+    "minimise_scalar_bounded_test1": {
+        "description": "Test minimisation of exp(x) - 4x on [0,3]",
+        "values": {
+            "bounds": [
+                0.0,
+                3.0
+            ],
+            "xmin": 1.3862943608934382,
+            "fmin": -1.5451774444795623,
+            "niter": 12,
+            "nfeval": 12
+        }
+    },
+    "minimise_scalar_bounded_test2": {
+        "description": "Test minimisation of 1e-8x^2 on [-10000,10000]",
+        "values": {
+            "bounds": [
+                -10000,
+                10000
+            ],
+            "xmin": 0.0,
+            "fmin": 0.0,
+            "niter": 6,
+            "nfeval": 6
+        }
+    },
+    "minimise_scalar_bounded_test3": {
+        "description": "Test minimisation of x^2 + 0.1sin(50x) on [-2,2]",
+        "values": {
+            "bounds": [
+                -2.0,
+                2.0
+            ],
+            "xmin": 0.09349960835136957,
+            "fmin": -0.09118786136883601,
+            "niter": 14,
+            "nfeval": 14
+        }
+    },
+    "minimise_scalar_bounded_test4": {
+        "description": "Test minimisation of abs(x - 2) + 1 on [0,4]",
+        "values": {
+            "bounds": [
+                0.0,
+                4.0
+            ],
+            "xmin": 2.0,
+            "fmin": 1.0,
+            "niter": 17,
+            "nfeval": 17
+        }
+    },
+    "minimise_scalar_bounded_test5": {
+        "description": "Test minimisation of (x^2 - 4)^2 on [-3,5]",
+        "values": {
+            "bounds": [
+                -3,
+                5
+            ],
+            "xmin": 1.9999999998960545,
+            "fmin": 1.7287473425370122e-19,
+            "niter": 14,
+            "nfeval": 14
+        }
+    },
+    "minimise_scalar_bounded_test6": {
+        "description": "Test minimisation of exp(x) - 4x on [2,3]",
+        "values": {
+            "bounds": [
+                2.0,
+                3.0
+            ],
+            "xmin": 2.000000045420679,
+            "fmin": -0.6109437471361119,
+            "niter": 35,
+            "nfeval": 35
+        }
+    },
+    "minimise_scalar_bounded_test7": {
+        "description": "Test minimisation of 1e-8x^2 on [-10000,0]",
+        "values": {
+            "bounds": [
+                -10000,
+                0
+            ],
+            "xmin": -4.230063006683087e-09,
+            "fmin": 1.7893433040508762e-25,
+            "niter": 59,
+            "nfeval": 59
+        }
+    },
+    "minimise_scalar_bounded_test8": {
+        "description": "Test minimisation of x^2 + 0.1sin(50x) on [0,2]",
+        "values": {
+            "bounds": [
+                0.0,
+                2.0
+            ],
+            "xmin": 0.46747693928106265,
+            "fmin": 0.12029852077099802,
+            "niter": 16,
+            "nfeval": 16
+        }
+    },
+    "minimise_scalar_bounded_test9": {
+        "description": "Test minimisation of abs(x - 2) + 1 on [0,4]",
+        "values": {
+            "bounds": [
+                2.0,
+                4.0
+            ],
+            "xmin": 2.000000059906638,
+            "fmin": 1.0000000599066379,
+            "niter": 36,
+            "nfeval": 36
+        }
+    },
+    "minimise_scalar_bounded_test10": {
+        "description": "Test minimisation of (x^2 - 4)^2 on [-1,0]",
+        "values": {
+            "bounds": [
+                -1,
+                0
+            ],
+            "xmin": -0.9999999700466811,
+            "fmin": 9.000000359439825,
+            "niter": 36,
+            "nfeval": 36
+        }
+    }
+}
