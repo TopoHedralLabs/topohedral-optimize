@@ -4,6 +4,7 @@
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports 
+use super::common::Error;
 //}}}
 //{{{ std imports 
 //}}}
@@ -134,5 +135,45 @@ pub fn cubicmin(
     error!(target: "ls", "--- Leaving cubicmin ---");
     //}}}
     return Some(alpha_min);
+}
+//}}}
+//{{{ fun: satisfies_armijo
+pub fn satisfies_armijo(c1: f64, alpha: f64, phi0: f64, dphi0: f64, phi1: f64) -> bool {
+    //{{{ trace
+    trace!(target: "ls", "armijo: left = {:1.4e} right = {:1.4e}", phi1, phi0 + c1 * alpha * dphi0);
+    trace!(target: "ls", "Satisfies Armijo {}", phi1 <= phi0 + c1 * alpha * dphi0);
+    //}}}
+    phi1 <= phi0 + c1 * alpha * dphi0
+}
+//}}}
+//{{{ fun:  satisfies_curvature
+pub fn satisfies_curvature(c2: f64, dphi0: f64, dphi1: f64) -> bool {
+    //{{{ trace
+    trace!(target: "ls", "curvature: left = {:1.4e} right = {:1.4e}", dphi1, c2 * dphi0);
+    trace!(target: "ls", "Satisfies curvature {}", dphi1 >= c2 * dphi0);
+    //}}}
+    dphi1 >= c2 * dphi0
+}
+//}}}
+//{{{ fun: satisfies_wolfe
+pub fn satisfies_wolfe(
+    c1: f64,
+    c2: f64,
+    phi0: f64,
+    dphi0: f64,
+    phi1: f64,
+    dphi1: f64,
+    alpha: f64,
+) -> Result<(), Error> {
+    //{{{ trace
+    trace!(target: "ls", "phi0 = {:1.4e} dphi0 = {:1.4e} phi1 = {:1.4e} dphi1 = {:1.4e} alpha = {:1.4e}", phi0, dphi0, phi1, dphi1, alpha);
+    //}}}
+    if !satisfies_armijo(c1, alpha, phi0, dphi0, phi1){
+        return Err(Error::Armijo);
+    }
+    if !satisfies_curvature(c2, dphi0, dphi1){
+        return Err(Error::Curvature);
+    }
+    Ok(())
 }
 //}}}

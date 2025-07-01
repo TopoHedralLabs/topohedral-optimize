@@ -15,5 +15,5 @@
 #![feature(impl_trait_in_assoc_type)]
 
 mod common;
-pub use common::{RealFn, RealFn1};
+pub use common::{RealFn, RealFn1, CountingRealFn};
 pub mod line_search;

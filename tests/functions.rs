@@ -6,11 +6,13 @@
 #![allow(incomplete_features)]
 #![feature(impl_trait_in_assoc_type)]
 
-use approx::assert_relative_eq;
 //{{{ crate imports
+use topohedral_optimize::{line_search::LineSearchFcn, RealFn, RealFn1, CountingRealFn};
 //}}}
 //{{{ std imports
-use std::rc::Rc;
+use std::{rc::Rc, sync::Mutex};
+use std::sync::Arc;
+use std::cell::RefCell;
 //}}}
 //{{{ dep imports
 use topohedral_linalg::{
@@ -21,11 +23,10 @@ use topohedral_linalg::{
     smatrix::{SMatrix},
     GreaterThan, VectorOps
 };
-use topohedral_optimize::{line_search::LineSearchFcn, RealFn, RealFn1};
-use std::cell::RefCell;
+use approx::assert_relative_eq;
 //}}}
 //--------------------------------------------------------------------------------------------------
-
+//{{{ colleciton: QuadraticStatic
 //{{{ struct: QadraticStatic
 #[allow(clippy::identity_op)]
 #[derive(Debug, Clone)]
@@ -57,7 +58,7 @@ where
         let mut out = SCVector::zeros();
         // first term
         for i in 0..N {
-            out[i] = 2.0 * self.coeffs[(i, i)];
+            out[i] = 2.0 * self.coeffs[(i, i)] * x[i];
             for j in 0..N {
                 if i != j {
                     out[i] += (self.coeffs[(i, j)] + self.coeffs[(j, i)]) * x[j];
@@ -100,118 +101,135 @@ impl QuadraticStatic<3>
 fn test_quadratic_static_3d()
 {
     let mut f = QuadraticStatic::<3>::new1();
-    let x = SCVector::<f64, 3>::zeros();
-    let fx = f.eval(&x);
-    assert_relative_eq!(fx, 0.0, epsilon = 1e-10);
+
+    let x1 = SCVector::<f64, 3>::zeros();
+    let fx1 = f.eval(&x1);
+    assert_relative_eq!(fx1, 0.0, epsilon = 1e-10);
+    let grad_fx1 = f.grad(&x1);
+    let exp_grad_fx1 = SCVector::<f64, 3>::zeros();
+    for (actual, expected) in grad_fx1.iter().zip(exp_grad_fx1.iter()) {
+        assert_relative_eq!(*actual, *expected, epsilon = 1e-10);
+    }
+    
+
+    let x2 = SCVector::<f64, 3>::ones();
+    let fx2 = f.eval(&x2);
+    assert_relative_eq!(fx2, 27.0);
+    let grad_fx2 = f.grad(&x2);
+    let exp_grad_fx2 = SCVector::<f64, 3>::from_col_slice(&[16.0, 18.0, 20.0]);
+    for (actual, expected) in grad_fx2.iter().zip(exp_grad_fx2.iter()) {
+        assert_relative_eq!(*actual, *expected, epsilon = 1e-10);
+    }
 }
 //}}}
 //{{{ test: test_quadratic_static_3d_line_search
 #[test]
 fn test_quadratic_static_3d_line_search() {
 
-    let center = SCVector::<f64, 3>::from_col_slice(&[1.0, 2.0, 3.0]);
-    let coeffs = SMatrix::<f64, 3, 3>::from_row_slice(&[
-        1.0, 0.0, 0.0,
-        0.0, 2.0, 0.0,
-        0.0, 0.0, 3.0,
-    ]);
-
-    let mut f = QuadraticStatic::<3> {
-        center,
-        coeffs,
-    };
-
-    let x = SCVector::<f64, 3>::from_col_slice(&[1.0, 2.0, 3.0]);
-    let dir = SCVector::<f64, 3>::from_col_slice(&[1.0, 1.0, 1.0]);
     let mut line_fcn1 = LineSearchFcn {
-        f: f.clone(),
-        x,
-        dir,
+        f:  CountingRealFn::new(QuadraticStatic::<3>::new1()),
+        x: SCVector::<f64, 3>::zeros(),
+        dir:  SCVector::<f64, 3>::from_col_slice(&[1.0, -2.0, 1.0]),
     };
 
-    let out = line_fcn1.eval(0.0);
-    println!("{out}");
+
+    let phi1 = line_fcn1.eval(0.0);
+    let dphi1 = line_fcn1.diff(0.0);
+    assert_relative_eq!(phi1, 0.0, epsilon = 1e-10);
+    assert_relative_eq!(dphi1, 0.0, epsilon = 1e-10);
+    assert_eq!(line_fcn1.f.num_func_evals, 1);
+    assert_eq!(line_fcn1.f.num_grad_evals, 1);
+
+
+    line_fcn1.x = SCVector::<f64, 3>::ones();
+    let phi2 = line_fcn1.eval(0.0);
+    let dphi2 = line_fcn1.diff(0.0);
+    assert_relative_eq!(phi2, 27.0, epsilon = 1e-10);
+    assert_relative_eq!(dphi2, 16.0 - 2.0*18.0 + 20.0, epsilon = 1e-10);
+    assert_eq!(line_fcn1.f.num_func_evals, 2);
+    assert_eq!(line_fcn1.f.num_grad_evals, 2);
+
 }
 //}}}
-//{{{ test: test_quadratic_staticstateful_line_search
+//{{{ test: test_quadratic_static_rc_line_search
 #[test]
-fn test_quadratic_staticstateful_line_search() {
+fn test_quadratic_static_rc_line_search() {
 
-    let fcn1 = Rc::new(RefCell::new(QuadraticStatic::<3>::new1()));
-    let x = SCVector::<f64, 3>::from_col_slice(&[1.0, 2.0, 3.0]);
-    let dir = SCVector::<f64, 3>::from_col_slice(&[1.0, 1.0, 1.0]);
+    let fcn1 = Rc::new(RefCell::new(CountingRealFn::new(QuadraticStatic::<3>::new1())));
+    let x = SCVector::<f64, 3>::zeros();
+    let dir = SCVector::<f64, 3>::from_col_slice(&[1.0, -2.0, 1.0]);
     let mut line_fcn1 = LineSearchFcn {
         f: fcn1.clone(), 
         x, 
         dir
     };
 
-    let out = line_fcn1.eval(0.0);
-    println!("{out}");
+    let phi1 = line_fcn1.eval(0.0);
+    let dphi1 = line_fcn1.diff(0.0);
+    assert_relative_eq!(phi1, 0.0, epsilon = 1e-10);
+    assert_relative_eq!(dphi1, 0.0, epsilon = 1e-10);
+    assert_eq!(fcn1.borrow().num_func_evals, 1);
+    assert_eq!(fcn1.borrow().num_grad_evals, 1);
+
+
+    line_fcn1.x = SCVector::<f64, 3>::ones();
+    let phi2 = line_fcn1.eval(0.0);
+    let dphi2 = line_fcn1.diff(0.0);
+    assert_relative_eq!(phi2, 27.0, epsilon = 1e-10);
+    assert_relative_eq!(dphi2, 16.0 - 2.0*18.0 + 20.0, epsilon = 1e-10);
+    assert_eq!(line_fcn1.f.borrow().num_func_evals, 2);
+    assert_eq!(line_fcn1.f.borrow().num_grad_evals, 2);
+
+    // check that this has alterned same underlying memory
+    assert_eq!(fcn1.borrow().num_func_evals, 2);
+    assert_eq!(fcn1.borrow().num_grad_evals, 2);
+
 }
 //}}}
+//{{{ test: test_quadratic_static_arc_line_search
+#[test]
+fn test_quadratic_static_arc_line_search() {
+
+    let fcn1 = Arc::new(Mutex::new(CountingRealFn::new(QuadraticStatic::<3>::new1())));
+
+    let x = SCVector::<f64, 3>::zeros();
+    let dir = SCVector::<f64, 3>::from_col_slice(&[1.0, -2.0, 1.0]);
+    let mut line_fcn1 = LineSearchFcn {
+        f: fcn1.clone(), 
+        x, 
+        dir
+    };
+
+    let phi1 = line_fcn1.eval(0.0);
+    let dphi1 = line_fcn1.diff(0.0);
+    assert_relative_eq!(phi1, 0.0, epsilon = 1e-10);
+    assert_relative_eq!(dphi1, 0.0, epsilon = 1e-10);
+    assert_eq!(fcn1.lock().unwrap().num_func_evals, 1);
+    assert_eq!(fcn1.lock().unwrap().num_grad_evals, 1);
+
+
+    line_fcn1.x = SCVector::<f64, 3>::ones();
+    let phi2 = line_fcn1.eval(0.0);
+    let dphi2 = line_fcn1.diff(0.0);
+    assert_relative_eq!(phi2, 27.0, epsilon = 1e-10);
+    assert_relative_eq!(dphi2, 16.0 - 2.0*18.0 + 20.0, epsilon = 1e-10);
+    assert_eq!(fcn1.lock().unwrap().num_func_evals, 2);
+    assert_eq!(fcn1.lock().unwrap().num_grad_evals, 2);
+
+    // check that this has altered same underlying memory
+    assert_eq!(fcn1.lock().unwrap().num_func_evals, 2);
+    assert_eq!(fcn1.lock().unwrap().num_grad_evals, 2);
+
+}
+//}}}
+//}}}
+//{{{ collection: QuadraticDynamic
 //{{{ struct: QuadraticDynamic
+#[derive(Debug, Clone)]
 struct QuadraticDynamic {
     n: usize,
     center: DVector<f64>,
     coeffs: DMatrix<f64>,
 }
 //}}}
-//{{{ impl RealFn for QuadraticDynamic
-impl RealFn for QuadraticDynamic
-{
-    type Vector = DVector<f64>;
-
-    fn eval(&mut self, x: &Self::Vector) -> f64 {
-        assert_eq!(x.len(), self.center.len());
-        let x1 = (x - &self.center).evald();
-        let x2 = self.coeffs.matmul(&x1);
-        x1.dot(&x2)
-    }
-
-    fn grad(&mut self, x: &Self::Vector) -> Self::Vector {
-        let mut out = DVector::<f64>::zeros(self.n, 1);
-        // first term
-        for i in 0..self.n {
-            out[i] = 2.0 * self.coeffs[(i, i)];
-            for j in 0..self.n {
-                if i != j {
-                    out[i] += (self.coeffs[(i, j)] + self.coeffs[(j, i)]) * x[j];
-                }
-            }
-        }
-        // second and third terms
-        for i in 0..self.n {
-            for j in 0..self.n {
-                out[i] +=
-                    self.center[j] * self.coeffs[(j, i)] + self.coeffs[(i, j)] * self.center[j];
-            }
-        }
-        out
-    }
-}
 //}}}
-//{{{ test: test_quadratic_dynamic
-#[test]
-fn test_quadratic_dynamic_3d()
-{
-    let center = DVector::<f64>::from_slice_vec(&[1.0, 2.0, 3.0], 3, VecType::Col);
-    let coeffs = DMatrix::<f64>::from_row_slice(&[
-        1.0, 0.0, 0.0,
-        0.0, 2.0, 0.0,
-        0.0, 0.0, 3.0,
-    ], 3, 3);
-
-    let mut f = QuadraticDynamic {
-        n: 3,
-        center,
-        coeffs,
-    };
-
-    let x = DVector::<f64>::from_slice_vec(&[1.0, 2.0, 3.0], 3, VecType::Col);
-    let fx = f.eval(&x);
-    assert_relative_eq!(fx, 0.0, epsilon = 1e-10);
-
-}
-//}}}
-

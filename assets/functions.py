@@ -30,6 +30,11 @@ def quadratic_form1():
     print("\nExpanded form:")
     sp.pprint(expanded_form)
 
+    # Compute the gradient with respect to x, y, z
+    grad = sp.Matrix([sp.diff(expanded_form, var) for var in (x, y, z)])
+    print("\nGradient:")
+    sp.pprint(grad)
+
 
 def quadratic_form2():
 
@@ -64,9 +69,41 @@ def quadratic_form2():
     sp.pprint(expanded_form)
 
 
+def quadratic_form3():
+
+    # Define the symbols
+    x, y, z = sp.symbols('x y z')
+    # Define a vector of variables
+    variables = sp.Matrix([x, y, z])
+
+    # Define a symmetric matrix A with specific values
+    A_matrix = sp.Matrix([[5, 1, 2],
+                          [1, 5, 3],
+                          [2, 3, 5]])
+
+    # Calculate the quadratic form x^T A x
+    quadratic_form = variables.transpose() * A_matrix * variables
+
+    # Expand the result to get the full expression
+    expanded_form = sp.expand(quadratic_form[0, 0])
+    print("\nExpanded form:")
+    sp.pprint(expanded_form)
+
+    # Compute the gradient with respect to x, y, z
+    grad = sp.Matrix([sp.diff(expanded_form, var) for var in (x, y, z)])
+    print("\nGradient:")
+    sp.pprint(grad)
+
+    # Evaluate the value and gradient at [x, y, z] = [1, 1, 1]
+    subs_dict = {x: 1, y: 1, z: 1}
+    value_at_zero = expanded_form.subs(subs_dict)
+    grad_at_zero = grad.subs(subs_dict)
+    print("\nValue at: [1, 1, 1]", value_at_zero)
+    print("Gradient at [1, 1, 1]:")
+    sp.pprint(grad_at_zero)
 
 def main():
-    quadratic_form1()
+    quadratic_form3()
 
 
 

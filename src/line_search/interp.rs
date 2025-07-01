@@ -6,6 +6,7 @@
 //{{{ crate imports
 use super::common::{Error, LineSearchFcn, LineSearcher, Options, Returns};
 use super::utils::{cubicmin, quadmin};
+use crate::line_search::utils::satisfies_wolfe;
 use crate::RealFn1;
 //}}}
 //{{{ std imports
@@ -65,11 +66,10 @@ impl<F: RealFn1> LineSearcher for InterpLineSearch<F> {
             return Err(Error::NotDecreasing);
         }
 
-        // let min_value = opt_min_value.unwrap();
-        // Some(Returns{
-        //     min_value.0, min_value.1, 
-        // })
-        todo!()
+        let min_value = opt_min_value.unwrap();
+        Ok(Returns{
+            alpha: min_value.0, falpha: min_value.1
+        })
 
 
     }

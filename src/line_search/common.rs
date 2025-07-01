@@ -16,6 +16,7 @@ use thiserror::Error;
 //--------------------------------------------------------------------------------------------------
 
 //{{{ struct LineSearchFcn
+#[derive(Debug, Clone)]
 pub struct LineSearchFcn<F: RealFn> {
     pub f: F,
     pub x: F::Vector,
@@ -90,8 +91,6 @@ pub struct Options {
 pub struct Returns {
     pub alpha: f64,
     pub falpha: f64,
-    pub funcalls: usize,
-    pub gradcalls: usize,
 }
 //}}}
 //{{{ struct: LineSearcher

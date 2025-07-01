@@ -9,6 +9,7 @@
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::sync::{Arc, Mutex};
+use std::fmt::Debug;
 //}}}
 //{{{ dep imports 
 //}}}
@@ -23,7 +24,7 @@ pub trait RealFn1 {
 }
 //}}}
 //{{{ trait: RealFn
-pub trait RealFn {
+pub trait RealFn: Clone + Debug {
 
     type Vector;
 
@@ -65,14 +66,15 @@ where
 }
 //}}}
 //{{{ struct: CountingRealFcn
-pub struct CountingRealFcn <F: RealFn> {
+#[derive(Clone, Debug)]
+pub struct CountingRealFn <F: RealFn> {
     fcn: F, 
-    num_func_evals: usize, 
-    num_grad_evals: usize, 
+    pub num_func_evals: usize, 
+    pub num_grad_evals: usize, 
 }
 //}}}
-//{{{ struct: CountingRealFcn
-impl<F: RealFn> RealFn for CountingRealFcn<F> {
+//{{{ impl: RealFn for CountingRealFcn
+impl<F: RealFn> RealFn for CountingRealFn<F> {
 
     type Vector = F::Vector;
 
@@ -84,6 +86,18 @@ impl<F: RealFn> RealFn for CountingRealFcn<F> {
     fn grad(&mut self, x: &Self::Vector) -> Self::Vector {
         self.num_grad_evals += 1;
         self.fcn.grad(x)
+    }
+}
+//}}}
+//{{{ impl: CountingRealFcn
+impl<F: RealFn> CountingRealFn<F> {
+
+    pub fn new(fcn: F) -> Self  {
+        Self{
+            fcn: fcn, 
+            num_func_evals: 0, 
+            num_grad_evals: 0
+        }
     }
 }
 //}}}
