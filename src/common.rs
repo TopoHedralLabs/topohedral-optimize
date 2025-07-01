@@ -14,52 +14,76 @@ use std::sync::{Arc, Mutex};
 //}}}
 //--------------------------------------------------------------------------------------------------
 
+//{{{ trait: RealFn1
 /// 1D real-valued function trait
 pub trait RealFn1 {
 
-    fn eval(&self, x: f64) -> f64;
-    fn diff(&self, x: f64) -> f64;
+    fn eval(&mut self, x: f64) -> f64;
+    fn diff(&mut self, x: f64) -> f64;
 }
-
-
-
-
+//}}}
+//{{{ trait: RealFn
 pub trait RealFn {
 
     type Vector;
 
-    fn eval(&self, x: &Self::Vector) -> f64;
-    fn grad(&self, x: &Self::Vector) -> Self::Vector;
+    fn eval(&mut self, x: &Self::Vector) -> f64;
+    fn grad(&mut self, x: &Self::Vector) -> Self::Vector;
 
 }
-
+//}}}
+//{{{ impl: RealFn for Rc<RefCell<T>> 
 impl<T> RealFn for Rc<RefCell<T>> 
 where 
     T: RealFn,
 {
     type Vector = T::Vector;
 
-    fn eval(&self, x: &Self::Vector) -> f64 {
-        self.borrow().eval(x)
+    fn eval(&mut self, x: &Self::Vector) -> f64 {
+        self.borrow_mut().eval(x)
     }
 
-    fn grad(&self, x: &Self::Vector) -> Self::Vector {
-        self.borrow().grad(x)
+    fn grad(&mut self, x: &Self::Vector) -> Self::Vector {
+        self.borrow_mut().grad(x)
     }
 }
-
-
+//}}}
+//{{{ impl: RealFn for Arc<Mutex<T>> 
 impl<T> RealFn for Arc<Mutex<T>> 
 where 
     T: RealFn,
 {
     type Vector = T::Vector;
 
-    fn eval(&self, x: &Self::Vector) -> f64 {
+    fn eval(&mut self, x: &Self::Vector) -> f64 {
         self.lock().unwrap().eval(x)
     }
 
-    fn grad(&self, x: &Self::Vector) -> Self::Vector {
+    fn grad(&mut self, x: &Self::Vector) -> Self::Vector {
         self.lock().unwrap().grad(x)
     }
 }
+//}}}
+//{{{ struct: CountingRealFcn
+pub struct CountingRealFcn <F: RealFn> {
+    fcn: F, 
+    num_func_evals: usize, 
+    num_grad_evals: usize, 
+}
+//}}}
+//{{{ struct: CountingRealFcn
+impl<F: RealFn> RealFn for CountingRealFcn<F> {
+
+    type Vector = F::Vector;
+
+    fn eval(&mut self, x: &Self::Vector) -> f64 {
+        self.num_func_evals += 1;
+        self.fcn.eval(x)
+    }
+
+    fn grad(&mut self, x: &Self::Vector) -> Self::Vector {
+        self.num_grad_evals += 1;
+        self.fcn.grad(x)
+    }
+}
+//}}}
