@@ -16,12 +16,12 @@ use std::rc::Rc;
 use topohedral_linalg::{
     MatMul,
     dvector::{DVector, VecType},
-    dmatrix::{DMatrix, EvaluateDMatrix},
+    dmatrix::{ DMatrix, EvaluateDMatrix},
     scvector::SCVector,
-    smatrix::SMatrix,
+    smatrix::{SMatrix},
     GreaterThan, VectorOps
 };
-use topohedral_optimize::{RealFn, line_search::LineSearchFcn};
+use topohedral_optimize::{line_search::LineSearchFcn, RealFn, RealFn1};
 use std::cell::RefCell;
 //}}}
 //--------------------------------------------------------------------------------------------------
@@ -123,32 +123,33 @@ fn test_quadratic_static_3d_line_search() {
 
     let x = SCVector::<f64, 3>::from_col_slice(&[1.0, 2.0, 3.0]);
     let dir = SCVector::<f64, 3>::from_col_slice(&[1.0, 1.0, 1.0]);
-    let mut line_search = LineSearchFcn {
+    let mut line_fcn1 = LineSearchFcn {
         f: f.clone(),
         x,
         dir,
     };
 
-    f.eval(&x);
+    let out = line_fcn1.eval(0.0);
+    println!("{out}");
 }
 //}}}
+//{{{ test: test_quadratic_staticstateful_line_search
 #[test]
 fn test_quadratic_staticstateful_line_search() {
 
     let fcn1 = Rc::new(RefCell::new(QuadraticStatic::<3>::new1()));
     let x = SCVector::<f64, 3>::from_col_slice(&[1.0, 2.0, 3.0]);
     let dir = SCVector::<f64, 3>::from_col_slice(&[1.0, 1.0, 1.0]);
-    let line_fcn1 = LineSearchFcn {
+    let mut line_fcn1 = LineSearchFcn {
         f: fcn1.clone(), 
         x, 
         dir
     };
 
-
-
-
-
+    let out = line_fcn1.eval(0.0);
+    println!("{out}");
 }
+//}}}
 //{{{ struct: QuadraticDynamic
 struct QuadraticDynamic {
     n: usize,
