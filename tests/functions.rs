@@ -17,8 +17,6 @@ use std::cell::RefCell;
 //{{{ dep imports
 use topohedral_linalg::{
     MatMul,
-    dvector::{DVector, VecType},
-    dmatrix::{ DMatrix, EvaluateDMatrix},
     scvector::SCVector,
     smatrix::{SMatrix},
     GreaterThan, VectorOps
@@ -225,11 +223,5 @@ fn test_quadratic_static_arc_line_search() {
 //}}}
 //{{{ collection: QuadraticDynamic
 //{{{ struct: QuadraticDynamic
-#[derive(Debug, Clone)]
-struct QuadraticDynamic {
-    n: usize,
-    center: DVector<f64>,
-    coeffs: DMatrix<f64>,
-}
 //}}}
 //}}}

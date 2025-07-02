@@ -11,9 +11,9 @@ use super::common::Error;
 //{{{ dep imports 
 use topohedral_tracing::*;
 use topohedral_linalg::{
-    MatMul,
     smatrix::{SMatrix},
-    scvector::{SCVector}
+    scvector::{SCVector},
+    MatMul
 };
 //}}}
 //--------------------------------------------------------------------------------------------------
