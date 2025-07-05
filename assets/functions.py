@@ -2,6 +2,24 @@
 import sympy as sp
 
 
+def quadratic_1d():
+    x, r1, r2 = sp.symbols('x r1 r2')
+    gx = (x - r1) * (x - r2)
+
+def cubic_1d():
+    x, r1, r2, r3 = sp.symbols('x r1 r2 r3')
+    gx = (x - r1) * (x - r2) * (x - r3)
+
+    dgx = sp.diff(gx, x)
+    dgx_expanded = sp.expand(dgx)
+    dgx_collected = sp.collect(dgx_expanded, x)
+    sp.pprint(dgx_collected) 
+    critical_points = sp.solve(sp.Eq(dgx, 0), x)
+    dgx_substituted = [critical_points[i].subs({r1: 1, r2: 2, r3: 3}) for i in range(len(critical_points))]
+    # sp.pprint(dgx_substituted)
+    sp.pprint(sp.simplify(dgx_substituted[0]))
+
+
 def quadratic_form1():
 
     # Define the symbols
@@ -103,7 +121,8 @@ def quadratic_form3():
     sp.pprint(grad_at_zero)
 
 def main():
-    quadratic_form3()
+    cubic_1d()
+    # quadratic_form3()
 
 
 

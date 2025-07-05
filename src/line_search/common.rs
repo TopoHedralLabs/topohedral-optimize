@@ -17,7 +17,8 @@ use thiserror::Error;
 
 //{{{ struct LineSearchFcn
 #[derive(Debug, Clone)]
-pub struct LineSearchFcn<F: RealFn> {
+pub struct LineSearchFcn<F: RealFn> 
+{
     pub f: F,
     pub x: F::Vector,
     pub dir: F::Vector, 
@@ -65,7 +66,7 @@ pub enum Error {
     StepSizeSmall,
 }
 //}}}
-//{{{ struct: LineSearchOpts
+//{{{ struct: Options 
 /// Options for configuring a line search algorithm.
 ///
 /// This struct contains the parameters needed to configure a line search algorithm,
@@ -79,7 +80,7 @@ pub struct Options {
     pub c2: f64,
 }
 //}}}
-//{{{ struct: LineSearchReturns
+//{{{ struct: Returns 
 /// The results of a line search algorithm.
 ///
 /// This struct contains the following fields:
@@ -93,10 +94,8 @@ pub struct Returns {
     pub falpha: f64,
 }
 //}}}
-//{{{ struct: LineSearcher
+//{{{ trait: LineSearcher
 pub trait LineSearcher {
-    type Returns;
-    type Error;
-    fn search(&mut self, phi0: f64, dphi0: f64) ->  Result<Self::Returns, Self::Error>;
+    fn search(&mut self, phi0: f64, dphi0: f64) ->  Result<Returns, Error>;
 }
 //}}}

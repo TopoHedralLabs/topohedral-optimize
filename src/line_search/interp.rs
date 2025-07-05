@@ -4,7 +4,8 @@
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
-use super::common::{Error, LineSearchFcn, LineSearcher, Options, Returns};
+use super::common::{Error, LineSearchFcn, LineSearcher, Returns};
+use super::common as com;
 use super::utils::{cubicmin, quadmin};
 use crate::line_search::utils::satisfies_wolfe;
 use crate::RealFn1;
@@ -14,36 +15,50 @@ use std::ops::{Add, Mul};
 use topohedral_linalg::VectorOps;
 //}}}
 //{{{ dep imports
+use topohedral_tracing::*;
 //}}}
 //--------------------------------------------------------------------------------------------------
 
 #[derive(Debug, Copy, Clone)]
-pub struct InterpOpts {
-    ls_opts: Options,
-    step1: f64,
-    step2: f64,
+pub struct Options {
+    pub ls_opts: com::Options,
+    pub step1: f64,
+    pub step2: f64,
 }
 
-pub struct InterpLineSearch<F: RealFn1> {
-    pub opts: InterpOpts,
+pub struct Interp<F: RealFn1> {
+    pub opts: Options,
     pub(crate) f: F,
 }
 
-impl<F: RealFn1> InterpLineSearch<F> {}
+impl<F: RealFn1> Interp<F> {
+    pub fn new(f: F, opts: &Options) -> Self { 
+        Self{
+            opts: opts.clone(), 
+            f: f
+        }
+    }
+}
 
-impl<F: RealFn1> LineSearcher for InterpLineSearch<F> {
-    type Error = Error;
-    type Returns = Returns;
 
-    fn search(&mut self, phi0: f64, dphi0: f64) -> Result<Self::Returns, Self::Error> {
+impl<F: RealFn1> LineSearcher for Interp<F> {
+
+    fn search(&mut self, phi0: f64, dphi0: f64) -> Result<Returns, Error> {
+
+        error!(target: "ls", "--- Entering search ---");
+        info!(target: "ls", "phi0={phi0} dphi0={dphi0}");
+
         let step0 = 0.0;
-        let InterpOpts {
+        let Options {
             ls_opts,
             step1,
             step2,
         } = self.opts;
+
         let phi1 = self.f.eval(step1);
         let phi2 = self.f.eval(step2);
+
+        info!("step1 = {step1} phi1 = {phi1} step2 = {step2} phi2 = {phi2}");
 
         let to_pair = |x: &Option<f64>| -> Option<(f64, f64)> {
             match x {
@@ -63,6 +78,7 @@ impl<F: RealFn1> LineSearcher for InterpLineSearch<F> {
 
         if opt_min_value.is_none()
         {
+            info!(target: "ls", "No value found");
             return Err(Error::NotDecreasing);
         }
 

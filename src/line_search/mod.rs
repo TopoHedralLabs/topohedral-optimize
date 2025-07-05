@@ -17,6 +17,10 @@ use topohedral_linalg::VectorOps;
 mod common;
 mod nocedal;
 mod utils;
+mod factory;
 mod interp;
 
-pub use common::*;
+pub use common::{LineSearchFcn, LineSearcher, Options, Returns, Error};
+pub use factory::{Method, create};
+pub use interp::Interp;
+pub use interp::Options as InterpOptions;

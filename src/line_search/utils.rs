@@ -3,18 +3,14 @@
 //! Longer description of module
 //--------------------------------------------------------------------------------------------------
 
-//{{{ crate imports 
+//{{{ crate imports
 use super::common::Error;
 //}}}
-//{{{ std imports 
+//{{{ std imports
 //}}}
-//{{{ dep imports 
+//{{{ dep imports
+use topohedral_linalg::{scvector::SCVector, smatrix::SMatrix, MatMul};
 use topohedral_tracing::*;
-use topohedral_linalg::{
-    smatrix::{SMatrix},
-    scvector::{SCVector},
-    MatMul
-};
 //}}}
 //--------------------------------------------------------------------------------------------------
 const SMALL: f64 = 1e-32;
@@ -105,7 +101,6 @@ pub fn cubicmin(
         //}}}
         return None;
     }
-
     let mut diff_mat: SMatrix<f64, 2, 2> = SMatrix::<f64, 2, 2>::zeros();
     diff_mat[(0, 0)] = dc.powi(2);
     diff_mat[(0, 1)] = -db.powi(2);
@@ -168,10 +163,10 @@ pub fn satisfies_wolfe(
     //{{{ trace
     trace!(target: "ls", "phi0 = {:1.4e} dphi0 = {:1.4e} phi1 = {:1.4e} dphi1 = {:1.4e} alpha = {:1.4e}", phi0, dphi0, phi1, dphi1, alpha);
     //}}}
-    if !satisfies_armijo(c1, alpha, phi0, dphi0, phi1){
+    if !satisfies_armijo(c1, alpha, phi0, dphi0, phi1) {
         return Err(Error::Armijo);
     }
-    if !satisfies_curvature(c2, dphi0, dphi1){
+    if !satisfies_curvature(c2, dphi0, dphi1) {
         return Err(Error::Curvature);
     }
     Ok(())
