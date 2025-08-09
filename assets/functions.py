@@ -1,6 +1,7 @@
 
 import sympy as sp
-
+import matplotlib.pyplot as plt
+import numpy as np
 
 def quadratic_1d():
     x, r1, r2 = sp.symbols('x r1 r2')
@@ -18,6 +19,29 @@ def cubic_1d():
     dgx_substituted = [critical_points[i].subs({r1: 1, r2: 2, r3: 3}) for i in range(len(critical_points))]
     # sp.pprint(dgx_substituted)
     sp.pprint(sp.simplify(dgx_substituted[0]))
+
+
+    gx.subs({'r1':1, "r2": 2, "r3": 3})
+
+
+def cubic_fcn(x):
+    r1 = 1
+    r2 = 2
+    r3 = 3
+    x = x+2
+    return (x -r1) * (x - r2) * (x - r3)
+
+def cubic_1d_plot():
+
+    fig, ax = plt.subplots()
+
+    x = np.linspace(0, 1, 200)
+    vals = [cubic_fcn(xi) for xi in x]
+    ax.plot(x, vals)
+    ax.grid()
+    plt.show()
+
+
 
 
 def quadratic_form1():
@@ -121,7 +145,8 @@ def quadratic_form3():
     sp.pprint(grad_at_zero)
 
 def main():
-    cubic_1d()
+    # cubic_1d()
+    cubic_1d_plot()
     # quadratic_form3()
 
 

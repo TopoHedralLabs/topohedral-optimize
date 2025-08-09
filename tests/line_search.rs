@@ -15,6 +15,7 @@ use std::sync::Arc;
 use std::cell::RefCell;
 //}}}
 //{{{ dep imports
+use ctor::ctor;
 use topohedral_linalg::{
     MatMul,
     dvector::{DVector, VecType},
@@ -24,7 +25,18 @@ use topohedral_linalg::{
     GreaterThan, VectorOps
 };
 use approx::assert_relative_eq;
+use topohedral_tracing::*;
+
 //}}}
+
+
+//{{{ fun: init_logger
+#[ctor]
+fn init_logger() {
+    init().unwrap();
+}
+//}}}
+
 
 #[derive(Debug, Clone)]
 struct QuadraticDynamic {
@@ -111,7 +123,7 @@ fn test_quadratic_1d() {
 
 #[test]
 fn test_cubic_1d() {
-    let mut c1 = Cubic1D{root1: 1.0, root2: 2.0, root3: 3.0};
+    let mut c1 = Cubic1D{root1: -1.0, root2: 0.0, root3: 1.0};
     let mut interp =  Interp::new(c1.clone(), 
         &InterpOptions{
             ls_opts: LineSearchOptions{
@@ -124,6 +136,6 @@ fn test_cubic_1d() {
     let phi0 = c1.eval(alpha);
     let dphi0 = c1.diff(alpha);
     let out = interp.search(phi0, dphi0).unwrap();
-    let exp_alpha = c1.extrema()[0];
+    let exp_alpha = c1.extrema()[1];
     assert_relative_eq!(out.alpha, exp_alpha, epsilon = 1e-10);
 }
