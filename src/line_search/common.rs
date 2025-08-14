@@ -88,7 +88,7 @@ pub struct Options {
 /// - `falpha`: The function value at the step size `alpha`.
 /// - `funcalls`: The number of function evaluations performed.
 /// - `gradcalls`: The number of gradient evaluations performed.
-#[derive(Debug, Copy, Clone, Default)]
+#[derive(Debug, Copy, Clone)]
 pub struct Returns {
     pub alpha: f64,
     pub falpha: f64,
@@ -96,6 +96,8 @@ pub struct Returns {
 //}}}
 //{{{ trait: LineSearcher
 pub trait LineSearcher {
+    type Function: RealFn1;
     fn search(&mut self, phi0: f64, dphi0: f64) ->  Result<Returns, Error>;
+    fn update_fcn(&mut self, fcn: Self::Function);
 }
 //}}}

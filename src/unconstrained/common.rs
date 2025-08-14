@@ -4,8 +4,8 @@
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports 
-use crate::line_search::Error as LineSearchError;
-use crate::line_search::Method as LineSearchMethod;
+use crate::line_search::LineSearchError;
+use crate::line_search::LineSearchMethod;
 //}}}
 //{{{ std imports 
 //}}}
@@ -14,16 +14,25 @@ use thiserror::Error;
 //}}}
 //--------------------------------------------------------------------------------------------------
 
+#[derive(Copy, Clone)]
 pub struct Options {
-    pub tol: f64,
+    pub grad_rtol: f64,
+    pub grad_atol: f64,
     pub max_iter: u64,
     pub ls_method: LineSearchMethod,
 }
 
-pub struct Returns<Vector> {
+#[derive(Copy, Clone, Debug)]
+pub enum ConvergedReason {
+    Rtol, 
+    Atol,
+}
 
-    xmin: Vector,
-    fmin: f64,
+#[derive(Copy, Clone, Debug)]
+pub struct Returns<Vector> {
+    pub xmin: Vector,
+    pub fmin: f64,
+    pub reason: ConvergedReason
 }
 
 #[derive(Error, Debug)] 
@@ -37,5 +46,5 @@ pub enum Error {
 pub trait UnconstrainedMinimizer {
 
     type Vector;
-    fn minimize(self, x0: Self::Vector) -> Result<Returns<Self::Vector>, Error>;
+    fn minimize(&mut self) -> Result<Returns<Self::Vector>, Error>;
 }

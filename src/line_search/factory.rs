@@ -6,7 +6,7 @@
 use topohedral_linalg::VectorOps;
 
 //{{{ crate imports 
-use crate::RealFn;
+use crate::RealFn1;
 use super::common::*;
 use super::interp;
 //}}}
@@ -17,25 +17,20 @@ use std::ops::{Mul, Add};
 //}}}
 //--------------------------------------------------------------------------------------------------
 
+
+#[derive(Copy, Clone)]
 pub enum Method{
     Interp(interp::Options)
 } 
 
-pub fn create<'a, F: RealFn + 'a>(x: F::Vector, dir: F::Vector, obj_fcn: F, method: Method) 
--> Box<dyn LineSearcher + 'a>
-where 
-    F::Vector: VectorOps<ScalarType = f64>,
-    F::Vector: Add<F::Vector, Output = F::Vector>,
-    f64: Mul<F::Vector, Output = F::Vector>,
+pub fn create<'a, F: RealFn1 + 'a>(fcn: F, method: Method) 
+-> Box<dyn LineSearcher<Function = F> + 'a>
 {
-
-    let search_fcn = LineSearchFcn { f: obj_fcn, x: x, dir: dir };
-
     match method {
         Method::Interp(opts) => {
             Box::new(interp::Interp{
                 opts: opts, 
-                f: search_fcn
+                f: fcn 
             })
         }
     }

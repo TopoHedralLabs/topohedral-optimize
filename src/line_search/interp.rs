@@ -24,6 +24,7 @@ pub struct Options {
     pub ls_opts: com::Options,
     pub step1: f64,
     pub step2: f64,
+    pub scale_factor: f64
 }
 
 pub struct Interp<F: RealFn1> {
@@ -32,9 +33,9 @@ pub struct Interp<F: RealFn1> {
 }
 
 impl<F: RealFn1> Interp<F> {
-    pub fn new(f: F, opts: &Options) -> Self { 
+    pub fn new(f: F, opts: Options) -> Self { 
         Self{
-            opts: opts.clone(), 
+            opts: opts, 
             f: f
         }
     }
@@ -42,6 +43,8 @@ impl<F: RealFn1> Interp<F> {
 
 
 impl<F: RealFn1> LineSearcher for Interp<F> {
+
+    type Function = F;
 
     fn search(&mut self, phi0: f64, dphi0: f64) -> Result<Returns, Error> {
 
@@ -53,12 +56,13 @@ impl<F: RealFn1> LineSearcher for Interp<F> {
             ls_opts,
             step1,
             step2,
+            scale_factor
         } = self.opts;
 
         let phi1 = self.f.eval(step1);
         let phi2 = self.f.eval(step2);
 
-        info!("step1 = {step1} phi1 = {phi1} step2 = {step2} phi2 = {phi2}");
+        info!(target: "ls", "step1 = {step1} phi1 = {phi1} step2 = {step2} phi2 = {phi2}");
 
         let to_pair = |x: &Option<f64>| -> Option<(f64, f64)> {
             match x {
@@ -73,7 +77,12 @@ impl<F: RealFn1> LineSearcher for Interp<F> {
         let opt_min_value = [cubic_min_alpha, quad_min1_alpha, quad_min2_alpha]
             .iter()
             .map(to_pair)
-            .filter_map(|x| x)
+            .filter_map(|x| {
+                //{{{ trace
+                trace!(target: "ls", "alpha-falpha pair: {:?}", x);
+                //}}}
+                x
+            })
             .min_by(|x, y| {x.1.partial_cmp(&y.1).unwrap()});
 
         if opt_min_value.is_none()
@@ -82,11 +91,18 @@ impl<F: RealFn1> LineSearcher for Interp<F> {
             return Err(Error::NotDecreasing);
         }
 
-        let min_value = opt_min_value.unwrap();
+        let (alpha_min, fmin) = opt_min_value.unwrap();
+        //{{{ trace
+        trace!(target: "ls", "returning alpha ={alpha_min:1.4e} fmin = {fmin:1.4e}");
+        //}}}
         Ok(Returns{
-            alpha: min_value.0, falpha: min_value.1
+            alpha: alpha_min, falpha:fmin 
         })
 
 
+    }
+    
+    fn update_fcn(&mut self, fcn: Self::Function) {
+        self.f = fcn;
     }
 }

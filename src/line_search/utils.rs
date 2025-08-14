@@ -5,6 +5,7 @@
 
 //{{{ crate imports
 use super::common::Error;
+use crate::common::RealFn1;
 //}}}
 //{{{ std imports
 //}}}
@@ -129,7 +130,62 @@ pub fn cubicmin(
     error!(target: "ls", "Returning alpha_min = {:1.4e}", alpha_min);
     error!(target: "ls", "--- Leaving cubicmin ---");
     //}}}
+    if alpha_min.is_nan() {
+        error!("Final result is Nan, returning None");
+        return None;
+    }
     return Some(alpha_min);
+}
+//}}}
+//{{{ fun: quadcubmin
+pub fn quadcubmin<F: RealFn1>(
+    f: &mut F, 
+    a: f64,
+    phi_a: f64,
+    dphi_a: f64,
+    b: f64,
+    phi_b: f64,
+    c: f64,
+    phi_c: f64,
+) -> Option<(f64, f64)> {
+
+    //{{{ trace
+    info!(target: "ls", "--- entering quadcubmin ---");
+    //}}}
+    let to_pair = |x: &Option<f64>| -> Option<(f64, f64)> {
+        match x {
+            None => None,
+            Some(alpha) => Some((*alpha, f.eval(*alpha))),
+        }
+    };
+    let cubic_min_alpha = cubicmin(a, phi_a, dphi_a, b, phi_b, c, phi_c);
+    let quad_min1_alpha = quadmin(a, phi_a, dphi_a, b, phi_b);
+    let quad_min2_alpha = quadmin(a, phi_a, dphi_a, c, phi_c);
+    let opt_min_value = [cubic_min_alpha, quad_min1_alpha, quad_min2_alpha]
+        .iter()
+        .map(to_pair)
+        .filter_map(|x| {
+            //{{{ trace
+            trace!(target: "ls", "alpha-falpha pair: {:?}", x);
+            //}}}
+            x
+        })
+        .min_by(|x, y| x.1.partial_cmp(&y.1).unwrap());
+
+    if opt_min_value.is_none() {
+        //{{{ trace
+        info!(target: "ls", "No value found");
+        info!(target: "ls", "--- leaving quadcubmin ---");
+        //}}}
+        return None
+    }
+
+    let (alpha_min, fmin) = opt_min_value.unwrap();
+    //{{{ trace
+    trace!(target: "ls", "returning alpha ={alpha_min:1.4e}");
+    info!(target: "ls", "--- leaving quadcubmin ---");
+    //}}}
+    Some((alpha_min, fmin))
 }
 //}}}
 //{{{ fun: satisfies_armijo

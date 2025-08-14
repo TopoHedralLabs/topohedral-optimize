@@ -6,7 +6,7 @@
 //{{{ crate imports
 use topohedral_optimize::{RealFn, RealFn1, CountingRealFn, 
                            line_search::{Interp, InterpOptions, LineSearchFcn}};
-use topohedral_optimize::line_search::Options as LineSearchOptions;
+use topohedral_optimize::line_search::LineSearchOptions;
 use topohedral_optimize::line_search::LineSearcher;
 //}}}
 //{{{ std imports
@@ -106,11 +106,11 @@ impl RealFn1 for Cubic1D{
 fn test_quadratic_1d() {
     let mut q1 = Quadratic1D{ root1: 1.0, root2: 2.0};
     let mut interp =  Interp::new(q1.clone(), 
-        &InterpOptions{
+        InterpOptions{
             ls_opts: LineSearchOptions{
                 c1: 1e-4, c2: 0.9
             },
-            step1: 0.1, step2: 0.7
+            step1: 0.1, step2: 0.7, scale_factor: 1.5
         } 
     );
     let alpha = 0.0; 
@@ -125,11 +125,11 @@ fn test_quadratic_1d() {
 fn test_cubic_1d() {
     let mut c1 = Cubic1D{root1: -1.0, root2: 0.0, root3: 1.0};
     let mut interp =  Interp::new(c1.clone(), 
-        &InterpOptions{
+        InterpOptions{
             ls_opts: LineSearchOptions{
                 c1: 1e-4, c2: 0.9
             },
-            step1: 0.1, step2: 0.7
+            step1: 0.1, step2: 0.7, scale_factor: 1.5
         } 
     );
     let alpha = 0.0; 
