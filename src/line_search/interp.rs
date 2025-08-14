@@ -7,7 +7,7 @@
 use super::common::{Error, LineSearchFcn, LineSearcher, Returns};
 use super::common as com;
 use super::utils::{cubicmin, quadmin};
-use crate::line_search::utils::satisfies_wolfe;
+use crate::line_search::utils::{quadcubmin, satisfies_wolfe};
 use crate::RealFn1;
 //}}}
 //{{{ std imports
@@ -71,27 +71,14 @@ impl<F: RealFn1> LineSearcher for Interp<F> {
             }
         };
 
-        let cubic_min_alpha = cubicmin(0.0, phi0, dphi0, step1, phi1, step2, phi2);
-        let quad_min1_alpha = quadmin(0.0, phi0, dphi0, step1, phi1);
-        let quad_min2_alpha = quadmin(0.0, phi0, dphi0, step2, phi2);
-        let opt_min_value = [cubic_min_alpha, quad_min1_alpha, quad_min2_alpha]
-            .iter()
-            .map(to_pair)
-            .filter_map(|x| {
-                //{{{ trace
-                trace!(target: "ls", "alpha-falpha pair: {:?}", x);
-                //}}}
-                x
-            })
-            .min_by(|x, y| {x.1.partial_cmp(&y.1).unwrap()});
-
-        if opt_min_value.is_none()
+        let best_guess = quadcubmin(&mut self.f, step0, phi0, dphi0, step1, phi1, step2, phi2);
+        if best_guess.is_none()
         {
             info!(target: "ls", "No value found");
             return Err(Error::NotDecreasing);
         }
 
-        let (alpha_min, fmin) = opt_min_value.unwrap();
+        let (alpha_min, fmin) = best_guess.unwrap();
         //{{{ trace
         trace!(target: "ls", "returning alpha ={alpha_min:1.4e} fmin = {fmin:1.4e}");
         //}}}
