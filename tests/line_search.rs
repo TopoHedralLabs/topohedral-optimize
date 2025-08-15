@@ -110,7 +110,7 @@ fn test_quadratic_1d() {
             ls_opts: LineSearchOptions{
                 c1: 1e-4, c2: 0.9
             },
-            step1: 0.1, step2: 0.7, scale_factor: 1.5
+            step1: 0.1, step2: 0.7, scale_factor: 1.5, maxiter: 10
         } 
     );
     let alpha = 0.0; 
@@ -129,7 +129,7 @@ fn test_cubic_1d() {
             ls_opts: LineSearchOptions{
                 c1: 1e-4, c2: 0.9
             },
-            step1: 0.1, step2: 0.7, scale_factor: 1.5
+            step1: 0.1, step2: 0.7, scale_factor: 1.5, maxiter: 10
         } 
     );
     let alpha = 0.0; 

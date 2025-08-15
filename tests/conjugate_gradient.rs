@@ -88,7 +88,8 @@ fn test_quadratic() {
                 },
                 step1: 0.5, 
                 step2: 1.0,
-                scale_factor: 1.5
+                scale_factor: 1.5, 
+                maxiter: 10
             })
         }, 
         direction: Direction::Steepest, 
@@ -138,8 +139,7 @@ fn test_quartic() {
         xmin: SCVector::<f64, 5>::from_col_slice(&[10.0, 10.0, 10.0, 10.0, 10.0])
     };
 
-    let scale_factor = 20.0;
-    let jump = 1.0;
+    let scale_factor = 30.0;
     let mut offset_dir = SCVector::<f64, 5>::from_col_slice(&[1e-3, 1.0, 0.5, 3.0, 1.0]);
     offset_dir = offset_dir.normalize();
 
@@ -147,20 +147,21 @@ fn test_quartic() {
 
     let mut cg = ConjugateGradient::new(quart, x0, ConjugateGradientOptions{
         uncon_opts: UnonstrainedOptions{
-            grad_rtol: 1e-6, 
-            grad_atol: 1e-8,
+            grad_rtol: 1e-8, 
+            grad_atol: 1e-10,
             max_iter: 1000,
             ls_method: LineSearchMethod::Interp(InterpOptions{
                 ls_opts: LineSearchOptions {
                     c1: 1e-4, 
                     c2: 0.4,
                 },
-                step1: 0.5 * jump, 
-                step2: jump ,
-                scale_factor: 1.5
+                step1: 0.5, 
+                step2: 1.0 ,
+                scale_factor: 1.5, 
+                maxiter: 10
             })
         }, 
-        direction: Direction::Steepest, 
+        direction: Direction::FletcherReeves, 
         restart: 100,
     });
 

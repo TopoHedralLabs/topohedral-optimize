@@ -64,6 +64,8 @@ pub enum Error {
     MaxIterations,
     #[error("Step size too small")]
     StepSizeSmall,
+    #[error("No step found")]
+    NoStepFound,
 }
 //}}}
 //{{{ struct: Options 
@@ -91,7 +93,8 @@ pub struct Options {
 #[derive(Debug, Copy, Clone)]
 pub struct Returns {
     pub alpha: f64,
-    pub falpha: f64,
+    pub phi_alpha: f64,
+    pub dphi_alpha: f64,
 }
 //}}}
 //{{{ trait: LineSearcher

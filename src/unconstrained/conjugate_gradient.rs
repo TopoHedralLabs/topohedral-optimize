@@ -191,7 +191,7 @@ where
             xk_prev = xk.clone();
             xk = xk + ls_ret.alpha * direction.clone();
             fk_prev = fk;
-            fk = ls_ret.falpha;
+            fk = ls_ret.phi_alpha;
             grad_fk_prev = grad_fk.clone();
             grad_fk = self.fcn.grad(&xk);
             grad_fk_prev_norm = grad_fk_prev.norm();

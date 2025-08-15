@@ -131,7 +131,10 @@ pub fn cubicmin(
     error!(target: "ls", "--- Leaving cubicmin ---");
     //}}}
     if alpha_min.is_nan() {
+        //{{{ trace
         error!("Final result is Nan, returning None");
+        error!(target: "ls", "--- Leaving cubicmin ---");
+        //}}}
         return None;
     }
     return Some(alpha_min);
@@ -212,9 +215,9 @@ pub fn satisfies_wolfe(
     c2: f64,
     phi0: f64,
     dphi0: f64,
+    alpha: f64,
     phi1: f64,
     dphi1: f64,
-    alpha: f64,
 ) -> Result<(), Error> {
     //{{{ trace
     trace!(target: "ls", "phi0 = {:1.4e} dphi0 = {:1.4e} phi1 = {:1.4e} dphi1 = {:1.4e} alpha = {:1.4e}", phi0, dphi0, phi1, dphi1, alpha);
