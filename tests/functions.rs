@@ -7,7 +7,7 @@
 #![feature(impl_trait_in_assoc_type)]
 
 //{{{ crate imports
-use topohedral_optimize::{line_search::LineSearchFcn, RealFn, RealFn1, CountingRealFn};
+use topohedral_optimize::{line_search::LineSearchFcn, RealFn, RealFn1};
 //}}}
 //{{{ std imports
 use std::{rc::Rc, sync::Mutex};
@@ -125,7 +125,7 @@ fn test_quadratic_static_3d()
 fn test_quadratic_static_3d_line_search() {
 
     let mut line_fcn1 = LineSearchFcn {
-        f:  CountingRealFn::new(QuadraticStatic::<3>::new1()),
+        f:  QuadraticStatic::<3>::new1(),
         x: SCVector::<f64, 3>::zeros(),
         dir:  SCVector::<f64, 3>::from_col_slice(&[1.0, -2.0, 1.0]),
     };
@@ -135,8 +135,6 @@ fn test_quadratic_static_3d_line_search() {
     let dphi1 = line_fcn1.diff(0.0);
     assert_relative_eq!(phi1, 0.0, epsilon = 1e-10);
     assert_relative_eq!(dphi1, 0.0, epsilon = 1e-10);
-    assert_eq!(line_fcn1.f.num_func_evals, 1);
-    assert_eq!(line_fcn1.f.num_grad_evals, 1);
 
 
     line_fcn1.x = SCVector::<f64, 3>::ones();
@@ -144,8 +142,6 @@ fn test_quadratic_static_3d_line_search() {
     let dphi2 = line_fcn1.diff(0.0);
     assert_relative_eq!(phi2, 27.0, epsilon = 1e-10);
     assert_relative_eq!(dphi2, 16.0 - 2.0*18.0 + 20.0, epsilon = 1e-10);
-    assert_eq!(line_fcn1.f.num_func_evals, 2);
-    assert_eq!(line_fcn1.f.num_grad_evals, 2);
 
 }
 //}}}
@@ -153,7 +149,7 @@ fn test_quadratic_static_3d_line_search() {
 #[test]
 fn test_quadratic_static_rc_line_search() {
 
-    let fcn1 = Rc::new(RefCell::new(CountingRealFn::new(QuadraticStatic::<3>::new1())));
+    let fcn1 = Rc::new(RefCell::new(QuadraticStatic::<3>::new1()));
     let x = SCVector::<f64, 3>::zeros();
     let dir = SCVector::<f64, 3>::from_col_slice(&[1.0, -2.0, 1.0]);
     let mut line_fcn1 = LineSearchFcn {
@@ -166,8 +162,6 @@ fn test_quadratic_static_rc_line_search() {
     let dphi1 = line_fcn1.diff(0.0);
     assert_relative_eq!(phi1, 0.0, epsilon = 1e-10);
     assert_relative_eq!(dphi1, 0.0, epsilon = 1e-10);
-    assert_eq!(fcn1.borrow().num_func_evals, 1);
-    assert_eq!(fcn1.borrow().num_grad_evals, 1);
 
 
     line_fcn1.x = SCVector::<f64, 3>::ones();
@@ -175,12 +169,8 @@ fn test_quadratic_static_rc_line_search() {
     let dphi2 = line_fcn1.diff(0.0);
     assert_relative_eq!(phi2, 27.0, epsilon = 1e-10);
     assert_relative_eq!(dphi2, 16.0 - 2.0*18.0 + 20.0, epsilon = 1e-10);
-    assert_eq!(line_fcn1.f.borrow().num_func_evals, 2);
-    assert_eq!(line_fcn1.f.borrow().num_grad_evals, 2);
 
     // check that this has alterned same underlying memory
-    assert_eq!(fcn1.borrow().num_func_evals, 2);
-    assert_eq!(fcn1.borrow().num_grad_evals, 2);
 
 }
 //}}}
@@ -188,7 +178,7 @@ fn test_quadratic_static_rc_line_search() {
 #[test]
 fn test_quadratic_static_arc_line_search() {
 
-    let fcn1 = Arc::new(Mutex::new(CountingRealFn::new(QuadraticStatic::<3>::new1())));
+    let fcn1 = Arc::new(Mutex::new(QuadraticStatic::<3>::new1()));
 
     let x = SCVector::<f64, 3>::zeros();
     let dir = SCVector::<f64, 3>::from_col_slice(&[1.0, -2.0, 1.0]);
@@ -202,8 +192,6 @@ fn test_quadratic_static_arc_line_search() {
     let dphi1 = line_fcn1.diff(0.0);
     assert_relative_eq!(phi1, 0.0, epsilon = 1e-10);
     assert_relative_eq!(dphi1, 0.0, epsilon = 1e-10);
-    assert_eq!(fcn1.lock().unwrap().num_func_evals, 1);
-    assert_eq!(fcn1.lock().unwrap().num_grad_evals, 1);
 
 
     line_fcn1.x = SCVector::<f64, 3>::ones();
@@ -211,12 +199,7 @@ fn test_quadratic_static_arc_line_search() {
     let dphi2 = line_fcn1.diff(0.0);
     assert_relative_eq!(phi2, 27.0, epsilon = 1e-10);
     assert_relative_eq!(dphi2, 16.0 - 2.0*18.0 + 20.0, epsilon = 1e-10);
-    assert_eq!(fcn1.lock().unwrap().num_func_evals, 2);
-    assert_eq!(fcn1.lock().unwrap().num_grad_evals, 2);
 
-    // check that this has altered same underlying memory
-    assert_eq!(fcn1.lock().unwrap().num_func_evals, 2);
-    assert_eq!(fcn1.lock().unwrap().num_grad_evals, 2);
 
 }
 //}}}

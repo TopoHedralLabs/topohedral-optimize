@@ -17,11 +17,10 @@ use topohedral_linalg::VectorOps;
 mod common;
 mod factory;
 mod interp;
-mod nocedal;
 mod utils;
 
 pub use common::{
-    Error as LineSearchError, LineSearchFcn, LineSearcher, Options as LineSearchOptions,
+    Error as LineSearchError, LineSearchFcn, LineSearch, Options as LineSearchOptions,
     Returns as LineSearchReturns,
 };
 pub use factory::{create, Method as LineSearchMethod};

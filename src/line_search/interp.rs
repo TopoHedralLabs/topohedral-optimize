@@ -6,7 +6,7 @@
 //{{{ crate imports
 use super::common as com;
 use super::common::{
-    Error, Error as LineSearchError, LineSearchFcn, LineSearcher, Options as LineSearchOptions,
+    Error, Error as LineSearchError, LineSearchFcn, LineSearch, Options as LineSearchOptions,
     Returns,
 };
 use super::utils::{cubicmin, quadmin};
@@ -54,8 +54,8 @@ impl<F: RealFn1> Interp<F> {
 
     fn guess_is_ok(&mut self, guess_data: GuessData) -> Option<(f64, f64, f64)> {
         //{{{ trace
-        info!("--- Entering guess_is_ok ---");
-        trace!("Data: {:?}", guess_data);
+        info!(target: "ls", "--- Entering guess_is_ok ---");
+        trace!(target: "ls", "Data: {:?}", guess_data);
         //}}}
         let GuessData {
             a,
@@ -72,19 +72,33 @@ impl<F: RealFn1> Interp<F> {
         let best_guess_opt = quadcubmin(&mut self.f, a, phi_a, dphi_a, b, phi_b, c, phi_c);
 
         if best_guess_opt.is_none() {
+            //{{{ trace
+            info!(target: "ls", "No guess found");
+            info!(target: "ls", "--- leaving guess_is_ok ---");
+            //}}}
             return None;
         }
 
         let (alpha, phi_alpha) = best_guess_opt.unwrap();
         let dphi_alpha = self.f.diff(alpha);
+        //{{{ trace
+        info!("Checking wolfe for alpha = {alpha} phi_alpha = {phi_alpha} dphi_alpha = {dphi_alpha}");
+        //}}}
         if satisfies_wolfe(c1, c2, phi_a, dphi_a, alpha, phi_alpha, dphi_alpha).is_ok() {
+            //{{{ trace
+            info!("Satisfies wolfe!");
+            info!(target: "ls", "--- leaving guess_is_ok ---");
+            //}}}
             return Some((alpha, phi_alpha, dphi_alpha));
         }
+        //{{{ trace
+        info!(target: "ls", "--- leaving guess_is_ok ---");
+        //}}}
         None
     }
 }
 
-impl<F: RealFn1> LineSearcher for Interp<F> {
+impl<F: RealFn1> LineSearch for Interp<F> {
     type Function = F;
 
     fn search(&mut self, phi0: f64, dphi0: f64) -> Result<Returns, Error> {
@@ -131,7 +145,7 @@ impl<F: RealFn1> LineSearcher for Interp<F> {
         let inv_scale_factor = 1.0 / scale_factor;
         for i in 0..maxiter {
             //{{{ trace
-            info!("---------------------------------- i = {i}");
+            info!(target: "ls", "---------------------------------- i = {i}");
             //}}}
             b_low = b_low * inv_scale_factor;
             phi_b_low = self.f.eval(b_low);
@@ -147,12 +161,12 @@ impl<F: RealFn1> LineSearcher for Interp<F> {
                 phi_c: phi_c_low,
             };
             //{{{ trace
-            debug!("Looking low:\n{guess_data_low:?}");
+            debug!(target: "ls", "Looking low:\n{guess_data_low:?}");
             //}}}
             if let Some((alpha, phi_alpha, dphi_alpha)) = self.guess_is_ok(guess_data_low) {
                 //{{{ trace
-                info!("Low guess found acceptable step: alpha = {alpha}, phi_alpha = {phi_alpha}, dphi_alpha = {dphi_alpha}");
-                info!("--- leaving search() ----");
+                info!(target: "ls", "Low guess found acceptable step: alpha = {alpha}, phi_alpha = {phi_alpha}, dphi_alpha = {dphi_alpha}");
+                info!(target: "ls", "--- leaving search() ----");
                 //}}}
                 return Ok(Returns {
                     alpha: alpha,
@@ -175,12 +189,12 @@ impl<F: RealFn1> LineSearcher for Interp<F> {
                 phi_c: phi_c_high,
             };
             //{{{ trace
-            debug!("Looking high:\n{guess_data_high:?}");
+            debug!(target: "ls", "Looking high:\n{guess_data_high:?}");
             //}}}
             if let Some((alpha, phi_alpha, dphi_alpha)) = self.guess_is_ok(guess_data_high) {
                 //{{{ trace
-                info!("High guess found acceptable step: alpha = {alpha}, phi_alpha = {phi_alpha}, dphi_alpha = {dphi_alpha}");
-                info!("--- leaving search() ----");
+                info!(target: "ls", "High guess found acceptable step: alpha = {alpha}, phi_alpha = {phi_alpha}, dphi_alpha = {dphi_alpha}");
+                info!(target: "ls", "--- leaving search() ----");
                 //}}}
                 return Ok(Returns {
                     alpha: alpha,

@@ -5,21 +5,23 @@
 
 use std::cmp::max;
 use std::fmt;
+use std::sync::Arc;
 
-use crate::line_search::LineSearchFcn;
-use crate::line_search::LineSearcher;
-use crate::unconstrained::common::ConvergedReason;
 //{{{ crate imports
 use super::common::Options as UnonstrainedOptions;
 use super::common::{Error, Returns, UnconstrainedMinimizer};
+use crate::common::CountingRealFn;
 use crate::line_search as ls;
+use crate::line_search::LineSearch;
+use crate::line_search::LineSearchFcn;
+use crate::unconstrained::common::ConvergedReason;
 use crate::RealFn;
-use topohedral_linalg::VectorOps;
 //}}}
 //{{{ std imports
-use std::ops::{Add, Mul, Sub, Neg};
+use std::ops::{Add, Mul, Neg, Sub};
 //}}}
 //{{{ dep imports
+use topohedral_linalg::VectorOps;
 use topohedral_tracing::*;
 //}}}
 //--------------------------------------------------------------------------------------------------
@@ -39,11 +41,11 @@ pub struct Options {
 }
 
 pub struct ConjugateGradient<'a, F: RealFn> {
-    fcn: F,
+    fcn: CountingRealFn<F>,
     x0: F::Vector,
     grad_fcn_norm_init: f64,
     opts: Options,
-    line_searcher: Box<dyn LineSearcher<Function = LineSearchFcn<F>> + 'a>,
+    line_searcher: Box<dyn LineSearch<Function = LineSearchFcn<CountingRealFn<F>>> + 'a>,
 }
 
 impl<'a, F: RealFn + 'a> ConjugateGradient<'a, F>
@@ -57,13 +59,14 @@ where
 {
     pub fn new(mut fcn: F, x0: F::Vector, opts: Options) -> Self {
         let grad_0 = fcn.grad(&x0);
+        // let fcn_shared = Arc
         Self {
-            fcn: fcn.clone(),
+            fcn: CountingRealFn::new(fcn.clone()),
             x0: x0.clone(),
             grad_fcn_norm_init: grad_0.norm(),
             opts: opts,
             line_searcher: ls::create(
-                LineSearchFcn::new(fcn, x0, grad_0),
+                LineSearchFcn::new(CountingRealFn::new(fcn), x0, grad_0),
                 opts.uncon_opts.ls_method,
             ),
         }
@@ -93,7 +96,7 @@ where
                 debug!("Applying Steepest Descent update");
                 //}}}
                 0.0
-            },
+            }
             Direction::FletcherReeves => {
                 //{{{ trace
                 debug!(target: "cg", "Applying fletcher-reeves update");
@@ -120,16 +123,16 @@ where
         new_dir_k
     }
 
-    fn is_converged(&self, grad_norm: f64) -> Option<ConvergedReason>{
+    fn is_converged(&self, grad_norm: f64) -> Option<ConvergedReason> {
         let rtol_converged = grad_norm < self.opts.uncon_opts.grad_rtol;
         if rtol_converged {
-            return Some(ConvergedReason::Rtol)
+            return Some(ConvergedReason::Rtol);
         }
         let atol_converged = grad_norm < self.opts.uncon_opts.grad_atol;
         if atol_converged {
-            return Some(ConvergedReason::Atol)
+            return Some(ConvergedReason::Atol);
         }
-        None    
+        None
     }
 }
 
@@ -169,7 +172,7 @@ where
             //{{{ trace
             info!(target: "cg", "======================================================================== i = {i}");
             info!(target: "cg", "Current values fk = {fk:1.4e} grad_fk_norm = {grad_fk_norm:1.4e}");
-            info!(target: "cg","Convergence measures:"); 
+            info!(target: "cg","Convergence measures:");
             info!(target: "cg", "\t||∇f(k)|| / ||∇f(0)|| = {:1.4e} ", grad_fk_norm / self.grad_fcn_norm_init);
             info!(target: "cg", "\t||x(k) - x(k-1)|| = {:1.4e}", (xk.clone() - xk_prev.clone()).norm());
             trace!(target: "cg", "\n\nxk = \n{xk}\n\ndir = \n{direction}\n\n");
@@ -179,12 +182,13 @@ where
             let needs_restart = i % self.opts.restart == 0;
             let not_decreaseing = dphi0 >= 0.0;
             if needs_restart || not_decreaseing {
-                info!(target: "cg", "Doing restart for reasons:  restart? {needs_restart} descent direction? {not_decreaseing}");
+                info!(target: "cg", "\tDoing restart for reasons:  restart? {needs_restart} descent direction? {not_decreaseing}");
                 direction = -grad_fk.clone();
                 dphi0 = grad_fk.dot(&direction);
             }
 
-            let line_search_fcn = LineSearchFcn::new(self.fcn.clone(), xk.clone(), direction.clone());
+            let line_search_fcn =
+                LineSearchFcn::new(self.fcn.clone(), xk.clone(), direction.clone());
             self.line_searcher.update_fcn(line_search_fcn);
 
             let ls_ret = self.line_searcher.search(phi0, dphi0)?;
@@ -202,13 +206,16 @@ where
                 info!(target: "cg", "Converging with reason {reason:?}");
                 info!(target: "cg", "--- Leaving minimize() ---");
                 //}}}
-                return Ok(Returns {
-                    fmin: fk, 
-                    xmin: xk, 
-                    reason: reason
-                })
-            }
 
+                return Ok(Returns {
+                    fmin: fk,
+                    xmin: xk,
+                    reason: reason,
+                    num_iterations: i as usize,
+                    num_fun_evals: self.fcn.num_func_evals,
+                    num_grad_evals: self.fcn.num_grad_evals,
+                });
+            }
 
             direction = self.update_direction(
                 &grad_fk_prev,

@@ -32,7 +32,10 @@ pub enum ConvergedReason {
 pub struct Returns<Vector> {
     pub xmin: Vector,
     pub fmin: f64,
-    pub reason: ConvergedReason
+    pub reason: ConvergedReason, 
+    pub num_iterations: usize, 
+    pub num_fun_evals: usize, 
+    pub num_grad_evals: usize, 
 }
 
 #[derive(Error, Debug)] 

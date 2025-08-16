@@ -67,7 +67,7 @@ where
 //}}}
 //{{{ struct: CountingRealFcn
 #[derive(Clone, Debug)]
-pub struct CountingRealFn <F: RealFn> {
+pub(crate) struct CountingRealFn <F: RealFn> {
     fcn: F, 
     pub num_func_evals: usize, 
     pub num_grad_evals: usize, 

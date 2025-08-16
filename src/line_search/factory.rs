@@ -24,7 +24,7 @@ pub enum Method{
 } 
 
 pub fn create<'a, F: RealFn1 + 'a>(fcn: F, method: Method) 
--> Box<dyn LineSearcher<Function = F> + 'a>
+-> Box<dyn LineSearch<Function = F> + 'a>
 {
     match method {
         Method::Interp(opts) => {

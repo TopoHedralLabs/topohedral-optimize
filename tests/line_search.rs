@@ -4,10 +4,10 @@
 #![feature(impl_trait_in_assoc_type)]
 
 //{{{ crate imports
-use topohedral_optimize::{RealFn, RealFn1, CountingRealFn, 
+use topohedral_optimize::{RealFn, RealFn1,
                            line_search::{Interp, InterpOptions, LineSearchFcn}};
 use topohedral_optimize::line_search::LineSearchOptions;
-use topohedral_optimize::line_search::LineSearcher;
+use topohedral_optimize::line_search::LineSearch;
 //}}}
 //{{{ std imports
 use std::{rc::Rc, sync::Mutex};

@@ -15,6 +15,6 @@
 #![feature(impl_trait_in_assoc_type)]
 
 mod common;
-pub use common::{RealFn, RealFn1, CountingRealFn};
+pub use common::{RealFn, RealFn1};
 pub mod line_search;
 pub mod unconstrained;

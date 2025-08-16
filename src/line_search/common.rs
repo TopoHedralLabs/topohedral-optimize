@@ -98,7 +98,7 @@ pub struct Returns {
 }
 //}}}
 //{{{ trait: LineSearcher
-pub trait LineSearcher {
+pub trait LineSearch {
     type Function: RealFn1;
     fn search(&mut self, phi0: f64, dphi0: f64) ->  Result<Returns, Error>;
     fn update_fcn(&mut self, fcn: Self::Function);
