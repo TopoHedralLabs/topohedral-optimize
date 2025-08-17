@@ -17,6 +17,7 @@ use topohedral_linalg::VectorOps;
 mod common;
 mod factory;
 mod interp;
+mod thuente;
 mod utils;
 
 pub use common::{

@@ -66,7 +66,7 @@ impl RealFn for Quadratic {
     }
 }
 //}}}
-
+//{{{ test: test_quadratic
 #[test]
 fn test_quadratic() {
 
@@ -102,6 +102,7 @@ fn test_quadratic() {
 
 
 }
+//}}}
 //{{{ struct: Quartic 
 #[derive(Debug, Clone, Copy)]
 struct Quartic {
@@ -131,7 +132,7 @@ impl RealFn for Quartic {
     }
 }
 //}}}
-
+//{{{ test: test_quartic
 #[test]
 fn test_quartic() {
 
@@ -170,4 +171,74 @@ fn test_quartic() {
     print!("{ret:?}")
 
 
+}
+//}}}
+//{{{ struct Rosenbrock
+#[derive(Debug, Clone, Copy)]
+struct Rosenbrock {
+    a: f64,
+    b: f64
+}
+//}}}
+//{{{ impl: Rosenbrock
+impl Rosenbrock {
+    fn new() -> Self  {
+        Self { a: 1.0, b: 100.0 }
+    }
+}
+//}}}
+//{{{ impl: RealFn for Rosenbrock
+impl RealFn for Rosenbrock {
+    type Vector = SCVector<f64, 2>;
+
+    fn eval(&mut self, xvec: &Self::Vector) -> f64 {
+        let x = xvec[0];
+        let y = xvec[1];
+        (self.a - x).powi(2) + self.b * (y - x.powi(2)).powi(2)
+    }
+
+    fn grad(&mut self, xvec: &Self::Vector) -> Self::Vector {
+
+        let a = self.a;
+        let b = self.b;
+        let x = xvec[0];
+        let y = xvec[1];
+        let mut out = SCVector::<f64, 2>::zeros();
+        out[0] = -2.0 * (a - x) - 4.0 * b * x * (y - x.powi(2));
+        out[1] = 2.0 * b * (y - x.powi(2));
+        out
+    }
+}
+//}}}
+#[test]
+fn test_rosenbrock() {
+
+    let rosenbrock = Rosenbrock::new();
+
+
+    let x0  = SCVector::<f64, 2>::from_col_slice(&[0.0, 3.0]);
+
+    let mut cg = ConjugateGradient::new(rosenbrock, x0, ConjugateGradientOptions{
+        uncon_opts: UnonstrainedOptions{
+            grad_rtol: 1e-9, 
+            grad_atol: 1e-10,
+            max_iter: 1000,
+            ls_method: LineSearchMethod::Interp(InterpOptions{
+                ls_opts: LineSearchOptions {
+                    c1: 1e-4, 
+                    c2: 0.4,
+                },
+                step1: 0.5, 
+                step2: 1.0 ,
+                scale_factor: 1.5, 
+                maxiter: 100
+            })
+        }, 
+        direction: Direction::FletcherReeves, 
+        restart: 100,
+    });
+
+    let ret = cg.minimize().unwrap();
+    
+    print!("{ret:?}")
 }

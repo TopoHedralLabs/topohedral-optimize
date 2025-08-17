@@ -117,8 +117,9 @@ where
         new_dir_k
     }
 
-    fn is_converged(&self, grad_norm: f64) -> Option<ConvergedReason> {
-        let rtol_converged = grad_norm < self.opts.uncon_opts.grad_rtol;
+    fn is_converged(&self, grad_norm: f64, grad_norm_init: f64) -> Option<ConvergedReason> {
+        let rtol = self.opts.uncon_opts.grad_rtol;
+        let rtol_converged = (grad_norm / grad_norm_init) < rtol;
         if rtol_converged {
             return Some(ConvergedReason::Rtol);
         }
@@ -202,7 +203,7 @@ where
             grad_fk_prev_norm = grad_fk_prev.norm();
             grad_fk_norm = grad_fk.norm();
 
-            if let Some(reason) = self.is_converged(grad_fk_norm) {
+            if let Some(reason) = self.is_converged(grad_fk_norm, grad_fx_norm_init) {
                 //{{{ trace
                 info!(target: "cg", "Converging with reason {reason:?}");
                 info!(target: "cg", "--- Leaving minimize() ---");
