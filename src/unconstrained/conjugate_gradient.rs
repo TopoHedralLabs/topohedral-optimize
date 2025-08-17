@@ -3,14 +3,11 @@
 //! Longer description of module
 //--------------------------------------------------------------------------------------------------
 
-use std::cmp::max;
-use std::fmt;
-use std::sync::Arc;
 
 //{{{ crate imports
 use super::common::Options as UnonstrainedOptions;
 use super::common::{Error, Returns, UnconstrainedMinimizer};
-use crate::common::CountingRealFn;
+use crate::common::{arc_real_fn, CountingRealFn};
 use crate::line_search as ls;
 use crate::line_search::LineSearch;
 use crate::line_search::LineSearchFcn;
@@ -19,6 +16,8 @@ use crate::RealFn;
 //}}}
 //{{{ std imports
 use std::ops::{Add, Mul, Neg, Sub};
+use std::fmt;
+use std::sync::{Arc, Mutex};
 //}}}
 //{{{ dep imports
 use topohedral_linalg::VectorOps;
@@ -40,15 +39,14 @@ pub struct Options {
     pub restart: u64,
 }
 
-pub struct ConjugateGradient<'a, F: RealFn> {
-    fcn: CountingRealFn<F>,
-    x0: F::Vector,
-    grad_fcn_norm_init: f64,
+pub struct ConjugateGradient<F: RealFn> {
+    fcn: Arc<Mutex<CountingRealFn<F>>>,
+    x_init: F::Vector,
+    grad_fx_init: F::Vector,
     opts: Options,
-    line_searcher: Box<dyn LineSearch<Function = LineSearchFcn<CountingRealFn<F>>> + 'a>,
 }
 
-impl<'a, F: RealFn + 'a> ConjugateGradient<'a, F>
+impl<F: RealFn> ConjugateGradient<F>
 where
     F::Vector: VectorOps<ScalarType = f64>
         + Add<Output = F::Vector>
@@ -59,16 +57,12 @@ where
 {
     pub fn new(mut fcn: F, x0: F::Vector, opts: Options) -> Self {
         let grad_0 = fcn.grad(&x0);
-        // let fcn_shared = Arc
+        let fcn_shared = arc_real_fn(CountingRealFn::new(fcn));
         Self {
-            fcn: CountingRealFn::new(fcn.clone()),
-            x0: x0.clone(),
-            grad_fcn_norm_init: grad_0.norm(),
+            fcn: fcn_shared.clone(),
+            x_init: x0.clone(),
+            grad_fx_init: grad_0,
             opts: opts,
-            line_searcher: ls::create(
-                LineSearchFcn::new(CountingRealFn::new(fcn), x0, grad_0),
-                opts.uncon_opts.ls_method,
-            ),
         }
     }
 
@@ -136,7 +130,7 @@ where
     }
 }
 
-impl<'a, F: RealFn> UnconstrainedMinimizer for ConjugateGradient<'a, F>
+impl<F: RealFn> UnconstrainedMinimizer for ConjugateGradient<F>
 where
     F::Vector: VectorOps<ScalarType = f64>
         + Add<Output = F::Vector>
@@ -150,8 +144,8 @@ where
 
     fn minimize(&mut self) -> Result<Returns<Self::Vector>, Error> {
         info!(target: "cg", "--- Entering minimize() ---");
-        let mut xk = self.x0.clone();
-        let mut xk_prev = self.x0.clone();
+        let mut xk = self.x_init.clone();
+        let mut xk_prev = self.x_init.clone();
         let mut fk = self.fcn.eval(&xk);
         let mut fk_prev = fk;
         let mut grad_fk = self.fcn.grad(&xk);
@@ -168,12 +162,19 @@ where
 
         let max_iter = self.opts.uncon_opts.max_iter;
 
+        let mut line_searcher = ls::create(
+                LineSearchFcn::new(self.fcn.clone(), self.x_init.clone(), self.grad_fx_init.clone()),
+                self.opts.uncon_opts.ls_method,
+        );
+
+        let grad_fx_norm_init = self.grad_fx_init.norm();
+
         for i in 1..max_iter {
             //{{{ trace
             info!(target: "cg", "======================================================================== i = {i}");
             info!(target: "cg", "Current values fk = {fk:1.4e} grad_fk_norm = {grad_fk_norm:1.4e}");
             info!(target: "cg","Convergence measures:");
-            info!(target: "cg", "\t||∇f(k)|| / ||∇f(0)|| = {:1.4e} ", grad_fk_norm / self.grad_fcn_norm_init);
+            info!(target: "cg", "\t||∇f(k)|| / ||∇f(0)|| = {:1.4e} ", grad_fk_norm / grad_fx_norm_init);
             info!(target: "cg", "\t||x(k) - x(k-1)|| = {:1.4e}", (xk.clone() - xk_prev.clone()).norm());
             trace!(target: "cg", "\n\nxk = \n{xk}\n\ndir = \n{direction}\n\n");
             //}}}
@@ -189,9 +190,9 @@ where
 
             let line_search_fcn =
                 LineSearchFcn::new(self.fcn.clone(), xk.clone(), direction.clone());
-            self.line_searcher.update_fcn(line_search_fcn);
+            line_searcher.update_fcn(line_search_fcn);
 
-            let ls_ret = self.line_searcher.search(phi0, dphi0)?;
+            let ls_ret = line_searcher.search(phi0, dphi0)?;
             xk_prev = xk.clone();
             xk = xk + ls_ret.alpha * direction.clone();
             fk_prev = fk;
@@ -207,13 +208,14 @@ where
                 info!(target: "cg", "--- Leaving minimize() ---");
                 //}}}
 
+                let fcn_lock = self.fcn.lock().unwrap();
                 return Ok(Returns {
                     fmin: fk,
                     xmin: xk,
                     reason: reason,
                     num_iterations: i as usize,
-                    num_fun_evals: self.fcn.num_func_evals,
-                    num_grad_evals: self.fcn.num_grad_evals,
+                    num_fun_evals: fcn_lock.num_func_evals,
+                    num_grad_evals: fcn_lock.num_grad_evals,
                 });
             }
 

@@ -101,3 +101,20 @@ impl<F: RealFn> CountingRealFn<F> {
     }
 }
 //}}}
+//{{{ type: aliases for Rc<RefCell<F>> and Arc<Mutex<F>>
+/// Type alias for a function wrapped in Rc<RefCell<F>>
+pub type RcRealFn<F: RealFn> = Rc<RefCell<F>>;
+/// Type alias for a function wrapped in Arc<Mutex<F>>
+pub type ArcRealFn<F: RealFn> = Arc<Mutex<F>>;
+//}}}
+//{{{ fun: rc_real_fn
+/// Creates a new reference-counted function using Rc<RefCell>
+pub fn rc_real_fn<F: RealFn>(fcn: F) -> RcRealFn<F> {
+    Rc::new(RefCell::new(fcn))
+}
+//}}}
+//{{{ fun: arc_real_fn
+/// Creates a new thread-safe reference-counted function using Arc<Mutex>
+pub fn arc_real_fn<F: RealFn>(fcn: F) -> ArcRealFn<F> {
+    Arc::new(Mutex::new(fcn))
+}//}}}
