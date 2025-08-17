@@ -82,10 +82,7 @@ fn test_quadratic() {
             grad_atol: 1e-8,
             max_iter: 100,
             ls_method: LineSearchMethod::Interp(InterpOptions{
-                ls_opts: LineSearchOptions {
-                    c1: 1e-4, 
-                    c2: 0.4,
-                },
+                ls_opts: LineSearchOptions::default(),
                 step1: 0.5, 
                 step2: 1.0,
                 scale_factor: 1.5, 
@@ -152,10 +149,7 @@ fn test_quartic() {
             grad_atol: 1e-10,
             max_iter: 1000,
             ls_method: LineSearchMethod::Interp(InterpOptions{
-                ls_opts: LineSearchOptions {
-                    c1: 1e-4, 
-                    c2: 0.4,
-                },
+                ls_opts: LineSearchOptions::default(),
                 step1: 0.5, 
                 step2: 1.0 ,
                 scale_factor: 1.5, 
@@ -224,10 +218,7 @@ fn test_rosenbrock() {
             grad_atol: 1e-10,
             max_iter: 1000,
             ls_method: LineSearchMethod::Interp(InterpOptions{
-                ls_opts: LineSearchOptions {
-                    c1: 1e-4, 
-                    c2: 0.4,
-                },
+                ls_opts: LineSearchOptions::default(),
                 step1: 0.5, 
                 step2: 1.0 ,
                 scale_factor: 1.5, 

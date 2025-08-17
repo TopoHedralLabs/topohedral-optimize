@@ -64,6 +64,8 @@ pub enum Error {
     MaxIterations,
     #[error("Step size too small")]
     StepSizeSmall,
+    #[error("Step size too large")]
+    StepSizeLarge,
     #[error("No step found")]
     NoStepFound,
 }
@@ -80,6 +82,22 @@ pub enum Error {
 pub struct Options {
     pub c1: f64,
     pub c2: f64,
+    pub step_min: f64,
+    pub step_max: f64,
+    pub step_init: f64,
+}
+//}}}
+//{{{ impl: Default for Options
+impl Default for Options {
+    fn default() -> Self {
+        Self {
+            c1: 1e-4,
+            c2: 0.9,
+            step_min: 1e-8,
+            step_max: 50.0,
+            step_init: 1.0,
+        }
+    }
 }
 //}}}
 //{{{ struct: Returns 
@@ -97,7 +115,7 @@ pub struct Returns {
     pub dphi_alpha: f64,
 }
 //}}}
-//{{{ trait: LineSearcher
+//{{{ trait: LineSearch
 pub trait LineSearch {
     type Function: RealFn1;
     fn search(&mut self, phi0: f64, dphi0: f64) ->  Result<Returns, Error>;

@@ -106,7 +106,7 @@ fn test_quadratic_1d() {
     let mut interp = Interp::new(
         q1.clone(),
         InterpOptions {
-            ls_opts: LineSearchOptions { c1: 1e-4, c2: 0.9 },
+            ls_opts: LineSearchOptions::default(),
             step1: 0.1,
             step2: 0.7,
             scale_factor: 1.5,
@@ -131,7 +131,7 @@ fn test_cubic_1d() {
     let mut interp = Interp::new(
         c1.clone(),
         InterpOptions {
-            ls_opts: LineSearchOptions { c1: 1e-4, c2: 0.9 },
+            ls_opts: LineSearchOptions::default(),
             step1: 0.1,
             step2: 0.7,
             scale_factor: 1.5,
@@ -172,7 +172,7 @@ fn test_fcn1() {
     let mut interp = Interp::new(
         fcn1.clone(),
         InterpOptions {
-            ls_opts: LineSearchOptions { c1: 1e-4, c2: 0.9 },
+            ls_opts: LineSearchOptions::default(),  
             step1: 0.5,
             step2: 1.0,
             scale_factor: 1.5,
