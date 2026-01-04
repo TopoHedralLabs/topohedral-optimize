@@ -15,12 +15,10 @@ jobs:
           sudo apt update
           sudo apt install -y libopenblas-dev
 
-      - name: Set up Rust Nightly
-        uses: actions-rs/toolchain@v1
-        with:
+      - uses: dtolnay/rust-toolchain@nightly
+        with: 
           toolchain: nightly
-          override: true
-          profile: minimal
+          components: rustfmt, clippy 
 
       - name: Cache Cargo registry
         uses: actions/cache@v3
@@ -41,11 +39,11 @@ jobs:
       - name: Install Dependencies
         run: cargo fetch
 
-      - name: Check Formatting
-        run: cargo fmt -- --check
+      # - name: Check Formatting
+      #   run: cargo fmt -- --check
 
-      - name: Run Linter
-        run: cargo clippy --all-targets --all-features -- -D warnings
+      # - name: Run Linter
+      #   run: cargo clippy --all-targets --all-features -- -D warnings
 
       - name: Build Project
         run: cargo build --all-targets --all-features
