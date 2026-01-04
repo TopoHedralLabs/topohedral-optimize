@@ -62,7 +62,7 @@ where
             fcn: fcn_shared.clone(),
             x_init: x0.clone(),
             grad_fx_init: grad_0,
-            opts: opts,
+            opts,
         }
     }
 
@@ -95,8 +95,8 @@ where
                 //{{{ trace
                 debug!(target: "cg", "Applying fletcher-reeves update");
                 //}}}
-                let beta_tmp = grad_fk.dot(&grad_fk1) / norm_grad_fk1.powi(2);
-                beta_tmp
+                
+                grad_fk.dot(grad_fk1) / norm_grad_fk1.powi(2)
             }
             Direction::PolakRibiere => {
                 //{{{ trace
@@ -213,7 +213,7 @@ where
                 return Ok(Returns {
                     fmin: fk,
                     xmin: xk,
-                    reason: reason,
+                    reason,
                     num_iterations: i as usize,
                     num_fun_evals: fcn_lock.num_func_evals,
                     num_grad_evals: fcn_lock.num_grad_evals,

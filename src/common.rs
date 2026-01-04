@@ -94,7 +94,7 @@ impl<F: RealFn> CountingRealFn<F> {
 
     pub fn new(fcn: F) -> Self  {
         Self{
-            fcn: fcn, 
+            fcn, 
             num_func_evals: 0, 
             num_grad_evals: 0
         }
@@ -103,9 +103,9 @@ impl<F: RealFn> CountingRealFn<F> {
 //}}}
 //{{{ type: aliases for Rc<RefCell<F>> and Arc<Mutex<F>>
 /// Type alias for a function wrapped in Rc<RefCell<F>>
-pub type RcRealFn<F: RealFn> = Rc<RefCell<F>>;
+pub type RcRealFn<F> = Rc<RefCell<F>>;
 /// Type alias for a function wrapped in Arc<Mutex<F>>
-pub type ArcRealFn<F: RealFn> = Arc<Mutex<F>>;
+pub type ArcRealFn<F> = Arc<Mutex<F>>;
 //}}}
 //{{{ fun: rc_real_fn
 /// Creates a new reference-counted function using Rc<RefCell>

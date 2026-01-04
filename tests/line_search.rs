@@ -6,24 +6,18 @@
 use topohedral_optimize::line_search::LineSearch;
 use topohedral_optimize::line_search::LineSearchOptions;
 use topohedral_optimize::{
-    line_search::{Interp, InterpOptions, LineSearchFcn},
+    line_search::{Interp, InterpOptions},
     RealFn, RealFn1,
 };
 //}}}
 //{{{ std imports
-use std::cell::RefCell;
-use std::sync::Arc;
-use std::{rc::Rc, sync::Mutex};
 //}}}
 //{{{ dep imports
 use approx::assert_relative_eq;
 use ctor::ctor;
 use topohedral_linalg::{
     dmatrix::DMatrix,
-    dvector::{DVector, VecType},
-    scvector::SCVector,
-    smatrix::SMatrix,
-    GreaterThan, MatMul, VectorOps,
+    dvector::DVector,
 };
 use topohedral_tracing::*;
 
@@ -158,8 +152,8 @@ impl RealFn1 for Fcn1 {
 
     fn diff(&mut self, x: f64) -> f64 {
         let alpha = x;
-        let out = (alpha.powi(2) - self.beta) / (alpha.powi(2) - self.beta).powi(2);
-        out
+        
+        (alpha.powi(2) - self.beta) / (alpha.powi(2) - self.beta).powi(2)
     }
 }
 
@@ -170,7 +164,7 @@ fn test_fcn1() {
         beta: 2.0
     };
     let mut interp = Interp::new(
-        fcn1.clone(),
+        fcn1,
         InterpOptions {
             ls_opts: LineSearchOptions::default(),  
             step1: 0.5,

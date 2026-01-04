@@ -6,19 +6,14 @@
 //{{{ crate imports
 use super::common as com;
 use super::common::{
-    Error, Error as LineSearchError, LineSearch, LineSearchFcn, Options as LineSearchOptions,
+    Error, LineSearch,
     Returns,
 };
-use super::utils::{cubicmin, quadmin};
-use crate::line_search::utils::{quadcubmin, satisfies_armijo, satisfies_wolfe};
 use crate::RealFn1;
 //}}}
 //{{{ std imports
-use std::ops::{Add, Mul};
-use topohedral_linalg::VectorOps;
 //}}}
 //{{{ dep imports
-use topohedral_tracing::*;
 //}}}
 //--------------------------------------------------------------------------------------------------
 const XTRAPL: f64 = 1.1;
@@ -52,8 +47,8 @@ impl<F: RealFn1> Thuente<F> {
 
         
         Self {
-            opts: opts,
-            f: f,
+            opts,
+            f,
             step_min: 0.0, 
             step_max: 0.0,
             cur_alpha1: 0.0,
@@ -90,9 +85,9 @@ impl<F: RealFn1> Thuente<F> {
 
         let mut iter = 0;
 
-        let mut alpha = alpha_init;
-        let mut phi = phi0;
-        let mut dphi = dphi0;
+        let alpha = alpha_init;
+        let phi = phi0;
+        let dphi = dphi0;
 
         while iter < self.opts.maxiter {
 
@@ -140,8 +135,8 @@ impl<F: RealFn1> Thuente<F> {
                     phi_alpha2: self.phi_alpha2, 
                     dphi_alpha2: self.dphi_alpha2, 
                     step: alpha, 
-                    phi: phi, 
-                    dphi: dphi, 
+                    phi, 
+                    dphi, 
                     bracketed: self.bracketed, 
                     lower_bound: self.step_min, 
                     upper_bound: self.step_max,
@@ -162,7 +157,7 @@ impl<F: RealFn1> Thuente<F> {
         (0.0, 0.0, 0.0)
     }
 
-    fn stage2(&mut self, alpha: f64, phi: f64, dphi: f64) -> (f64, f64, f64) {
+    fn stage2(&mut self, _alpha: f64, _phi: f64, _dphi: f64) -> (f64, f64, f64) {
 
 
         (0.0, 0.0, 0.0)

@@ -63,7 +63,7 @@ pub fn quadmin(a: f64, phi_a: f64, dphi_a: f64, b: f64, phi_b: f64) -> Option<f6
     error!(target: "ls", "Returning alpha_min = {:1.4e}", alpha_min);
     error!(target: "ls", "--- Leaving quadmin ---");
     //}}}
-    return Some(alpha_min);
+    Some(alpha_min)
 }
 //}}}
 //{{{ fun: cubicmin
@@ -137,7 +137,7 @@ pub fn cubicmin(
         //}}}
         return None;
     }
-    return Some(alpha_min);
+    Some(alpha_min)
 }
 //}}}
 //{{{ fun: quadcubmin
@@ -156,10 +156,7 @@ pub fn quadcubmin<F: RealFn1>(
     info!(target: "ls", "--- entering quadcubmin ---");
     //}}}
     let to_pair = |x: &Option<f64>| -> Option<(f64, f64)> {
-        match x {
-            None => None,
-            Some(alpha) => Some((*alpha, f.eval(*alpha))),
-        }
+        x.as_ref().map(|alpha| (*alpha, f.eval(*alpha)))
     };
     let cubic_min_alpha = cubicmin(a, phi_a, dphi_a, b, phi_b, c, phi_c);
     let quad_min1_alpha = quadmin(a, phi_a, dphi_a, b, phi_b);

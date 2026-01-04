@@ -12,14 +12,8 @@ use topohedral_optimize::unconstrained::{UnconstrainedMinimizer, UnonstrainedOpt
 //{{{ dep imports
 use ctor::ctor;
 use topohedral_linalg::{
-    MatMul,
-    dvector::{DVector, VecType},
-    dmatrix::{ DMatrix},
-    scvector::SCVector,
-    smatrix::{SMatrix},
-    GreaterThan, VectorOps
+    scvector::SCVector, VectorOps
 };
-use approx::assert_relative_eq;
 use topohedral_tracing::*;
 //}}}
 
@@ -141,7 +135,7 @@ fn test_quartic() {
     let mut offset_dir = SCVector::<f64, 5>::from_col_slice(&[1e-3, 1.0, 0.5, 3.0, 1.0]);
     offset_dir = offset_dir.normalize();
 
-    let x0 = quart.xmin.clone() + scale_factor * offset_dir;
+    let x0 = quart.xmin + scale_factor * offset_dir;
 
     let mut cg = ConjugateGradient::new(quart, x0, ConjugateGradientOptions{
         uncon_opts: UnonstrainedOptions{
