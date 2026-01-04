@@ -9,11 +9,11 @@ enable_trace = ["topohedral-tracing/enable_trace"]
 approx = "0.5.1"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-log = "0.4.21"
-thiserror = "1.0.65"
-topohedral-tracing = { version = "0.0.1", registry = "cloudsmith"}
-topohedral-linalg= { version = "1.0.0", registry = "cloudsmith"}
+log = "0.4.29"
+thiserror = "2.0.17"
+topohedral-tracing = { version = "0.0.2", registry = "cloudsmith"}
+topohedral-linalg= { version = "1.0.1", registry = "cloudsmith"}
 
 [dev-dependencies]
-ctor = "0.2.8"
-rstest = "0.24.0"
+ctor = "0.6.3"
+rstest = "0.26.1"
