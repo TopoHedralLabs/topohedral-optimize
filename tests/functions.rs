@@ -10,18 +10,13 @@
 use topohedral_optimize::{line_search::LineSearchFcn, RealFn, RealFn1};
 //}}}
 //{{{ std imports
-use std::{rc::Rc, sync::Mutex};
-use std::sync::Arc;
 use std::cell::RefCell;
+use std::sync::Arc;
+use std::{rc::Rc, sync::Mutex};
 //}}}
 //{{{ dep imports
-use topohedral_linalg::{
-    MatMul,
-    scvector::SCVector,
-    smatrix::{SMatrix},
-    GreaterThan, VectorOps
-};
 use approx::assert_relative_eq;
+use topohedral_linalg::{scvector::SCVector, smatrix::SMatrix, GreaterThan, MatMul, VectorOps};
 //}}}
 //--------------------------------------------------------------------------------------------------
 //{{{ colleciton: QuadraticStatic
@@ -75,29 +70,22 @@ where
 }
 //}}}
 //{{{ impl QuadraticStatic<3>
-impl QuadraticStatic<3>
-{
+impl QuadraticStatic<3> {
     fn new1() -> Self {
-
         let center = SCVector::<f64, 3>::zeros();
-        let coeffs = SMatrix::<f64, 3, 3>::from_row_slice(&[
-            5.0, 1.0, 2.0,
-            1.0, 5.0, 3.0,
-            2.0, 3.0, 5.0,
-        ]);
+        let coeffs =
+            SMatrix::<f64, 3, 3>::from_row_slice(&[5.0, 1.0, 2.0, 1.0, 5.0, 3.0, 2.0, 3.0, 5.0]);
         Self { center, coeffs }
     }
 
-    fn update_center(&mut self, new_center: SCVector<f64, 3>)
-    {
+    fn update_center(&mut self, new_center: SCVector<f64, 3>) {
         self.center = new_center;
     }
 }
 //}}}
 //{{{ test: test_quadratic_static_3d
 #[test]
-fn test_quadratic_static_3d()
-{
+fn test_quadratic_static_3d() {
     let mut f = QuadraticStatic::<3>::new1();
 
     let x1 = SCVector::<f64, 3>::zeros();
@@ -108,7 +96,6 @@ fn test_quadratic_static_3d()
     for (actual, expected) in grad_fx1.iter().zip(exp_grad_fx1.iter()) {
         assert_relative_eq!(*actual, *expected, epsilon = 1e-10);
     }
-    
 
     let x2 = SCVector::<f64, 3>::ones();
     let fx2 = f.eval(&x2);
@@ -123,39 +110,34 @@ fn test_quadratic_static_3d()
 //{{{ test: test_quadratic_static_3d_line_search
 #[test]
 fn test_quadratic_static_3d_line_search() {
-
     let mut line_fcn1 = LineSearchFcn {
-        f:  QuadraticStatic::<3>::new1(),
+        f: QuadraticStatic::<3>::new1(),
         x: SCVector::<f64, 3>::zeros(),
-        dir:  SCVector::<f64, 3>::from_col_slice(&[1.0, -2.0, 1.0]),
+        dir: SCVector::<f64, 3>::from_col_slice(&[1.0, -2.0, 1.0]),
     };
-
 
     let phi1 = line_fcn1.eval(0.0);
     let dphi1 = line_fcn1.diff(0.0);
     assert_relative_eq!(phi1, 0.0, epsilon = 1e-10);
     assert_relative_eq!(dphi1, 0.0, epsilon = 1e-10);
 
-
     line_fcn1.x = SCVector::<f64, 3>::ones();
     let phi2 = line_fcn1.eval(0.0);
     let dphi2 = line_fcn1.diff(0.0);
     assert_relative_eq!(phi2, 27.0, epsilon = 1e-10);
-    assert_relative_eq!(dphi2, 16.0 - 2.0*18.0 + 20.0, epsilon = 1e-10);
-
+    assert_relative_eq!(dphi2, 16.0 - 2.0 * 18.0 + 20.0, epsilon = 1e-10);
 }
 //}}}
 //{{{ test: test_quadratic_static_rc_line_search
 #[test]
 fn test_quadratic_static_rc_line_search() {
-
     let fcn1 = Rc::new(RefCell::new(QuadraticStatic::<3>::new1()));
     let x = SCVector::<f64, 3>::zeros();
     let dir = SCVector::<f64, 3>::from_col_slice(&[1.0, -2.0, 1.0]);
     let mut line_fcn1 = LineSearchFcn {
-        f: fcn1.clone(), 
-        x, 
-        dir
+        f: fcn1.clone(),
+        x,
+        dir,
     };
 
     let phi1 = line_fcn1.eval(0.0);
@@ -163,29 +145,26 @@ fn test_quadratic_static_rc_line_search() {
     assert_relative_eq!(phi1, 0.0, epsilon = 1e-10);
     assert_relative_eq!(dphi1, 0.0, epsilon = 1e-10);
 
-
     line_fcn1.x = SCVector::<f64, 3>::ones();
     let phi2 = line_fcn1.eval(0.0);
     let dphi2 = line_fcn1.diff(0.0);
     assert_relative_eq!(phi2, 27.0, epsilon = 1e-10);
-    assert_relative_eq!(dphi2, 16.0 - 2.0*18.0 + 20.0, epsilon = 1e-10);
+    assert_relative_eq!(dphi2, 16.0 - 2.0 * 18.0 + 20.0, epsilon = 1e-10);
 
     // check that this has alterned same underlying memory
-
 }
 //}}}
 //{{{ test: test_quadratic_static_arc_line_search
 #[test]
 fn test_quadratic_static_arc_line_search() {
-
     let fcn1 = Arc::new(Mutex::new(QuadraticStatic::<3>::new1()));
 
     let x = SCVector::<f64, 3>::zeros();
     let dir = SCVector::<f64, 3>::from_col_slice(&[1.0, -2.0, 1.0]);
     let mut line_fcn1 = LineSearchFcn {
-        f: fcn1.clone(), 
-        x, 
-        dir
+        f: fcn1.clone(),
+        x,
+        dir,
     };
 
     let phi1 = line_fcn1.eval(0.0);
@@ -193,14 +172,11 @@ fn test_quadratic_static_arc_line_search() {
     assert_relative_eq!(phi1, 0.0, epsilon = 1e-10);
     assert_relative_eq!(dphi1, 0.0, epsilon = 1e-10);
 
-
     line_fcn1.x = SCVector::<f64, 3>::ones();
     let phi2 = line_fcn1.eval(0.0);
     let dphi2 = line_fcn1.diff(0.0);
     assert_relative_eq!(phi2, 27.0, epsilon = 1e-10);
-    assert_relative_eq!(dphi2, 16.0 - 2.0*18.0 + 20.0, epsilon = 1e-10);
-
-
+    assert_relative_eq!(dphi2, 16.0 - 2.0 * 18.0 + 20.0, epsilon = 1e-10);
 }
 //}}}
 //}}}

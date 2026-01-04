@@ -3,13 +3,13 @@
 //! Longer description of module
 //--------------------------------------------------------------------------------------------------
 
-//{{{ crate imports 
+//{{{ crate imports
 use crate::line_search::LineSearchError;
 use crate::line_search::LineSearchMethod;
 //}}}
-//{{{ std imports 
+//{{{ std imports
 //}}}
-//{{{ dep imports 
+//{{{ dep imports
 use thiserror::Error;
 //}}}
 //--------------------------------------------------------------------------------------------------
@@ -24,7 +24,7 @@ pub struct Options {
 
 #[derive(Copy, Clone, Debug)]
 pub enum ConvergedReason {
-    Rtol, 
+    Rtol,
     Atol,
 }
 
@@ -32,13 +32,13 @@ pub enum ConvergedReason {
 pub struct Returns<Vector> {
     pub xmin: Vector,
     pub fmin: f64,
-    pub reason: ConvergedReason, 
-    pub num_iterations: usize, 
-    pub num_fun_evals: usize, 
-    pub num_grad_evals: usize, 
+    pub reason: ConvergedReason,
+    pub num_iterations: usize,
+    pub num_fun_evals: usize,
+    pub num_grad_evals: usize,
 }
 
-#[derive(Error, Debug)] 
+#[derive(Error, Debug)]
 pub enum Error {
     #[error("Linear search failed with error {0}")]
     LineSearch(#[from] LineSearchError),
@@ -47,7 +47,6 @@ pub enum Error {
 }
 
 pub trait UnconstrainedMinimizer {
-
     type Vector;
     fn minimize(&mut self) -> Result<Returns<Self::Vector>, Error>;
 }

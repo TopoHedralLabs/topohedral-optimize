@@ -5,17 +5,11 @@
 
 //{{{ crate imports
 use super::common as com;
-use super::common::{
-    Error, Error as LineSearchError, LineSearchFcn, LineSearch, Options as LineSearchOptions,
-    Returns,
-};
-use super::utils::{cubicmin, quadmin};
-use crate::line_search::utils::{quadcubmin, satisfies_armijo, satisfies_wolfe};
+use super::common::{Error, Error as LineSearchError, LineSearch, Returns};
+use crate::line_search::utils::{quadcubmin, satisfies_wolfe};
 use crate::RealFn1;
 //}}}
 //{{{ std imports
-use std::ops::{Add, Mul};
-use topohedral_linalg::VectorOps;
 //}}}
 //{{{ dep imports
 use topohedral_tracing::*;
@@ -49,7 +43,7 @@ pub struct Interp<F: RealFn1> {
 
 impl<F: RealFn1> Interp<F> {
     pub fn new(f: F, opts: Options) -> Self {
-        Self { opts: opts, f: f }
+        Self { opts, f }
     }
 
     fn guess_is_ok(&mut self, guess_data: GuessData) -> Option<(f64, f64, f64)> {
@@ -82,7 +76,9 @@ impl<F: RealFn1> Interp<F> {
         let (alpha, phi_alpha) = best_guess_opt.unwrap();
         let dphi_alpha = self.f.diff(alpha);
         //{{{ trace
-        info!("Checking wolfe for alpha = {alpha} phi_alpha = {phi_alpha} dphi_alpha = {dphi_alpha}");
+        info!(
+            "Checking wolfe for alpha = {alpha} phi_alpha = {phi_alpha} dphi_alpha = {dphi_alpha}"
+        );
         //}}}
         if satisfies_wolfe(c1, c2, phi_a, dphi_a, alpha, phi_alpha, dphi_alpha).is_ok() {
             //{{{ trace
@@ -127,18 +123,18 @@ impl<F: RealFn1> LineSearch for Interp<F> {
         let mut phi_c_high = phi_b_high;
 
         if let Some((alpha, phi_alpha, dphi_alpha)) = self.guess_is_ok(GuessData {
-            a: a,
-            phi_a: phi_a,
-            dphi_a: dphi_a,
+            a,
+            phi_a,
+            dphi_a,
             b: b_low,
             phi_b: phi_b_low,
             c: c_low,
             phi_c: phi_c_low,
         }) {
             return Ok(Returns {
-                alpha: alpha,
-                phi_alpha: phi_alpha,
-                dphi_alpha: dphi_alpha,
+                alpha,
+                phi_alpha,
+                dphi_alpha,
             });
         }
 
@@ -147,14 +143,14 @@ impl<F: RealFn1> LineSearch for Interp<F> {
             //{{{ trace
             info!(target: "ls", "---------------------------------- i = {i}");
             //}}}
-            b_low = b_low * inv_scale_factor;
+            b_low *= inv_scale_factor;
             phi_b_low = self.f.eval(b_low);
-            c_low = c_low * inv_scale_factor;
+            c_low *= inv_scale_factor;
             phi_c_low = self.f.eval(c_low);
             let guess_data_low = GuessData {
-                a: a,
-                phi_a: phi_a,
-                dphi_a: dphi_a,
+                a,
+                phi_a,
+                dphi_a,
                 b: b_low,
                 phi_b: phi_b_low,
                 c: c_low,
@@ -169,20 +165,20 @@ impl<F: RealFn1> LineSearch for Interp<F> {
                 info!(target: "ls", "--- leaving search() ----");
                 //}}}
                 return Ok(Returns {
-                    alpha: alpha,
-                    phi_alpha: phi_alpha,
-                    dphi_alpha: dphi_alpha,
+                    alpha,
+                    phi_alpha,
+                    dphi_alpha,
                 });
             }
 
-            b_high = b_high * scale_factor;
+            b_high *= scale_factor;
             phi_b_high = self.f.eval(b_high);
-            c_high = c_high * scale_factor;
+            c_high *= scale_factor;
             phi_c_high = self.f.eval(c_high);
             let guess_data_high = GuessData {
-                a: a,
-                phi_a: phi_a,
-                dphi_a: dphi_a,
+                a,
+                phi_a,
+                dphi_a,
                 b: b_high,
                 phi_b: phi_b_high,
                 c: c_high,
@@ -197,9 +193,9 @@ impl<F: RealFn1> LineSearch for Interp<F> {
                 info!(target: "ls", "--- leaving search() ----");
                 //}}}
                 return Ok(Returns {
-                    alpha: alpha,
-                    phi_alpha: phi_alpha,
-                    dphi_alpha: dphi_alpha,
+                    alpha,
+                    phi_alpha,
+                    dphi_alpha,
                 });
             }
         }

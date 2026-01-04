@@ -4,13 +4,10 @@
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
-use crate::{RealFn, RealFn1};
 //}}}
 //{{{ std imports
-use std::ops::{Add, Mul};
 //}}}
 //{{{ dep imports
-use topohedral_linalg::VectorOps;
 //}}}
 //--------------------------------------------------------------------------------------------------
 
@@ -21,7 +18,7 @@ mod thuente;
 mod utils;
 
 pub use common::{
-    Error as LineSearchError, LineSearchFcn, LineSearch, Options as LineSearchOptions,
+    Error as LineSearchError, LineSearch, LineSearchFcn, Options as LineSearchOptions,
     Returns as LineSearchReturns,
 };
 pub use factory::{create, Method as LineSearchMethod};
