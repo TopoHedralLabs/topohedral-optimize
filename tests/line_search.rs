@@ -15,10 +15,7 @@ use topohedral_optimize::{
 //{{{ dep imports
 use approx::assert_relative_eq;
 use ctor::ctor;
-use topohedral_linalg::{
-    dmatrix::DMatrix,
-    dvector::DVector,
-};
+use topohedral_linalg::{dmatrix::DMatrix, dvector::DVector};
 use topohedral_tracing::*;
 
 //}}}
@@ -152,21 +149,18 @@ impl RealFn1 for Fcn1 {
 
     fn diff(&mut self, x: f64) -> f64 {
         let alpha = x;
-        
+
         (alpha.powi(2) - self.beta) / (alpha.powi(2) - self.beta).powi(2)
     }
 }
 
 #[test]
 fn test_fcn1() {
-
-    let mut fcn1 = Fcn1{
-        beta: 2.0
-    };
+    let mut fcn1 = Fcn1 { beta: 2.0 };
     let mut interp = Interp::new(
         fcn1,
         InterpOptions {
-            ls_opts: LineSearchOptions::default(),  
+            ls_opts: LineSearchOptions::default(),
             step1: 0.5,
             step2: 1.0,
             scale_factor: 1.5,

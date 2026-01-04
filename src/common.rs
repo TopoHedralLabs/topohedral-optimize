@@ -3,39 +3,36 @@
 //! Longer description of module
 //--------------------------------------------------------------------------------------------------
 
-//{{{ crate imports 
+//{{{ crate imports
 //}}}
-//{{{ std imports 
-use std::rc::Rc;
+//{{{ std imports
 use std::cell::RefCell;
-use std::sync::{Arc, Mutex};
 use std::fmt::Debug;
+use std::rc::Rc;
+use std::sync::{Arc, Mutex};
 //}}}
-//{{{ dep imports 
+//{{{ dep imports
 //}}}
 //--------------------------------------------------------------------------------------------------
 
 //{{{ trait: RealFn1
 /// 1D real-valued function trait
 pub trait RealFn1 {
-
     fn eval(&mut self, x: f64) -> f64;
     fn diff(&mut self, x: f64) -> f64;
 }
 //}}}
 //{{{ trait: RealFn
 pub trait RealFn: Clone + Debug {
-
     type Vector;
 
     fn eval(&mut self, x: &Self::Vector) -> f64;
     fn grad(&mut self, x: &Self::Vector) -> Self::Vector;
-
 }
 //}}}
-//{{{ impl: RealFn for Rc<RefCell<T>> 
-impl<T> RealFn for Rc<RefCell<T>> 
-where 
+//{{{ impl: RealFn for Rc<RefCell<T>>
+impl<T> RealFn for Rc<RefCell<T>>
+where
     T: RealFn,
 {
     type Vector = T::Vector;
@@ -49,9 +46,9 @@ where
     }
 }
 //}}}
-//{{{ impl: RealFn for Arc<Mutex<T>> 
-impl<T> RealFn for Arc<Mutex<T>> 
-where 
+//{{{ impl: RealFn for Arc<Mutex<T>>
+impl<T> RealFn for Arc<Mutex<T>>
+where
     T: RealFn,
 {
     type Vector = T::Vector;
@@ -67,15 +64,14 @@ where
 //}}}
 //{{{ struct: CountingRealFcn
 #[derive(Clone, Debug)]
-pub(crate) struct CountingRealFn <F: RealFn> {
-    fcn: F, 
-    pub num_func_evals: usize, 
-    pub num_grad_evals: usize, 
+pub(crate) struct CountingRealFn<F: RealFn> {
+    fcn: F,
+    pub num_func_evals: usize,
+    pub num_grad_evals: usize,
 }
 //}}}
 //{{{ impl: RealFn for CountingRealFcn
 impl<F: RealFn> RealFn for CountingRealFn<F> {
-
     type Vector = F::Vector;
 
     fn eval(&mut self, x: &Self::Vector) -> f64 {
@@ -91,12 +87,11 @@ impl<F: RealFn> RealFn for CountingRealFn<F> {
 //}}}
 //{{{ impl: CountingRealFcn
 impl<F: RealFn> CountingRealFn<F> {
-
-    pub fn new(fcn: F) -> Self  {
-        Self{
-            fcn, 
-            num_func_evals: 0, 
-            num_grad_evals: 0
+    pub fn new(fcn: F) -> Self {
+        Self {
+            fcn,
+            num_func_evals: 0,
+            num_grad_evals: 0,
         }
     }
 }
@@ -117,4 +112,4 @@ pub fn rc_real_fn<F: RealFn>(fcn: F) -> RcRealFn<F> {
 /// Creates a new thread-safe reference-counted function using Arc<Mutex>
 pub fn arc_real_fn<F: RealFn>(fcn: F) -> ArcRealFn<F> {
     Arc::new(Mutex::new(fcn))
-}//}}}
+} //}}}

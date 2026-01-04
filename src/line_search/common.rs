@@ -3,25 +3,24 @@
 //! Longer description of module
 //--------------------------------------------------------------------------------------------------
 
-//{{{ crate imports 
+//{{{ crate imports
 use crate::{RealFn, RealFn1};
 //}}}
-//{{{ std imports 
+//{{{ std imports
 use std::ops::{Add, Mul};
 //}}}
-//{{{ dep imports 
-use topohedral_linalg::VectorOps;
+//{{{ dep imports
 use thiserror::Error;
+use topohedral_linalg::VectorOps;
 //}}}
 //--------------------------------------------------------------------------------------------------
 
 //{{{ struct LineSearchFcn
 #[derive(Debug, Clone)]
-pub struct LineSearchFcn<F: RealFn> 
-{
+pub struct LineSearchFcn<F: RealFn> {
     pub f: F,
     pub x: F::Vector,
-    pub dir: F::Vector, 
+    pub dir: F::Vector,
 }
 //}}}
 //{{{ impl LineSearchFcn
@@ -35,9 +34,8 @@ impl<F: RealFn> LineSearchFcn<F> {
 impl<F: RealFn> RealFn1 for LineSearchFcn<F>
 where
     F: RealFn,
-    F::Vector: VectorOps<ScalarType=f64> + Add<Output = F::Vector>,
+    F::Vector: VectorOps<ScalarType = f64> + Add<Output = F::Vector>,
     f64: Mul<F::Vector, Output = F::Vector>,
-
 {
     fn eval(&mut self, alpha: f64) -> f64 {
         let x = self.x.clone() + alpha * self.dir.clone();
@@ -70,7 +68,7 @@ pub enum Error {
     NoStepFound,
 }
 //}}}
-//{{{ struct: Options 
+//{{{ struct: Options
 /// Options for configuring a line search algorithm.
 ///
 /// This struct contains the parameters needed to configure a line search algorithm,
@@ -100,7 +98,7 @@ impl Default for Options {
     }
 }
 //}}}
-//{{{ struct: Returns 
+//{{{ struct: Returns
 /// The results of a line search algorithm.
 ///
 /// This struct contains the following fields:
@@ -118,7 +116,7 @@ pub struct Returns {
 //{{{ trait: LineSearch
 pub trait LineSearch {
     type Function: RealFn1;
-    fn search(&mut self, phi0: f64, dphi0: f64) ->  Result<Returns, Error>;
+    fn search(&mut self, phi0: f64, dphi0: f64) -> Result<Returns, Error>;
     fn update_fcn(&mut self, fcn: Self::Function);
 }
 //}}}

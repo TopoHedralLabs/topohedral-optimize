@@ -142,7 +142,7 @@ pub fn cubicmin(
 //}}}
 //{{{ fun: quadcubmin
 pub fn quadcubmin<F: RealFn1>(
-    f: &mut F, 
+    f: &mut F,
     a: f64,
     phi_a: f64,
     dphi_a: f64,
@@ -151,7 +151,6 @@ pub fn quadcubmin<F: RealFn1>(
     c: f64,
     phi_c: f64,
 ) -> Option<(f64, f64)> {
-
     //{{{ trace
     info!(target: "ls", "--- entering quadcubmin ---");
     //}}}
@@ -177,7 +176,7 @@ pub fn quadcubmin<F: RealFn1>(
         info!(target: "ls", "No value found");
         info!(target: "ls", "--- leaving quadcubmin ---");
         //}}}
-        return None
+        return None;
     }
 
     let (alpha_min, fmin) = opt_min_value.unwrap();

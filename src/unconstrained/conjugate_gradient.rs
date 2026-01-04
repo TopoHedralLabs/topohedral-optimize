@@ -3,7 +3,6 @@
 //! Longer description of module
 //--------------------------------------------------------------------------------------------------
 
-
 //{{{ crate imports
 use super::common::Options as UnonstrainedOptions;
 use super::common::{Error, Returns, UnconstrainedMinimizer};
@@ -15,8 +14,8 @@ use crate::unconstrained::common::ConvergedReason;
 use crate::RealFn;
 //}}}
 //{{{ std imports
-use std::ops::{Add, Mul, Neg, Sub};
 use std::fmt;
+use std::ops::{Add, Mul, Neg, Sub};
 use std::sync::{Arc, Mutex};
 //}}}
 //{{{ dep imports
@@ -95,7 +94,7 @@ where
                 //{{{ trace
                 debug!(target: "cg", "Applying fletcher-reeves update");
                 //}}}
-                
+
                 grad_fk.dot(grad_fk1) / norm_grad_fk1.powi(2)
             }
             Direction::PolakRibiere => {
@@ -164,8 +163,12 @@ where
         let max_iter = self.opts.uncon_opts.max_iter;
 
         let mut line_searcher = ls::create(
-                LineSearchFcn::new(self.fcn.clone(), self.x_init.clone(), self.grad_fx_init.clone()),
-                self.opts.uncon_opts.ls_method,
+            LineSearchFcn::new(
+                self.fcn.clone(),
+                self.x_init.clone(),
+                self.grad_fx_init.clone(),
+            ),
+            self.opts.uncon_opts.ls_method,
         );
 
         let grad_fx_norm_init = self.grad_fx_init.norm();

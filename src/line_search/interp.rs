@@ -5,10 +5,7 @@
 
 //{{{ crate imports
 use super::common as com;
-use super::common::{
-    Error, Error as LineSearchError, LineSearch,
-    Returns,
-};
+use super::common::{Error, Error as LineSearchError, LineSearch, Returns};
 use crate::line_search::utils::{quadcubmin, satisfies_wolfe};
 use crate::RealFn1;
 //}}}
@@ -79,7 +76,9 @@ impl<F: RealFn1> Interp<F> {
         let (alpha, phi_alpha) = best_guess_opt.unwrap();
         let dphi_alpha = self.f.diff(alpha);
         //{{{ trace
-        info!("Checking wolfe for alpha = {alpha} phi_alpha = {phi_alpha} dphi_alpha = {dphi_alpha}");
+        info!(
+            "Checking wolfe for alpha = {alpha} phi_alpha = {phi_alpha} dphi_alpha = {dphi_alpha}"
+        );
         //}}}
         if satisfies_wolfe(c1, c2, phi_a, dphi_a, alpha, phi_alpha, dphi_alpha).is_ok() {
             //{{{ trace
