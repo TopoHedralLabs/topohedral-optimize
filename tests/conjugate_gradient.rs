@@ -196,28 +196,28 @@ impl RealFn for Rosenbrock {
 #[test]
 fn test_rosenbrock() {
 
-    // let rosenbrock = Rosenbrock::new();
+    let rosenbrock = Rosenbrock::new();
 
-    // let x0  = SCVector::<f64, 2>::from_col_slice(&[0.0, 3.0]);
+    let x0  = SCVector::<f64, 2>::from_col_slice(&[0.0, 3.0]);
 
-    // let mut cg = ConjugateGradient::new(rosenbrock, x0, ConjugateGradientOptions{
-    //     uncon_opts: UnonstrainedOptions{
-    //         grad_rtol: 1e-9,
-    //         grad_atol: 1e-10,
-    //         max_iter: 1000,
-    //         ls_method: LineSearchMethod::Interp(InterpOptions{
-    //             ls_opts: LineSearchOptions::default(),
-    //             step1: 0.5,
-    //             step2: 1.0 ,
-    //             scale_factor: 1.5,
-    //             maxiter: 100
-    //         })
-    //     },
-    //     direction: Direction::FletcherReeves,
-    //     restart: 100,
-    // });
+    let mut cg = ConjugateGradient::new(rosenbrock, x0, ConjugateGradientOptions{
+        uncon_opts: UnonstrainedOptions{
+            grad_rtol: 1e-9,
+            grad_atol: 1e-10,
+            max_iter: 1000,
+            ls_method: LineSearchMethod::Interp(InterpOptions{
+                ls_opts: LineSearchOptions::default(),
+                step1: 0.5,
+                step2: 1.0 ,
+                scale_factor: 1.5,
+                maxiter: 100
+            })
+        },
+        direction: Direction::FletcherReeves,
+        restart: 100,
+    });
 
-    // let ret = cg.minimize().unwrap();
+    let ret = cg.minimize().unwrap();
 
-    // print!("{ret:?}")
+    print!("{ret:?}")
 }

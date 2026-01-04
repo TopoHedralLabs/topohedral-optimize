@@ -187,7 +187,9 @@ where
             let needs_restart = i % self.opts.restart == 0;
             let not_decreaseing = dphi0 >= 0.0;
             if needs_restart || not_decreaseing {
+                //{{{ trace
                 info!(target: "cg", "\tDoing restart for reasons:  restart? {needs_restart} descent direction? {not_decreaseing}");
+                //}}}
                 direction = -grad_fk.clone();
                 dphi0 = grad_fk.dot(&direction);
             }
