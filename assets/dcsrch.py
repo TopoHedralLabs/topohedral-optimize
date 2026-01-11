@@ -243,9 +243,14 @@ class DCSRCH:
 
         task = b"START"
         for i in range(maxiter):
+            print(f"------------------------------- i = {i}\n")
+            print(f"before: alpha 1= {alpha1} phi1 = {phi1} derphi1 = {derphi1} task = {task}\n")
+
             stp, phi1, derphi1, task = self._iterate(
                 alpha1, phi1, derphi1, task
             )
+
+            print(f"after : stp = {stp:1.8e} phi1 = {phi1:1.8e} derphi1 = {derphi1:1.8e} task = {task}\n")
 
             if not np.isfinite(stp):
                 task = b"WARN"
@@ -500,7 +505,6 @@ class DCSRCH:
         task = b"FG"
         return stp, f, g, task
 
-
 def dcstep(stx, fx, dx, sty, fy, dy, stp, fp, dp, brackt, stpmin, stpmax):
     """
     Subroutine dcstep
@@ -729,7 +733,6 @@ def dcstep(stx, fx, dx, sty, fy, dy, stp, fp, dp, brackt, stpmin, stpmax):
 
     return stx, fx, dx, sty, fy, dy, stp, brackt
 
-
 def scalar_search_wolfe1(phi, derphi, phi0=None, old_phi0=None, derphi0=None,
                          c1=1e-4, c2=0.9,
                          amax=50, amin=1e-8, xtol=1e-14):
@@ -805,7 +808,6 @@ def scalar_search_wolfe1(phi, derphi, phi0=None, old_phi0=None, derphi0=None,
 
     return stp, phi1, phi0
 
-
 def plot_fcn(fcn: tp.Callable[[float], float], lims: tp.Tuple[float, float], n_pts: int = 300) -> None:
 
     x = np.linspace(lims[0], lims[1], n_pts)
@@ -827,48 +829,20 @@ def test_dcsrch1():
         out = (alpha**2 - beta) / ((alpha**2 + beta)**2)
         return out
 
-    test_alphas = [1e-4, 1e-3, 1e-2, 1e-1, 1.0, 10.0, 100.0, 500.0]
+    # test_alphas = [1e-4, 1e-3, 1e-2, 1e-1, 1.0, 10.0, 100.0, 500.0]
+    test_alphas = [500]
     output = []
 
     for alpha in test_alphas:
         alpha0 = 0.0
         phi0 = phi(alpha0)
         derphi0 = dphi(alpha0)
-        dcsrch_obj = DCSRCH(phi, dphi, 1e-4, 0.9, 1e-14, 1e-8, 1000)
+        dcsrch_obj = DCSRCH(phi, dphi, 1e-4, 0.9, 1e-14, 0.0, 500.0)
         alpha_out, phi_out, dphi_out, task = dcsrch_obj(alpha1=alpha, phi0=phi0, derphi0=derphi0)
         output.append((alpha_out, phi_out, dphi_out, task))
         print(f"alpha: {alpha:1.8e}, alpha_out: {alpha_out:1.8e}, phi_out: {phi_out:1.8e}, dphi_out: {dphi_out}, task: {task}")
     
-    plot_fcn(phi, (0, 16), n_pts=1000)
-
-def test_dcsrch2():
-
-    def phi(alpha_in):
-        alpha = (16 - alpha_in) 
-        beta = 2
-        out = (-alpha) / (alpha**2 + beta)
-        return out
-    
-    def dphi(alpha_in):
-        alpha = (16 - alpha_in)
-        beta = 2
-        out = -(alpha**2 - beta) / ((alpha**2 + beta)**2)
-        return out
-
-    test_alphas = [1e-4, 1e-3, 1e-2, 1e-1, 1.0, 10.0, 100.0, 500.0]
-    output = []
-
-    for alpha in test_alphas:
-        alpha0 = 0.0
-        phi0 = phi(alpha0)
-        derphi0 = dphi(alpha0)
-        dcsrch_obj = DCSRCH(phi, dphi, 1e-4, 0.9, 1e-14, 1e-8, 1000)
-        alpha_out, phi_out, dphi_out, task = dcsrch_obj(alpha1=alpha, phi0=phi0, derphi0=derphi0)
-        output.append((alpha_out, phi_out, dphi_out, task))
-        print(f"alpha: {alpha}, alpha_out: {alpha_out}, phi_out: {phi_out}, dphi_out: {dphi_out}, task: {task}")
-    
-    plot_fcn(dphi, (0, 16), n_pts=1000)
-    
+    # plot_fcn(phi, (0, 16), n_pts=1000)
 
 
 def test_dcsrch3():
@@ -879,10 +853,6 @@ def test_dcsrch3():
         return 2 * alpha
 
     alpha0 = 10.0
-
-    
-
-
 
 def main():
 

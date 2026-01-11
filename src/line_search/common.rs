@@ -91,7 +91,7 @@ impl Default for Options {
         Self {
             c1: 1e-4,
             c2: 0.9,
-            step_min: 1e-8,
+            step_min: 0.0,
             step_max: 50.0,
             step_init: 1.0,
         }
