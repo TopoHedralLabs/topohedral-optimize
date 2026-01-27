@@ -17,9 +17,7 @@ use topohedral_optimize::{
 //{{{ dep imports
 use approx::assert_relative_eq;
 use ctor::ctor;
-use topohedral_linalg::{dmatrix::DMatrix, dvector::DVector};
 use topohedral_tracing::*;
-
 //}}}
 
 //{{{ fun: init_logger
@@ -28,14 +26,6 @@ fn init_logger() {
     init().unwrap();
 }
 //}}}
-
-#[derive(Debug, Clone)]
-struct QuadraticDynamic {
-    n: usize,
-    center: DVector<f64>,
-    coeffs: DMatrix<f64>,
-}
-
 //{{{ collection Quadratic1D
 #[derive(Debug, Clone)]
 struct Quadratic1D {
@@ -176,7 +166,7 @@ fn test_interp_fcn1() {
     println!("out = {out:?}");
 }
 //}}}
-
+//{{{ collection: thuente tests
 #[test]
 fn test_thuente_rational() {
     let alpha_set = [1e-4, 500.0];
@@ -210,31 +200,38 @@ fn test_thuente_rational() {
 
 #[test]
 fn test_thuente_quadratic() {
-    let root1 = 1.0;
-    let root2 = 2.0;
-    let exp_alpha = (root1 + root2) * 0.5;
-    let exp_phi = (exp_alpha - root1) * (exp_alpha - root2);
+    let root1 = 10.0;
+    let root2 = 100.0;
 
-    for step_init in [1e-4, 0.05, 1.0, 10.0] {
-        let mut q1 = Quadratic1D { root1, root2 };
-        let phi0 = q1.eval(0.0);
-        let dphi0 = q1.diff(0.0);
+    let mut fcn1 = Quadratic1D {
+        root1: root1,
+        root2: root2,
+    };
 
+    let alpha_set = [1e-4, 10.0];
+    let expected_vals = [
+        (8.73810000e+00, 1.15163392e+02, -9.25238000e+01),
+        (10.0, 0.0, -9.00000000e+01),
+    ];
+
+    for (alpha, exp_vals) in alpha_set.iter().zip(expected_vals.iter()) {
         let mut interp = Thuente::new(
-            q1,
+            fcn1.clone(),
             ThuenteOptions {
                 ls_opts: LineSearchOptions {
-                    step_init,
-                    step_max: 100.0,
+                    step_init: *alpha,
+                    step_max: 500.0,
                     ..Default::default()
                 },
-                maxiter: 50,
+                maxiter: 100,
             },
         );
-
+        let phi0 = fcn1.eval(0.0);
+        let dphi0 = fcn1.diff(0.0);
         let out = interp.search(phi0, dphi0).unwrap();
-        assert_relative_eq!(out.alpha, exp_alpha, epsilon = 1e-6);
-        assert_relative_eq!(out.phi_alpha, exp_phi, epsilon = 1e-6);
-        assert!(out.dphi_alpha.abs() < 1e-6);
+        assert_relative_eq!(out.alpha, exp_vals.0, epsilon = 1e-6);
+        assert_relative_eq!(out.phi_alpha, exp_vals.1, epsilon = 1e-6);
+        assert_relative_eq!(out.dphi_alpha, exp_vals.2, epsilon = 1e-6);
     }
 }
+//}}}

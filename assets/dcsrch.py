@@ -829,8 +829,7 @@ def test_dcsrch1():
         out = (alpha**2 - beta) / ((alpha**2 + beta)**2)
         return out
 
-    # test_alphas = [1e-4, 1e-3, 1e-2, 1e-1, 1.0, 10.0, 100.0, 500.0]
-    test_alphas = [500]
+    test_alphas = [1e-4, 500]
     output = []
 
     for alpha in test_alphas:
@@ -845,19 +844,34 @@ def test_dcsrch1():
     # plot_fcn(phi, (0, 16), n_pts=1000)
 
 
-def test_dcsrch3():
+def test_dcsrch2():
+
+    root1 = 10
+    root2 = 100
     def phi(alpha): 
-        return alpha**2
+        return (alpha - root1)  * (alpha - root2)
 
     def dphi(alpha):
-        return 2 * alpha
+        return 2 * alpha - (root2 + root1)
 
-    alpha0 = 10.0
+    test_alphas = [1e-4 ,10.0]
+    output = []
+
+    for alpha in test_alphas:
+        alpha0 = 0
+        phi0 = phi(alpha0)
+        derphi0 = dphi(alpha0)
+        dcsrch_obj = DCSRCH(phi, dphi, 1e-4, 0.9, 1e-14, 0.0, 500.0)
+        alpha_out, phi_out, dphi_out, task = dcsrch_obj(alpha1=alpha, phi0=phi0, derphi0=derphi0)
+        dphi_out = dphi(alpha_out)
+        output.append((alpha_out, phi_out, dphi_out, task))
+        print(f"alpha: {alpha:1.8e}, alpha_out: {alpha_out:1.8e}, phi_out: {phi_out:1.8e}, dphi_out: {dphi_out:1.8e}, task: {task}")
+
 
 def main():
 
-    test_dcsrch1()
-    # test_dcsrch2()
+    # test_dcsrch1()
+    test_dcsrch2()
 
 
 
