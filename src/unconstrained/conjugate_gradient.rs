@@ -71,16 +71,16 @@ where
     /// `Opts` struct.
     fn update_direction(
         &self,
-        grad_fk1: &F::Vector,
+        grad_fk_prev: &F::Vector,
         grad_fk: &F::Vector,
-        norm_grad_fk1: f64,
+        norm_grad_fk_prev: f64,
         norm_grad_fk: f64,
         dir_k: &F::Vector,
     ) -> F::Vector {
         //{{{ trace
         debug!(target: "cg", "\t--- Entering update_direction ---");
-        trace!(target: "cg", "\t\n\ngrad_fk1 = \n{grad_fk1}\n\ngrad_fk = \n{grad_fk}\n\n");
-        trace!(target: "cg", "\tnorm_grad_fk1 = {norm_grad_fk1:1.4e} norm_grad_fk = {norm_grad_fk:1.4e}");
+        trace!(target: "cg", "\t\n\ngrad_fk1 = \n{grad_fk_prev}\n\ngrad_fk = \n{grad_fk}\n\n");
+        trace!(target: "cg", "\tnorm_grad_fk1 = {norm_grad_fk_prev:1.4e} norm_grad_fk = {norm_grad_fk:1.4e}");
         //}}}
         // direction updates
         let beta = match self.opts.direction {
@@ -95,14 +95,14 @@ where
                 debug!(target: "cg", "Applying fletcher-reeves update");
                 //}}}
 
-                grad_fk.dot(grad_fk1) / norm_grad_fk1.powi(2)
+                grad_fk.dot(grad_fk_prev) / norm_grad_fk_prev.powi(2)
             }
             Direction::PolakRibiere => {
                 //{{{ trace
                 debug!(target: "cg", "Applying polak-ribiere update");
                 //}}}
-                let yk = grad_fk.clone() - grad_fk1.clone();
-                let mut beta_tmp = grad_fk.dot(&yk) / norm_grad_fk1.powi(2);
+                let yk = grad_fk.clone() - grad_fk_prev.clone();
+                let mut beta_tmp = grad_fk.dot(&yk) / norm_grad_fk_prev.powi(2);
                 beta_tmp = beta_tmp.max(0.0);
                 beta_tmp
             }
