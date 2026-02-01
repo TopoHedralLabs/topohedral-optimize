@@ -8,14 +8,14 @@ use super::common::Options as UnonstrainedOptions;
 use super::common::{Error, Returns, UnconstrainedMinimizer};
 use crate::common::{arc_real_fn, CountingRealFn};
 use crate::line_search as ls;
-use crate::line_search::LineSearch;
+use crate::line_search::initial_step;
 use crate::line_search::LineSearchFcn;
 use crate::unconstrained::common::ConvergedReason;
 use crate::RealFn;
 //}}}
 //{{{ std imports
 use std::fmt;
-use std::ops::{Add, Mul, Neg, Sub};
+use std::ops::{Add, Div, Mul, Neg, Sub};
 use std::sync::{Arc, Mutex};
 //}}}
 //{{{ dep imports
@@ -136,6 +136,7 @@ where
         + Add<Output = F::Vector>
         + Sub<Output = F::Vector>
         + Neg<Output = F::Vector>
+        + Div<Output = F::Vector>
         + Clone
         + fmt::Display,
     f64: Mul<F::Vector, Output = F::Vector>,
@@ -143,15 +144,18 @@ where
     type Vector = F::Vector;
 
     fn minimize(&mut self) -> Result<Returns<Self::Vector>, Error> {
+        //{{{ trace
         info!(target: "cg", "--- Entering minimize() ---");
+        //}}}
         let mut xk = self.x_init.clone();
         let mut xk_prev = self.x_init.clone();
-        let mut fk = self.fcn.eval(&xk);
-        let mut fk_prev = fk;
         let mut grad_fk = self.fcn.grad(&xk);
         let mut grad_fk_prev = grad_fk.clone();
-        let mut grad_fk_prev_norm = grad_fk_prev.norm();
-        let mut grad_fk_norm = grad_fk.norm();
+        let mut grad_fk_norm: f64 = grad_fk.norm();
+        let mut grad_fk_prev_norm: f64 = grad_fk_prev.norm();
+        let mut fk: f64 = self.fcn.eval(&xk);
+        let fk_prev_offset: f64 = <f64 as Mul>::mul(0.5, grad_fk_norm);
+        let mut fk_prev = fk + fk_prev_offset;
         let mut direction = -grad_fk.clone();
 
         //{{{ trace
@@ -182,7 +186,6 @@ where
             info!(target: "cg", "\t||x(k) - x(k-1)|| = {:1.4e}", (xk.clone() - xk_prev.clone()).norm());
             trace!(target: "cg", "\n\nxk = \n{xk}\n\ndir = \n{direction}\n\n");
             //}}}
-            let phi0 = fk;
             let mut dphi0 = grad_fk.dot(&direction);
             let needs_restart = i % self.opts.restart == 0;
             let not_decreaseing = dphi0 >= 0.0;
@@ -198,7 +201,11 @@ where
                 LineSearchFcn::new(self.fcn.clone(), xk.clone(), direction.clone());
             line_searcher.update_fcn(line_search_fcn);
 
-            let ls_ret = line_searcher.search(phi0, dphi0)?;
+            let phi0 = fk;
+            let old_phi0 = fk_prev;
+            let alpha1: f64 = initial_step(phi0, old_phi0, dphi0);
+            info!(target: "cg", "alpha1 = {alpha1}");
+            let ls_ret = line_searcher.search(phi0, dphi0, alpha1)?;
             xk_prev = xk.clone();
             xk = xk + ls_ret.alpha * direction.clone();
             fk_prev = fk;

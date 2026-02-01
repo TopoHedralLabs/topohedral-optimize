@@ -67,8 +67,7 @@ pub fn quadmin(a: f64, phi_a: f64, dphi_a: f64, b: f64, phi_b: f64) -> Option<f6
 }
 //}}}
 //{{{ fun: cubicmin2
-pub fn cubicmin2(a: f64, phi_a: f64, dphi_a: f64, b: f64, phi_b: f64, dphi_b: f64) -> Option<f64>
-{
+pub fn cubicmin2(a: f64, phi_a: f64, dphi_a: f64, b: f64, phi_b: f64, dphi_b: f64) -> Option<f64> {
     //{{{ trace
     error!(target: "ls", "--- Entering cubicmin2 ---");
     trace!(target: "ls", "Entering with a = {:1.4e}, b = {:1.4e}", a, b);
@@ -77,32 +76,38 @@ pub fn cubicmin2(a: f64, phi_a: f64, dphi_a: f64, b: f64, phi_b: f64, dphi_b: f6
     //}}}
 
     let d = b - a;
-    if d.abs() <= f64::EPSILON { return None; }
+    if d.abs() <= f64::EPSILON {
+        return None;
+    }
 
-    let quad_coeff = (-2.0*d*dphi_a - d*dphi_b - 3.0*phi_a + 3.0*phi_b) / (d*d);
-    let cube_coeff = ( d*dphi_a + d*dphi_b + 2.0*phi_a - 2.0*phi_b) / (d*d*d);
+    let quad_coeff = (-2.0 * d * dphi_a - d * dphi_b - 3.0 * phi_a + 3.0 * phi_b) / (d * d);
+    let cube_coeff = (d * dphi_a + d * dphi_b + 2.0 * phi_a - 2.0 * phi_b) / (d * d * d);
 
     //{{{ trace
     trace!(target: "ls", "quad_coeff = {:1.4e} cub_coeff = {:1.4e}", quad_coeff, cube_coeff);
     //}}}
 
     // Solve 3B t^2 + 2A t + ga = 0
-    let c2 = 3.0*cube_coeff;
-    let c1 = 2.0*quad_coeff;
+    let c2 = 3.0 * cube_coeff;
+    let c1 = 2.0 * quad_coeff;
     let c0 = dphi_a;
 
-    let disc = c1*c1 - 4.0*c2*c0;
-    if disc < 0.0 { return None; }             // no real stationary points
-    if c2.abs() < f64::EPSILON { return None; } // degenerate cubic
+    let disc = c1 * c1 - 4.0 * c2 * c0;
+    if disc < 0.0 {
+        return None;
+    } // no real stationary points
+    if c2.abs() < f64::EPSILON {
+        return None;
+    } // degenerate cubic
 
     let sqrt_disc = disc.sqrt();
-    let t1 = (-c1 + sqrt_disc) / (2.0*c2);
-    let t2 = (-c1 - sqrt_disc) / (2.0*c2);
+    let t1 = (-c1 + sqrt_disc) / (2.0 * c2);
+    let t2 = (-c1 - sqrt_disc) / (2.0 * c2);
 
     // pick feasible minimizer in (0,d) with positive second derivative
     let candidates = [t1, t2].into_iter().filter(|t| *t > 0.0 && *t < d);
     for t in candidates {
-        let p2 = 2.0*quad_coeff + 6.0*cube_coeff*t;
+        let p2 = 2.0 * quad_coeff + 6.0 * cube_coeff * t;
         if p2 > 0.0 {
             return Some(a + t);
         }
@@ -275,7 +280,19 @@ pub fn satisfies_wolfe(
     Ok(())
 }
 //}}}
-
+pub fn initial_step(phi1: f64, phi0: f64, dphi1: f64) -> f64 {
+    //{{{ trace
+    trace!(target: "ls", "--entering initial_step ---");
+    trace!(target: "ls", "phi1 = {phi1:1.4e}, phi0 = {phi0:1.4e} dphi1 = {dphi1:1.4e}");
+    //}}}
+    let stp1: f64 = 1.0;
+    let stp2: f64 = 2.02 * (phi1 - phi0) / dphi1;
+    //{{{ trace
+    trace!(target: "ls", "stp1 = {stp1} stp2 = {stp2}");
+    trace!(target: "ls", "--leaving initial_step ---");
+    //}}}
+    return stp1.min(stp2);
+}
 //{{{ mod: tests
 #[cfg(test)]
 mod tests {
@@ -335,8 +352,7 @@ mod tests {
         let dphi_a = cubic_deriv(a);
         let dphi_b = cubic_deriv(b);
 
-        let alpha_min =
-            cubicmin2(a, phi_a, dphi_a, b, phi_b, dphi_b).expect("should find minimum");
+        let alpha_min = cubicmin2(a, phi_a, dphi_a, b, phi_b, dphi_b).expect("should find minimum");
 
         // For f(x) = x^3 - 3x, local minimum at x = 1
         assert!((alpha_min - 1.0).abs() < 1e-6);

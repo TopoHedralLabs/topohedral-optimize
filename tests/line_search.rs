@@ -107,8 +107,6 @@ fn test_interp_quadratic_1d() {
         q1.clone(),
         InterpOptions {
             ls_opts: LineSearchOptions::default(),
-            step1: 0.1,
-            step2: 0.7,
             scale_factor: 1.5,
             maxiter: 10,
         },
@@ -116,7 +114,7 @@ fn test_interp_quadratic_1d() {
     let alpha = 0.0;
     let phi0 = q1.eval(alpha);
     let dphi0 = q1.diff(alpha);
-    let out = interp.search(phi0, dphi0).unwrap();
+    let out = interp.search(phi0, dphi0, 1.0).unwrap();
     let exp_alpha = q1.extrema();
     assert_relative_eq!(out.alpha, exp_alpha, epsilon = 1e-10);
 }
@@ -132,8 +130,6 @@ fn test_interp_cubic_1d() {
         c1.clone(),
         InterpOptions {
             ls_opts: LineSearchOptions::default(),
-            step1: 0.1,
-            step2: 0.7,
             scale_factor: 1.5,
             maxiter: 10,
         },
@@ -141,7 +137,7 @@ fn test_interp_cubic_1d() {
     let alpha = 0.0;
     let phi0 = c1.eval(alpha);
     let dphi0 = c1.diff(alpha);
-    let out = interp.search(phi0, dphi0).unwrap();
+    let out = interp.search(phi0, dphi0, 1.0).unwrap();
     let exp_alpha = c1.extrema()[1];
     assert_relative_eq!(out.alpha, exp_alpha, epsilon = 1e-10);
 }
@@ -153,8 +149,6 @@ fn test_interp_fcn1() {
         fcn1,
         InterpOptions {
             ls_opts: LineSearchOptions::default(),
-            step1: 0.5,
-            step2: 1.0,
             scale_factor: 1.5,
             maxiter: 10,
         },
@@ -162,7 +156,7 @@ fn test_interp_fcn1() {
     let alpha = 0.0;
     let phi0 = fcn1.eval(alpha);
     let dphi0 = fcn1.diff(alpha);
-    let out = interp.search(phi0, dphi0).unwrap();
+    let out = interp.search(phi0, dphi0, 1.0).unwrap();
     println!("out = {out:?}");
 }
 //}}}
@@ -182,7 +176,6 @@ fn test_thuente_rational() {
             fcn1,
             ThuenteOptions {
                 ls_opts: LineSearchOptions {
-                    step_init: *alpha,
                     step_max: 500.0,
                     ..Default::default()
                 },
@@ -191,7 +184,7 @@ fn test_thuente_rational() {
         );
         let phi0 = fcn1.eval(0.0);
         let dphi0 = fcn1.diff(0.0);
-        let out = interp.search(phi0, dphi0).unwrap();
+        let out = interp.search(phi0, dphi0, *alpha).unwrap();
         assert_relative_eq!(out.alpha, exp_vals.0, epsilon = 1e-6);
         assert_relative_eq!(out.phi_alpha, exp_vals.1, epsilon = 1e-6);
         assert_relative_eq!(out.dphi_alpha, exp_vals.2, epsilon = 1e-6);
@@ -219,7 +212,6 @@ fn test_thuente_quadratic() {
             fcn1.clone(),
             ThuenteOptions {
                 ls_opts: LineSearchOptions {
-                    step_init: *alpha,
                     step_max: 500.0,
                     ..Default::default()
                 },
@@ -228,7 +220,7 @@ fn test_thuente_quadratic() {
         );
         let phi0 = fcn1.eval(0.0);
         let dphi0 = fcn1.diff(0.0);
-        let out = interp.search(phi0, dphi0).unwrap();
+        let out = interp.search(phi0, dphi0, *alpha).unwrap();
         assert_relative_eq!(out.alpha, exp_vals.0, epsilon = 1e-6);
         assert_relative_eq!(out.phi_alpha, exp_vals.1, epsilon = 1e-6);
         assert_relative_eq!(out.dphi_alpha, exp_vals.2, epsilon = 1e-6);

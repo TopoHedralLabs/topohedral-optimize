@@ -30,8 +30,6 @@ struct GuessData {
 #[derive(Debug, Copy, Clone)]
 pub struct Options {
     pub ls_opts: com::Options,
-    pub step1: f64,
-    pub step2: f64,
     pub scale_factor: f64,
     pub maxiter: usize,
 }
@@ -97,24 +95,24 @@ impl<F: RealFn1> Interp<F> {
 impl<F: RealFn1> LineSearch for Interp<F> {
     type Function = F;
 
-    fn search(&mut self, phi0: f64, dphi0: f64) -> Result<Returns, Error> {
+    fn search(&mut self, phi0: f64, dphi0: f64, alpha1: f64) -> Result<Returns, Error> {
         //{{{ trace
         error!(target: "ls", "--- Entering search ---");
         info!(target: "ls", "phi0={phi0} dphi0={dphi0}");
         //}}}
         let Options {
             ls_opts: _,
-            step1,
-            step2,
             scale_factor,
             maxiter,
         } = self.opts;
 
+        let inv_scale_factor = 1.0 / scale_factor;
+
         let a = 0.0;
-        let mut b_low = step1;
-        let mut c_low = step2;
-        let mut b_high = step1;
-        let mut c_high = step2;
+        let mut b_low = inv_scale_factor * alpha1;
+        let mut c_low = scale_factor * alpha1;
+        let mut b_high = inv_scale_factor * alpha1;
+        let mut c_high = scale_factor * alpha1;
         let phi_a = phi0;
         let dphi_a = dphi0;
         let mut phi_b_low = self.f.eval(b_high);
@@ -138,7 +136,6 @@ impl<F: RealFn1> LineSearch for Interp<F> {
             });
         }
 
-        let inv_scale_factor = 1.0 / scale_factor;
         for i in 0..maxiter {
             //{{{ trace
             info!(target: "ls", "---------------------------------- i = {i}");

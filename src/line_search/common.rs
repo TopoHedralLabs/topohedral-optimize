@@ -82,7 +82,6 @@ pub struct Options {
     pub c2: f64,
     pub step_min: f64,
     pub step_max: f64,
-    pub step_init: f64,
 }
 //}}}
 //{{{ impl: Default for Options
@@ -93,7 +92,6 @@ impl Default for Options {
             c2: 0.9,
             step_min: 0.0,
             step_max: 50.0,
-            step_init: 1.0,
         }
     }
 }
@@ -116,7 +114,7 @@ pub struct Returns {
 //{{{ trait: LineSearch
 pub trait LineSearch {
     type Function: RealFn1;
-    fn search(&mut self, phi0: f64, dphi0: f64) -> Result<Returns, Error>;
+    fn search(&mut self, phi0: f64, dphi0: f64, alpha1: f64) -> Result<Returns, Error>;
     fn update_fcn(&mut self, fcn: Self::Function);
 }
 //}}}

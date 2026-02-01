@@ -114,8 +114,7 @@ impl<F: RealFn1> Thuente<F> {
     }
     //}}}
     //{{{ fn: initialize
-    fn initialize(&mut self, phi0: f64, dphi0: f64) {
-        let alpha1 = self.opts.ls_opts.step_init;
+    fn initialize(&mut self, phi0: f64, dphi0: f64, alpha1: f64) {
         let ftol = self.opts.ls_opts.c1;
         let finit = phi0;
         let ginit = dphi0;
@@ -274,16 +273,16 @@ impl<F: RealFn1> Thuente<F> {
 impl<F: RealFn1> LineSearch for Thuente<F> {
     type Function = F;
 
-    fn search(&mut self, phi0: f64, dphi0: f64) -> Result<Returns, Error> {
+    fn search(&mut self, phi0: f64, dphi0: f64, alpha1: f64) -> Result<Returns, Error> {
         //{{{ trace
         error!(target: "ls", "--- Entering search ---");
-        info!(target: "ls", "phi0={phi0:1.3e} dphi0={dphi0:1.3e}");
+        info!(target: "ls", "phi0={phi0:1.3e} dphi0={dphi0:1.3e} alpha1 = {alpha1:1.3e}");
         //}}}
-        self.initialize(phi0, dphi0);
+        self.initialize(phi0, dphi0, alpha1);
         let mut cur_step = Values {
-            alpha: self.opts.ls_opts.step_init,
-            phi: self.f.eval(self.opts.ls_opts.step_init),
-            dphi: self.f.diff(self.opts.ls_opts.step_init),
+            alpha: alpha1,
+            phi: self.f.eval(alpha1),
+            dphi: self.f.diff(alpha1),
         };
 
         for iter in 0..self.opts.maxiter {

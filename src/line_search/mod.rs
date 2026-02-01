@@ -29,3 +29,5 @@ pub use interp::Options as InterpOptions;
 
 pub use thuente::Options as ThuenteOptions;
 pub use thuente::Thuente;
+
+pub use utils::initial_step;
