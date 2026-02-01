@@ -3,7 +3,9 @@
 #![feature(impl_trait_in_assoc_type)]
 
 //{{{ crate imports
-use topohedral_optimize::line_search::{InterpOptions, LineSearchMethod, LineSearchOptions};
+use topohedral_optimize::line_search::{
+    InterpOptions, LineSearchMethod, LineSearchOptions, ThuenteOptions,
+};
 use topohedral_optimize::unconstrained::{
     ConjugateGradient, ConjugateGradientOptions, Direction, UnconstrainedMinimizer,
     UnonstrainedOptions,
@@ -54,9 +56,9 @@ impl RealFn for Quadratic {
     }
 }
 //}}}
-//{{{ test: test_quadratic
+//{{{ test: test_quadratic_interp
 #[test]
-fn test_quadratic() {
+fn test_quadratic_interp() {
     let quad = Quadratic {
         xmin: SCVector::<f64, 5>::from_col_slice(&[1000.0, -100.0, 0.0, 567.0, -23.0]),
     };
@@ -77,6 +79,38 @@ fn test_quadratic() {
                     step2: 1.0,
                     scale_factor: 1.5,
                     maxiter: 10,
+                }),
+            },
+            direction: Direction::Steepest,
+            restart: 10,
+        },
+    );
+
+    let ret = cg.minimize().unwrap();
+
+    print!("{ret:?}")
+}
+//}}}
+//{{{ test: test_quadratic_thuente
+#[test]
+fn test_quadratic_thuente() {
+    let quad = Quadratic {
+        xmin: SCVector::<f64, 5>::from_col_slice(&[1000.0, -100.0, 0.0, 567.0, -23.0]),
+    };
+
+    let x0 = SCVector::<f64, 5>::from_col_slice(&[0.0, 0.0, 0.0, 0.0, 0.0]);
+
+    let mut cg = ConjugateGradient::new(
+        quad,
+        x0,
+        ConjugateGradientOptions {
+            uncon_opts: UnonstrainedOptions {
+                grad_rtol: 1e-6,
+                grad_atol: 1e-8,
+                max_iter: 100,
+                ls_method: LineSearchMethod::Thuente(ThuenteOptions {
+                    ls_opts: LineSearchOptions::default(),
+                    maxiter: 100,
                 }),
             },
             direction: Direction::Steepest,
@@ -195,27 +229,33 @@ impl RealFn for Rosenbrock {
 //}}}
 #[test]
 fn test_rosenbrock() {
-
     let rosenbrock = Rosenbrock::new();
 
-    let x0  = SCVector::<f64, 2>::from_col_slice(&[0.0, 3.0]);
+    let x0 = SCVector::<f64, 2>::from_col_slice(&[0.0, 3.0]);
 
-    let mut cg = ConjugateGradient::new(rosenbrock, x0, ConjugateGradientOptions{
-        uncon_opts: UnonstrainedOptions{
-            grad_rtol: 1e-9,
-            grad_atol: 1e-10,
-            max_iter: 1000,
-            ls_method: LineSearchMethod::Interp(InterpOptions{
-                ls_opts: LineSearchOptions::default(),
-                step1: 0.5,
-                step2: 1.0 ,
-                scale_factor: 1.5,
-                maxiter: 100
-            })
+    let mut cg = ConjugateGradient::new(
+        rosenbrock,
+        x0,
+        ConjugateGradientOptions {
+            uncon_opts: UnonstrainedOptions {
+                grad_rtol: 1e-9,
+                grad_atol: 1e-10,
+                max_iter: 1000,
+                ls_method: LineSearchMethod::Thuente(ThuenteOptions {
+                    ls_opts: LineSearchOptions {
+                        c1: 1e-4,
+                        c2: 0.4,
+                        step_min: 1e-8,
+                        step_max: 1e9,
+                        step_init: 1.0,
+                    },
+                    maxiter: 100,
+                }),
+            },
+            direction: Direction::PolakRibiere,
+            restart: 100,
         },
-        direction: Direction::FletcherReeves,
-        restart: 100,
-    });
+    );
 
     let ret = cg.minimize().unwrap();
 
