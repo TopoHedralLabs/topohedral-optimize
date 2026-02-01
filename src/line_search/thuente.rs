@@ -18,7 +18,7 @@ const XTRAPL: f64 = 1.1;
 const XTRAPU: f64 = 4.0;
 
 //{{{ struct: Options
-#[derive(Default)]
+#[derive(Default, Copy, Clone)]
 pub struct Options {
     pub ls_opts: com::Options,
     pub maxiter: usize,
@@ -351,7 +351,7 @@ fn bracket_step(args: &StepArgs) -> StepReturn {
 }
 //}}}
 //{{{ coll: StepArgs
-#[derive(Default)]
+#[derive(Default, Debug)]
 struct StepArgs {
     interval_endpoint_1: Values,
     interval_endpoint_2: Values,
