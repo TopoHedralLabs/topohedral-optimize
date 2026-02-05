@@ -150,9 +150,9 @@ impl RealFn for Quartic {
     }
 }
 //}}}
-//{{{ test: test_quartic
+//{{{ test: test_quartic_interp
 #[test]
-fn test_quartic() {
+fn test_quartic_interp() {
     let quart = Quartic {
         xmin: SCVector::<f64, 5>::from_col_slice(&[10.0, 10.0, 10.0, 10.0, 10.0]),
     };
@@ -177,7 +177,7 @@ fn test_quartic() {
                     maxiter: 10,
                 }),
             },
-            direction: Direction::FletcherReeves,
+            direction: Direction::PolakRibiere,
             restart: 100,
         },
     );
