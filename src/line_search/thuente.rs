@@ -134,6 +134,7 @@ impl<F: RealFn1> Thuente<F> {
             phi: finit,
             dphi: ginit,
         };
+        self.bracketed = false;
 
         self.data = ThuenteData {
             finit,
@@ -506,7 +507,7 @@ fn step_case3(args: &StepArgs) -> (f64, bool) {
     let theta = 3.0 * (fx - fp) / (stp - stx) + dx + dp;
     let s = theta.abs().max(dx.abs()).max(dp.abs());
     let sign = if stp > stx { -1.0 } else { 1.0 };
-    let gamma = sign * s * ((theta / s).powi(2) - (dx / s) * (dp / s)).sqrt();
+    let gamma = sign * s * (((theta / s).powi(2) - (dx / s) * (dp / s)).max(0.0)).sqrt();
     let p = (gamma - dp) + theta;
     let q = (gamma + (dx - dp)) + gamma;
     let r = p / q;
@@ -545,8 +546,9 @@ fn step_case3(args: &StepArgs) -> (f64, bool) {
         // A minimizer has not been bracketed. If the cubic step is
         // farther from stp than the secant step, the cubic step is
         // taken, otherwise the secant step is taken.
-        let cubic_step_smaller = (cubic_step - stp).abs() < (quad_step - stp).abs();
-        let step_tmp = if cubic_step_smaller {
+        let cubic_step_larger = (cubic_step - stp).abs() > (quad_step - stp).abs();
+
+        let step_tmp = if cubic_step_larger {
             cubic_step
         } else {
             quad_step
