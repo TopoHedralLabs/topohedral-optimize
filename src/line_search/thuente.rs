@@ -369,7 +369,7 @@ impl StepArgs {
 }
 //}}}
 //{{{ struct: StepReturn
-#[derive(Default)]
+#[derive(Default, Debug)]
 struct StepReturn {
     interval_endpoint_1: Values,
     interval_endpoint_2: Values,
@@ -483,17 +483,20 @@ fn step_case2(args: &StepArgs) -> (f64, bool) {
 //}}}
 //{{{ fn: step_case_3
 fn step_case3(args: &StepArgs) -> (f64, bool) {
-    error!(target: "ls", "--- entering step_case2 ---");
+    error!(target: "ls", "--- entering step_case3 ---");
+
     let &Values {
         alpha: stx,
         phi: fx,
         dphi: dx,
     } = &args.interval_endpoint_1;
+
     let &Values {
         alpha: stp,
         phi: fp,
         dphi: dp,
     } = &args.interval_intpoint;
+
     let &Values {
         alpha: sty,
         phi: _,
