@@ -22,7 +22,7 @@ pub struct Options {
     pub ls_method: LineSearchMethod,
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum ConvergedReason {
     Rtol,
     Atol,
