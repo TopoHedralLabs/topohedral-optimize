@@ -197,8 +197,8 @@ fn test_thuente_quadratic() {
     let root2 = 100.0;
 
     let mut fcn1 = Quadratic1D {
-        root1: root1,
-        root2: root2,
+        root1,
+        root2,
     };
 
     let alpha_set = [1e-4, 10.0];

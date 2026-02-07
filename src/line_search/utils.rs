@@ -291,7 +291,7 @@ pub fn initial_step(phi1: f64, phi0: f64, dphi1: f64) -> f64 {
     trace!(target: "ls", "stp1 = {stp1} stp2 = {stp2}");
     trace!(target: "ls", "--leaving initial_step ---");
     //}}}
-    return stp1.min(stp2);
+    stp1.min(stp2)
 }
 //{{{ mod: tests
 #[cfg(test)]

@@ -95,22 +95,22 @@ impl<F: RealFn1> Thuente<F> {
     //}}}
     //{{{ fn: interval_width
     fn interval_width(&self) -> f64 {
-        return (self.interval_endpoint1.alpha - self.interval_endpoint2.alpha).abs();
+        (self.interval_endpoint1.alpha - self.interval_endpoint2.alpha).abs()
     }
     //}}}
     //{{{ fn: interval_midpoint
     fn interval_midpoint(&self) -> f64 {
-        return 0.5 * (self.interval_endpoint1.alpha + self.interval_endpoint2.alpha);
+        0.5 * (self.interval_endpoint1.alpha + self.interval_endpoint2.alpha)
     }
     //}}}
     //{{{ fn: interval_min
     fn interval_min(&self) -> f64 {
-        return f64::min(self.interval_endpoint1.alpha, self.interval_endpoint2.alpha);
+        f64::min(self.interval_endpoint1.alpha, self.interval_endpoint2.alpha)
     }
     //}}}
     //{{{ fn: interval_max
     fn interval_max(&self) -> f64 {
-        return f64::max(self.interval_endpoint1.alpha, self.interval_endpoint2.alpha);
+        f64::max(self.interval_endpoint1.alpha, self.interval_endpoint2.alpha)
     }
     //}}}
     //{{{ fn: initialize
@@ -157,10 +157,10 @@ impl<F: RealFn1> Thuente<F> {
             ginit: _,
             gtest,
             mut ftest,
-            mut width,
-            mut width1,
-            mut stmin,
-            mut stmax,
+            width: _,
+            width1: _,
+            stmin: _,
+            stmax: _,
         } = &self.data;
 
         ftest = finit + cur_values.alpha * gtest;
@@ -175,13 +175,13 @@ impl<F: RealFn1> Thuente<F> {
         {
             trace!(target: "ls", "entering stage 1");
             // Define the modified function and derivative values.
-            let mut interval_intpoint = cur_values.clone();
+            let mut interval_intpoint = *cur_values;
             interval_intpoint.modify_forward(gtest);
 
-            let mut interval_endpoint_1 = self.interval_endpoint1.clone();
+            let mut interval_endpoint_1 = self.interval_endpoint1;
             interval_endpoint_1.modify_forward(gtest);
 
-            let mut interval_endpoint_2 = self.interval_endpoint2.clone();
+            let mut interval_endpoint_2 = self.interval_endpoint2;
             interval_endpoint_2.modify_forward(gtest);
 
             let ret = bracket_step(&StepArgs {
@@ -202,9 +202,9 @@ impl<F: RealFn1> Thuente<F> {
         } else {
             trace!(target: "ls", "entering stage 2");
             let ret = bracket_step(&StepArgs {
-                interval_endpoint_1: self.interval_endpoint1.clone(),
-                interval_endpoint_2: self.interval_endpoint2.clone(),
-                interval_intpoint: cur_values.clone(),
+                interval_endpoint_1: self.interval_endpoint1,
+                interval_endpoint_2: self.interval_endpoint2,
+                interval_intpoint: *cur_values,
                 bracketed: self.bracketed,
                 step_min: self.data.stmin,
                 step_max: self.data.stmax,
@@ -248,11 +248,11 @@ impl<F: RealFn1> Thuente<F> {
 
         let new_phi = self.f.eval(new_step);
         let new_dphi = self.f.diff(new_step);
-        return Values {
+        Values {
             alpha: new_step,
             phi: new_phi,
             dphi: new_dphi,
-        };
+        }
     }
     //}}}
     //{{{ fn: convergence_reached
@@ -265,7 +265,7 @@ impl<F: RealFn1> Thuente<F> {
 
         let ftest = self.data.finit + alpha * self.data.gtest;
         let gtol = self.opts.ls_opts.c2;
-        return *f <= ftest && g.abs() <= -gtol * self.data.ginit;
+        *f <= ftest && g.abs() <= -gtol * self.data.ginit
     }
     //}}}
 }
@@ -364,7 +364,7 @@ impl StepArgs {
     fn deriv_sign_is_opposite(&self) -> bool {
         let sign_intpint = self.interval_intpoint.dphi.signum();
         let sign_endpoint_1 = self.interval_endpoint_1.dphi.signum();
-        return sign_intpint * sign_endpoint_1 < 0.0;
+        sign_intpint * sign_endpoint_1 < 0.0
     }
 }
 //}}}
@@ -400,7 +400,7 @@ fn find_step_case(args: &StepArgs) -> u8 {
 
     // case 4: Lower function value, derivatives same sign, magnitude of derivative is increasing
     // in direction of step.
-    return 4;
+    4
 }
 //}}}
 //{{{ fn: step_case_1
@@ -439,7 +439,7 @@ fn step_case1(args: &StepArgs) -> (f64, bool) {
     };
 
     error!(target: "ls", "--- leaving step_case1 ---");
-    return (step, bracket);
+    (step, bracket)
 }
 //}}}
 //{{{ fn: step_case_2
@@ -478,7 +478,7 @@ fn step_case2(args: &StepArgs) -> (f64, bool) {
     };
 
     error!(target: "ls", "--- leaving step_case2 ---");
-    return (step, bracket);
+    (step, bracket)
 }
 //}}}
 //{{{ fn: step_case_3
@@ -538,13 +538,13 @@ fn step_case3(args: &StepArgs) -> (f64, bool) {
             quad_step
         };
 
-        let step = if step_tmp > stx {
+        
+
+        if step_tmp > stx {
             (stp + 0.66 * (sty - stp)).min(step_tmp)
         } else {
             (stp + 0.66 * (sty - stp)).max(step_tmp)
-        };
-
-        step
+        }
     } else {
         // A minimizer has not been bracketed. If the cubic step is
         // farther from stp than the secant step, the cubic step is
@@ -560,7 +560,7 @@ fn step_case3(args: &StepArgs) -> (f64, bool) {
     };
 
     error!(target: "ls", "--- leaving step_case3 ---");
-    return (step, args.bracketed);
+    (step, args.bracketed)
 }
 //}}}
 //{{{ fn: step_case_4
@@ -600,6 +600,6 @@ fn step_case4(args: &StepArgs) -> (f64, bool) {
     let cubic_step = stp + r * (sty - stp);
 
     error!(target: "ls", "--- leaving step_case4 ---");
-    return (cubic_step, args.bracketed);
+    (cubic_step, args.bracketed)
 }
 //}}}
