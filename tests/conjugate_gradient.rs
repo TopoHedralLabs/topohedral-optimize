@@ -7,7 +7,8 @@ use topohedral_optimize::line_search::{
     InterpOptions, LineSearchMethod, LineSearchOptions, ThuenteOptions,
 };
 use topohedral_optimize::unconstrained::{
-    ConjugateGradient, ConjugateGradientOptions, Direction, UnconstrainedConvergedReason, UnconstrainedMinimizer, UnconstrainedReturns, UnonstrainedOptions,
+    ConjugateGradient, ConjugateGradientOptions, Direction, UnconstrainedConvergedReason,
+    UnconstrainedMinimizer, UnconstrainedReturns, UnonstrainedOptions,
 };
 use topohedral_optimize::RealFn;
 //}}}

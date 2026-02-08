@@ -1,0 +1,11 @@
+edition = "2021"
+max_width = 100
+hard_tabs = false
+tab_spaces = 4
+newline_style = "Unix"
+reorder_imports = true
+brace_style = "AlwaysNextLine"
+control_brace_style = "AlwaysNextLine"
+fn_params_layout = "Vertical"
+blank_lines_lower_bound = 0
+blank_lines_upper_bound = 1
