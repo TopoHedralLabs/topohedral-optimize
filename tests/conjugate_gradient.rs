@@ -306,11 +306,11 @@ const THUENTE_PR: ConjugateGradientOptions = ConjugateGradientOptions {
     SCVector::<f64, 5>::from_col_slice(&[0.0, 0.0, 0.0, 0.0, 0.0]),
     INTERP_STEEPEST,
     UnconstrainedReturns{
-        xmin:  SCVector::<f64, 5>::from_col_slice(&[1000.0, -100.0, 0.0, 567.0, -23.0]), 
-        fmin: 0.0, 
+        xmin:  SCVector::<f64, 5>::from_col_slice(&[1000.0, -100.0, 0.0, 567.0, -23.0]),
+        fmin: 0.0,
         reason: UnconstrainedConvergedReason::Rtol,
-        num_iterations: 1, 
-        num_fun_evals: 6, 
+        num_iterations: 1,
+        num_fun_evals: 6,
         num_grad_evals: 3
     }
 )]
@@ -320,11 +320,11 @@ const THUENTE_PR: ConjugateGradientOptions = ConjugateGradientOptions {
     SCVector::<f64, 5>::from_col_slice(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
     THUENTE_STEEPEST,
     UnconstrainedReturns{
-        xmin:  SCVector::<f64, 5>::from_col_slice(&[1000.0, -100.0, 0.0, 567.0, -23.0]), 
-        fmin: 0.0, 
+        xmin:  SCVector::<f64, 5>::from_col_slice(&[1000.0, -100.0, 0.0, 567.0, -23.0]),
+        fmin: 0.0,
         reason: UnconstrainedConvergedReason::Rtol,
-        num_iterations: 1, 
-        num_fun_evals: 7, 
+        num_iterations: 1,
+        num_fun_evals: 7,
         num_grad_evals: 8
     }
 )]
@@ -334,11 +334,11 @@ const THUENTE_PR: ConjugateGradientOptions = ConjugateGradientOptions {
     SCVector::<f64, 5>::from_col_slice(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
     INTERP_FR,
     UnconstrainedReturns{
-        xmin:  SCVector::<f64, 5>::from_col_slice(&[1000.0, -100.0, 0.0, 567.0, -23.0]), 
-        fmin: 0.0, 
+        xmin:  SCVector::<f64, 5>::from_col_slice(&[1000.0, -100.0, 0.0, 567.0, -23.0]),
+        fmin: 0.0,
         reason: UnconstrainedConvergedReason::Rtol,
-        num_iterations: 1, 
-        num_fun_evals: 6, 
+        num_iterations: 1,
+        num_fun_evals: 6,
         num_grad_evals: 3,
     }
 )]
@@ -348,11 +348,11 @@ const THUENTE_PR: ConjugateGradientOptions = ConjugateGradientOptions {
     SCVector::<f64, 5>::from_col_slice(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
     THUENTE_FR,
     UnconstrainedReturns{
-        xmin:  SCVector::<f64, 5>::from_col_slice(&[1000.0, -100.0, 0.0, 567.0, -23.0]), 
-        fmin: 0.0, 
+        xmin:  SCVector::<f64, 5>::from_col_slice(&[1000.0, -100.0, 0.0, 567.0, -23.0]),
+        fmin: 0.0,
         reason: UnconstrainedConvergedReason::Rtol,
-        num_iterations: 1, 
-        num_fun_evals: 7, 
+        num_iterations: 1,
+        num_fun_evals: 7,
         num_grad_evals: 8,
     }
 )]
@@ -362,11 +362,11 @@ const THUENTE_PR: ConjugateGradientOptions = ConjugateGradientOptions {
     SCVector::<f64, 5>::from_col_slice(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
     INTERP_PR,
     UnconstrainedReturns{
-        xmin:  SCVector::<f64, 5>::from_col_slice(&[1000.0, -100.0, 0.0, 567.0, -23.0]), 
-        fmin: 0.0, 
+        xmin:  SCVector::<f64, 5>::from_col_slice(&[1000.0, -100.0, 0.0, 567.0, -23.0]),
+        fmin: 0.0,
         reason: UnconstrainedConvergedReason::Rtol,
-        num_iterations: 1, 
-        num_fun_evals: 6, 
+        num_iterations: 1,
+        num_fun_evals: 6,
         num_grad_evals: 3,
     }
 )]
@@ -376,11 +376,11 @@ const THUENTE_PR: ConjugateGradientOptions = ConjugateGradientOptions {
     SCVector::<f64, 5>::from_col_slice(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
     THUENTE_PR,
     UnconstrainedReturns{
-        xmin:  SCVector::<f64, 5>::from_col_slice(&[1000.0, -100.0, 0.0, 567.0, -23.0]), 
-        fmin: 0.0, 
+        xmin:  SCVector::<f64, 5>::from_col_slice(&[1000.0, -100.0, 0.0, 567.0, -23.0]),
+        fmin: 0.0,
         reason: UnconstrainedConvergedReason::Rtol,
-        num_iterations: 1, 
-        num_fun_evals: 7, 
+        num_iterations: 1,
+        num_fun_evals: 7,
         num_grad_evals: 8,
     }
 )]
