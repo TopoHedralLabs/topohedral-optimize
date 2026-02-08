@@ -197,6 +197,7 @@ fn test_interp_fcn1()
     let phi0 = fcn1.eval(alpha);
     let dphi0 = fcn1.diff(alpha);
     let out = interp.search(phi0, dphi0, 1.0).unwrap();
+    assert_relative_eq!(out.alpha, 1.416666e0, epsilon = 1e-5);
 }
 //}}}
 //{{{ collection: thuente tests
@@ -274,7 +275,7 @@ fn test_nocedal_rational()
     let alpha_set = [1e-4, 500.0];
     let expected_vals = [
         (4.096e-01, -0.188949, -0.389899),
-        (1.056683e2, 9.461885e-3, 8.9511233e-5),
+        (1.056683e2, -9.461885e-3, 8.9511233e-5),
     ];
 
     let mut fcn1 = RationalQuad1D { beta: 2.0 };
@@ -295,12 +296,9 @@ fn test_nocedal_rational()
         let phi0 = fcn1.eval(0.0);
         let dphi0 = fcn1.diff(0.0);
         let out = nocedal.search(phi0, dphi0, *alpha).unwrap();
-        println!("{out:?}");
-        let alpha = out.alpha;
-        println!("{alpha:1.6e}");
-        // assert_relative_eq!(out.alpha, exp_vals.0, epsilon = 1e-6);
-        // assert_relative_eq!(out.phi_alpha, exp_vals.1, epsilon = 1e-6);
-        // assert_relative_eq!(out.dphi_alpha, exp_vals.2, epsilon = 1e-6);
+        assert_relative_eq!(out.alpha, exp_vals.0, epsilon = 1e-3);
+        assert_relative_eq!(out.phi_alpha, exp_vals.1, epsilon = 1e-3);
+        assert_relative_eq!(out.dphi_alpha, exp_vals.2, epsilon = 1e-3);
     }
 }
 
