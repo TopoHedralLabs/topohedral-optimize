@@ -1,6 +1,5 @@
 //! Implementation of the More-Thuente line search.
 //!
-//! Longer description of module
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports

@@ -325,6 +325,7 @@ pub fn satisfies_wolfe(
     Ok(())
 }
 //}}}
+//{{{ fun: initial_step
 pub fn initial_step(
     phi1: f64,
     phi0: f64,
@@ -343,6 +344,7 @@ pub fn initial_step(
     //}}}
     stp1.min(stp2)
 }
+//}}}
 //{{{ mod: tests
 #[cfg(test)]
 mod tests

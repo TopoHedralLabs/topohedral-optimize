@@ -14,6 +14,7 @@
 mod common;
 mod factory;
 mod interp;
+mod nocedal;
 mod thuente;
 mod utils;
 
@@ -29,5 +30,8 @@ pub use interp::Options as InterpOptions;
 
 pub use thuente::Options as ThuenteOptions;
 pub use thuente::Thuente;
+
+pub use nocedal::Nocedal;
+pub use nocedal::Options as NocedalOptions;
 
 pub use utils::initial_step;

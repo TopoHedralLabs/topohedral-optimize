@@ -4,7 +4,7 @@
 
 //{{{ crate imports
 use topohedral_optimize::line_search::{
-    InterpOptions, LineSearchMethod, LineSearchOptions, ThuenteOptions,
+    InterpOptions, LineSearchMethod, LineSearchOptions, NocedalOptions, ThuenteOptions,
 };
 use topohedral_optimize::unconstrained::{
     ConjugateGradient, ConjugateGradientOptions, Direction, UnconstrainedConvergedReason,
@@ -299,6 +299,69 @@ const THUENTE_PR: ConjugateGradientOptions = ConjugateGradientOptions {
     restart: 10,
 };
 //}}}
+//{{{ const: NOCEDAL_STEEPEST
+const NOCEDAL_STEEPEST: ConjugateGradientOptions = ConjugateGradientOptions {
+    uncon_opts: UnonstrainedOptions {
+        grad_rtol: 1e-6,
+        grad_atol: 1e-8,
+        max_iter: 100,
+        ls_method: LineSearchMethod::Nocedal(NocedalOptions {
+            ls_opts: LineSearchOptions {
+                c1: 1.0e-4,
+                c2: 0.4,
+                step_min: 1e-8,
+                step_max: 1e5,
+            },
+            maxiter: 10,
+            zoom_maxiter: 10,
+        }),
+    },
+    direction: Direction::Steepest,
+    restart: 10,
+};
+//}}}
+//{{{ const: NOCEDAL_FR
+const NOCEDAL_FR: ConjugateGradientOptions = ConjugateGradientOptions {
+    uncon_opts: UnonstrainedOptions {
+        grad_rtol: 1e-6,
+        grad_atol: 1e-8,
+        max_iter: 100,
+        ls_method: LineSearchMethod::Nocedal(NocedalOptions {
+            ls_opts: LineSearchOptions {
+                c1: 1.0e-4,
+                c2: 0.4,
+                step_min: 1e-8,
+                step_max: 1e5,
+            },
+            maxiter: 10,
+            zoom_maxiter: 10,
+        }),
+    },
+    direction: Direction::FletcherReeves,
+    restart: 10,
+};
+//}}}
+//{{{ const: NOCEDAL_PR
+const NOCEDAL_PR: ConjugateGradientOptions = ConjugateGradientOptions {
+    uncon_opts: UnonstrainedOptions {
+        grad_rtol: 1e-6,
+        grad_atol: 1e-8,
+        max_iter: 100,
+        ls_method: LineSearchMethod::Nocedal(NocedalOptions {
+            ls_opts: LineSearchOptions {
+                c1: 1.0e-4,
+                c2: 0.4,
+                step_min: 1e-8,
+                step_max: 1e5,
+            },
+            maxiter: 10,
+            zoom_maxiter: 10,
+        }),
+    },
+    direction: Direction::PolakRibiere,
+    restart: 10,
+};
+//}}}
 //{{{ test: quadratic
 #[rstest]
 //{{{ case: test_quadratic_interp_steepest
@@ -382,6 +445,48 @@ const THUENTE_PR: ConjugateGradientOptions = ConjugateGradientOptions {
         num_iterations: 1,
         num_fun_evals: 7,
         num_grad_evals: 8,
+    }
+)]
+//}}}
+//{{{ case: test_quadratic_nocedal_steepest
+#[case::test_quadratic_nocedal_steepest(
+    SCVector::<f64, 5>::from_col_slice(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
+    NOCEDAL_STEEPEST,
+    UnconstrainedReturns{
+        xmin:  SCVector::<f64, 5>::from_col_slice(&[1000.0, -100.0, 0.0, 567.0, -23.0]),
+        fmin: 0.0,
+        reason: UnconstrainedConvergedReason::Rtol,
+        num_iterations: 2,
+        num_fun_evals: 14,
+        num_grad_evals: 14
+    }
+)]
+//}}}
+//{{{ case: test_quadratic_nocedal_fr
+#[case::test_quadratic_nocedal_fr(
+    SCVector::<f64, 5>::from_col_slice(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
+    NOCEDAL_FR,
+    UnconstrainedReturns{
+        xmin:  SCVector::<f64, 5>::from_col_slice(&[1000.0, -100.0, 0.0, 567.0, -23.0]),
+        fmin: 0.0,
+        reason: UnconstrainedConvergedReason::Rtol,
+        num_iterations: 2,
+        num_fun_evals: 14,
+        num_grad_evals: 14,
+    }
+)]
+//}}}
+//{{{ case: test_quadratic_nocedal_pr
+#[case::test_quadratic_nocedal_pr(
+    SCVector::<f64, 5>::from_col_slice(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
+    NOCEDAL_PR,
+    UnconstrainedReturns{
+        xmin:  SCVector::<f64, 5>::from_col_slice(&[1000.0, -100.0, 0.0, 567.0, -23.0]),
+        fmin: 0.0,
+        reason: UnconstrainedConvergedReason::Rtol,
+        num_iterations: 2,
+        num_fun_evals: 14,
+        num_grad_evals: 14,
     }
 )]
 //}}}
@@ -487,6 +592,48 @@ fn test_qudratic(
     }
 )]
 //}}}
+//{{{ case: test_quartic_nocedal_steepest
+#[case::test_quartic_nocedal_steepest(
+    SCVector::<f64, 5>::from_col_slice(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
+    NOCEDAL_STEEPEST,
+    UnconstrainedReturns{
+        xmin:  SCVector::<f64, 5>::from_col_slice(&[10.0, 10.0, 10.0, 10.0, 10.0]),
+        fmin: 0.0,
+        reason: UnconstrainedConvergedReason::Rtol,
+        num_iterations: 19,
+        num_fun_evals: 88,
+        num_grad_evals: 92
+    }
+)]
+//}}}
+//{{{ case: test_quartic_nocedal_fr
+#[case::test_quartic_nocedal_fr(
+    SCVector::<f64, 5>::from_col_slice(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
+    NOCEDAL_FR,
+    UnconstrainedReturns{
+        xmin:  SCVector::<f64, 5>::from_col_slice(&[10.0, 10.0, 10.0, 10.0, 10.0]),
+        fmin: 0.0,
+        reason: UnconstrainedConvergedReason::Rtol,
+        num_iterations: 16,
+        num_fun_evals: 69,
+        num_grad_evals: 67,
+    }
+)]
+//}}}
+//{{{ case: test_quartic_nocedal_pr
+#[case::test_quartic_nocedal_pr(
+    SCVector::<f64, 5>::from_col_slice(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
+    NOCEDAL_PR,
+    UnconstrainedReturns{
+        xmin:  SCVector::<f64, 5>::from_col_slice(&[10.0, 10.0, 10.0, 10.0, 10.0]),
+        fmin: 0.0,
+        reason: UnconstrainedConvergedReason::Rtol,
+        num_iterations: 20,
+        num_fun_evals: 96,
+        num_grad_evals: 99,
+    }
+)]
+//}}}
 fn test_quartic(
     #[case] x0: SCVector<f64, 5>,
     #[case] mut opts: ConjugateGradientOptions,
@@ -560,6 +707,34 @@ fn test_quartic(
         num_iterations: 19,
         num_fun_evals: 40,
         num_grad_evals: 59,
+    }
+)]
+//}}}
+//{{{ case: test_rosenbrock_nocedal_fr
+#[case::test_rosenbrock_nocedal_fr(
+    SCVector::<f64, 2>::from_col_slice(&[0.0, 3.0]),
+    NOCEDAL_FR,
+    UnconstrainedReturns{
+        xmin:  SCVector::<f64, 2>::from_col_slice(&[1.0, 1.0]),
+        fmin: 0.0,
+        reason: UnconstrainedConvergedReason::Rtol,
+        num_iterations: 245,
+        num_fun_evals: 586,
+        num_grad_evals: 704,
+    }
+)]
+//}}}
+//{{{ case: test_rosenbrock_nocedal_pr
+#[case::test_rosenbrock_nocedal_pr(
+    SCVector::<f64, 2>::from_col_slice(&[0.0, 3.0]),
+    NOCEDAL_PR,
+    UnconstrainedReturns{
+        xmin:  SCVector::<f64, 2>::from_col_slice(&[1.0, 1.0]),
+        fmin: 0.0,
+        reason: UnconstrainedConvergedReason::Rtol,
+        num_iterations: 24,
+        num_fun_evals: 92,
+        num_grad_evals: 83,
     }
 )]
 //}}}
