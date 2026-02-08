@@ -1,10 +1,16 @@
 {
+    "[rust]": {
+        "editor.defaultFormatter": "rust-lang.rust-analyzer",
+        "editor.formatOnSave": true
+    },
     "rust-analyzer.showUnlinkedFileNotification": false,
     "rust-analyzer.debug.engine": "vadimcn.vscode-lldb",
-    "editor.foldingStrategy": "auto", 
+    "editor.foldingStrategy": "auto",
     "editor.defaultFoldingRangeProvider": "TopoHedralLabs.topohedral-vscode",
-    "rust-analyzer.cargo.features": ["enable_trace"] , 
-    "rust-analyzer.cargo.buildScripts.useRustcWrapper": true, 
+    "rust-analyzer.cargo.features": [
+        "enable_trace"
+    ],
+    "rust-analyzer.cargo.buildScripts.useRustcWrapper": true,
     "rust-analyzer.cargo.extraEnv": {
         "RUSTUP_TOOLCHAIN": "nightly"
     }

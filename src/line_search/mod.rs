@@ -21,6 +21,13 @@ pub use common::{
     Error as LineSearchError, LineSearch, LineSearchFcn, Options as LineSearchOptions,
     Returns as LineSearchReturns,
 };
+
 pub use factory::{create, Method as LineSearchMethod};
+
 pub use interp::Interp;
 pub use interp::Options as InterpOptions;
+
+pub use thuente::Options as ThuenteOptions;
+pub use thuente::Thuente;
+
+pub use utils::initial_step;

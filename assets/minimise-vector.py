@@ -63,10 +63,23 @@ def rosenbrock():
         b = 100.0
         return (a- x)**2 + b * (y - x**2)**2
 
+    def grad_f(xarr):
+        x = xarr[0]
+        y = xarr[1]
+        a = 1.0
+        b = 100.0
+        out = np.zeros((2,))
+        out[0] = -2.0 * (a - x) - 4.0 * b * x * (y - np.pow(x, 2));
+        out[1] = 2.0 * b * (y - np.pow(x, 2))
+        return out
+
+
 
     # draw_function(f)
-    out = opt.minimize(f, [0, 3], method='CG', options={'disp': True, 'return_all': True})
-    print(out)
+    out = opt.minimize(f, [0, 3], jac=grad_f, method='CG', options={'disp': True, 'return_all': True})
+
+    for vec in out.allvecs:
+        print(vec)
 
 
 

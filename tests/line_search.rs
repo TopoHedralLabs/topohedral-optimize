@@ -5,9 +5,11 @@
 //{{{ crate imports
 use topohedral_optimize::line_search::LineSearch;
 use topohedral_optimize::line_search::LineSearchOptions;
+use topohedral_optimize::line_search::Thuente;
+use topohedral_optimize::line_search::ThuenteOptions;
 use topohedral_optimize::{
     line_search::{Interp, InterpOptions},
-    RealFn, RealFn1,
+    RealFn1,
 };
 //}}}
 //{{{ std imports
@@ -15,55 +17,61 @@ use topohedral_optimize::{
 //{{{ dep imports
 use approx::assert_relative_eq;
 use ctor::ctor;
-use topohedral_linalg::{dmatrix::DMatrix, dvector::DVector};
 use topohedral_tracing::*;
-
 //}}}
 
 //{{{ fun: init_logger
 #[ctor]
-fn init_logger() {
+fn init_logger()
+{
     init().unwrap();
 }
 //}}}
-
-#[derive(Debug, Clone)]
-struct QuadraticDynamic {
-    n: usize,
-    center: DVector<f64>,
-    coeffs: DMatrix<f64>,
-}
-
 //{{{ collection Quadratic1D
 #[derive(Debug, Clone)]
-struct Quadratic1D {
+struct Quadratic1D
+{
     pub root1: f64,
     pub root2: f64,
 }
-impl Quadratic1D {
-    pub fn extrema(&self) -> f64 {
+impl Quadratic1D
+{
+    pub fn extrema(&self) -> f64
+    {
         (self.root1 + self.root2) / 2.0
     }
 }
-impl RealFn1 for Quadratic1D {
-    fn eval(&mut self, x: f64) -> f64 {
+impl RealFn1 for Quadratic1D
+{
+    fn eval(
+        &mut self,
+        x: f64,
+    ) -> f64
+    {
         (x - self.root1) * (x - self.root2)
     }
 
-    fn diff(&mut self, x: f64) -> f64 {
+    fn diff(
+        &mut self,
+        x: f64,
+    ) -> f64
+    {
         2.0 * x - (self.root1 + self.root2)
     }
 }
 //}}}
 //{{{ collection: Cubic1D
 #[derive(Debug, Clone)]
-struct Cubic1D {
+struct Cubic1D
+{
     pub root1: f64,
     pub root2: f64,
     pub root3: f64,
 }
-impl Cubic1D {
-    fn extrema(&self) -> [f64; 2] {
+impl Cubic1D
+{
+    fn extrema(&self) -> [f64; 2]
+    {
         let (r1, r2, r3) = (self.root1, self.root2, self.root3);
         let a = 3.0;
         let b = -2.0 * (r1 + r2 + r3);
@@ -73,12 +81,21 @@ impl Cubic1D {
         [v1, v2]
     }
 }
-impl RealFn1 for Cubic1D {
-    fn eval(&mut self, x: f64) -> f64 {
+impl RealFn1 for Cubic1D
+{
+    fn eval(
+        &mut self,
+        x: f64,
+    ) -> f64
+    {
         (x - self.root1) * (x - self.root2) * (x - self.root3)
     }
 
-    fn diff(&mut self, x: f64) -> f64 {
+    fn diff(
+        &mut self,
+        x: f64,
+    ) -> f64
+    {
         let mut out = 0.0;
         out += (x - self.root2) * (x - self.root3);
         out += (x - self.root1) * (x - self.root3);
@@ -87,9 +104,37 @@ impl RealFn1 for Cubic1D {
     }
 }
 //}}}
+//{{{ colleciton: RationalQuad1D
+#[derive(Clone, Copy, Debug)]
+struct RationalQuad1D
+{
+    beta: f64,
+}
+impl RealFn1 for RationalQuad1D
+{
+    fn eval(
+        &mut self,
+        x: f64,
+    ) -> f64
+    {
+        let alpha = x;
+        -alpha / (alpha.powi(2) + self.beta)
+    }
 
+    fn diff(
+        &mut self,
+        x: f64,
+    ) -> f64
+    {
+        let alpha = x;
+        (alpha.powi(2) - self.beta) / (alpha.powi(2) + self.beta).powi(2)
+    }
+}
+//}}}
+//{{{ collection: interp tests
 #[test]
-fn test_quadratic_1d() {
+fn test_interp_quadratic_1d()
+{
     let mut q1 = Quadratic1D {
         root1: 1.0,
         root2: 2.0,
@@ -98,8 +143,6 @@ fn test_quadratic_1d() {
         q1.clone(),
         InterpOptions {
             ls_opts: LineSearchOptions::default(),
-            step1: 0.1,
-            step2: 0.7,
             scale_factor: 1.5,
             maxiter: 10,
         },
@@ -107,13 +150,14 @@ fn test_quadratic_1d() {
     let alpha = 0.0;
     let phi0 = q1.eval(alpha);
     let dphi0 = q1.diff(alpha);
-    let out = interp.search(phi0, dphi0).unwrap();
+    let out = interp.search(phi0, dphi0, 1.0).unwrap();
     let exp_alpha = q1.extrema();
     assert_relative_eq!(out.alpha, exp_alpha, epsilon = 1e-10);
 }
 
 #[test]
-fn test_cubic_1d() {
+fn test_interp_cubic_1d()
+{
     let mut c1 = Cubic1D {
         root1: -1.0,
         root2: 0.0,
@@ -123,8 +167,6 @@ fn test_cubic_1d() {
         c1.clone(),
         InterpOptions {
             ls_opts: LineSearchOptions::default(),
-            step1: 0.1,
-            step2: 0.7,
             scale_factor: 1.5,
             maxiter: 10,
         },
@@ -132,37 +174,19 @@ fn test_cubic_1d() {
     let alpha = 0.0;
     let phi0 = c1.eval(alpha);
     let dphi0 = c1.diff(alpha);
-    let out = interp.search(phi0, dphi0).unwrap();
+    let out = interp.search(phi0, dphi0, 1.0).unwrap();
     let exp_alpha = c1.extrema()[1];
     assert_relative_eq!(out.alpha, exp_alpha, epsilon = 1e-10);
 }
 
-#[derive(Clone, Copy, Debug)]
-struct Fcn1 {
-    beta: f64,
-}
-impl RealFn1 for Fcn1 {
-    fn eval(&mut self, x: f64) -> f64 {
-        let alpha = x;
-        -alpha / (alpha.powi(2) + self.beta)
-    }
-
-    fn diff(&mut self, x: f64) -> f64 {
-        let alpha = x;
-
-        (alpha.powi(2) - self.beta) / (alpha.powi(2) - self.beta).powi(2)
-    }
-}
-
 #[test]
-fn test_fcn1() {
-    let mut fcn1 = Fcn1 { beta: 2.0 };
+fn test_interp_fcn1()
+{
+    let mut fcn1 = RationalQuad1D { beta: 2.0 };
     let mut interp = Interp::new(
         fcn1,
         InterpOptions {
             ls_opts: LineSearchOptions::default(),
-            step1: 0.5,
-            step2: 1.0,
             scale_factor: 1.5,
             maxiter: 10,
         },
@@ -170,6 +194,75 @@ fn test_fcn1() {
     let alpha = 0.0;
     let phi0 = fcn1.eval(alpha);
     let dphi0 = fcn1.diff(alpha);
-    let out = interp.search(phi0, dphi0).unwrap();
+    let out = interp.search(phi0, dphi0, 1.0).unwrap();
     println!("out = {out:?}");
 }
+//}}}
+//{{{ collection: thuente tests
+#[test]
+fn test_thuente_rational()
+{
+    let alpha_set = [1e-4, 500.0];
+    let expected_vals = [
+        (5.46100000e-01, -2.37618140e-01, -3.22193606e-01),
+        (5.55500019e+01, -1.79901396e-02, 3.23435359e-04),
+    ];
+
+    let mut fcn1 = RationalQuad1D { beta: 2.0 };
+
+    for (alpha, exp_vals) in alpha_set.iter().zip(expected_vals.iter())
+    {
+        let mut interp = Thuente::new(
+            fcn1,
+            ThuenteOptions {
+                ls_opts: LineSearchOptions {
+                    step_max: 500.0,
+                    ..Default::default()
+                },
+                maxiter: 100,
+            },
+        );
+        let phi0 = fcn1.eval(0.0);
+        let dphi0 = fcn1.diff(0.0);
+        let out = interp.search(phi0, dphi0, *alpha).unwrap();
+        assert_relative_eq!(out.alpha, exp_vals.0, epsilon = 1e-6);
+        assert_relative_eq!(out.phi_alpha, exp_vals.1, epsilon = 1e-6);
+        assert_relative_eq!(out.dphi_alpha, exp_vals.2, epsilon = 1e-6);
+    }
+}
+
+#[test]
+fn test_thuente_quadratic()
+{
+    let root1 = 10.0;
+    let root2 = 100.0;
+
+    let mut fcn1 = Quadratic1D { root1, root2 };
+
+    let alpha_set = [1e-4, 10.0];
+    let expected_vals = [
+        (8.73810000e+00, 1.15163392e+02, -9.25238000e+01),
+        (10.0, 0.0, -9.00000000e+01),
+    ];
+
+    for (alpha, exp_vals) in alpha_set.iter().zip(expected_vals.iter())
+    {
+        let mut interp = Thuente::new(
+            fcn1.clone(),
+            ThuenteOptions {
+                ls_opts: LineSearchOptions {
+                    step_max: 500.0,
+                    ..Default::default()
+                },
+                maxiter: 100,
+            },
+        );
+        let phi0 = fcn1.eval(0.0);
+        let dphi0 = fcn1.diff(0.0);
+        let out = interp.search(phi0, dphi0, *alpha).unwrap();
+        assert_relative_eq!(out.alpha, exp_vals.0, epsilon = 1e-6);
+        assert_relative_eq!(out.phi_alpha, exp_vals.1, epsilon = 1e-6);
+        assert_relative_eq!(out.dphi_alpha, exp_vals.2, epsilon = 1e-6);
+    }
+}
+//}}}

@@ -10,11 +10,10 @@
 //{{{ dep imports
 //}}}
 //--------------------------------------------------------------------------------------------------
-#![feature(generic_const_exprs)]
 #![allow(incomplete_features)]
-#![feature(impl_trait_in_assoc_type)]
+#![feature(generic_const_exprs)]
 
 mod common;
-pub use common::{RealFn, RealFn1};
+pub use common::{rc_real_fn, RcRealFn, RealFn, RealFn1};
 pub mod line_search;
 pub mod unconstrained;
