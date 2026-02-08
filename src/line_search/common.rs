@@ -17,15 +17,22 @@ use topohedral_linalg::VectorOps;
 
 //{{{ struct LineSearchFcn
 #[derive(Debug, Clone)]
-pub struct LineSearchFcn<F: RealFn> {
+pub struct LineSearchFcn<F: RealFn>
+{
     pub f: F,
     pub x: F::Vector,
     pub dir: F::Vector,
 }
 //}}}
 //{{{ impl LineSearchFcn
-impl<F: RealFn> LineSearchFcn<F> {
-    pub fn new(f: F, x: F::Vector, dir: F::Vector) -> Self {
+impl<F: RealFn> LineSearchFcn<F>
+{
+    pub fn new(
+        f: F,
+        x: F::Vector,
+        dir: F::Vector,
+    ) -> Self
+    {
         Self { f, x, dir }
     }
 }
@@ -37,12 +44,20 @@ where
     F::Vector: VectorOps<ScalarType = f64> + Add<Output = F::Vector>,
     f64: Mul<F::Vector, Output = F::Vector>,
 {
-    fn eval(&mut self, alpha: f64) -> f64 {
+    fn eval(
+        &mut self,
+        alpha: f64,
+    ) -> f64
+    {
         let x = self.x.clone() + alpha * self.dir.clone();
         self.f.eval(&x)
     }
 
-    fn diff(&mut self, alpha: f64) -> f64 {
+    fn diff(
+        &mut self,
+        alpha: f64,
+    ) -> f64
+    {
         let x = self.x.clone() + alpha * self.dir.clone();
         let grad = self.f.grad(&x);
         grad.dot(&self.dir)
@@ -51,7 +66,8 @@ where
 //}}}
 //{{{ enum: Error
 #[derive(PartialEq, Error, Debug)]
-pub enum Error {
+pub enum Error
+{
     #[error("Not decreasing")]
     NotDecreasing,
     #[error("Fails Armijo condition")]
@@ -77,7 +93,8 @@ pub enum Error {
 /// specifies the line search method to use, which can be one of `FixedStep`, `Quadratic`,
 /// or `Inexact`.
 #[derive(Debug, Copy, Clone)]
-pub struct Options {
+pub struct Options
+{
     pub c1: f64,
     pub c2: f64,
     pub step_min: f64,
@@ -85,8 +102,10 @@ pub struct Options {
 }
 //}}}
 //{{{ impl: Default for Options
-impl Default for Options {
-    fn default() -> Self {
+impl Default for Options
+{
+    fn default() -> Self
+    {
         Self {
             c1: 1e-4,
             c2: 0.9,
@@ -105,16 +124,26 @@ impl Default for Options {
 /// - `funcalls`: The number of function evaluations performed.
 /// - `gradcalls`: The number of gradient evaluations performed.
 #[derive(Debug, Copy, Clone)]
-pub struct Returns {
+pub struct Returns
+{
     pub alpha: f64,
     pub phi_alpha: f64,
     pub dphi_alpha: f64,
 }
 //}}}
 //{{{ trait: LineSearch
-pub trait LineSearch {
+pub trait LineSearch
+{
     type Function: RealFn1;
-    fn search(&mut self, phi0: f64, dphi0: f64, alpha1: f64) -> Result<Returns, Error>;
-    fn update_fcn(&mut self, fcn: Self::Function);
+    fn search(
+        &mut self,
+        phi0: f64,
+        dphi0: f64,
+        alpha1: f64,
+    ) -> Result<Returns, Error>;
+    fn update_fcn(
+        &mut self,
+        fcn: Self::Function,
+    );
 }
 //}}}

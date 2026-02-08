@@ -17,7 +17,8 @@ use topohedral_tracing::*;
 //--------------------------------------------------------------------------------------------------
 
 #[derive(Copy, Clone, Debug)]
-struct GuessData {
+struct GuessData
+{
     a: f64,
     phi_a: f64,
     dphi_a: f64,
@@ -28,23 +29,34 @@ struct GuessData {
 }
 
 #[derive(Debug, Copy, Clone)]
-pub struct Options {
+pub struct Options
+{
     pub ls_opts: com::Options,
     pub scale_factor: f64,
     pub maxiter: usize,
 }
 
-pub struct Interp<F: RealFn1> {
+pub struct Interp<F: RealFn1>
+{
     pub opts: Options,
     pub(crate) f: F,
 }
 
-impl<F: RealFn1> Interp<F> {
-    pub fn new(f: F, opts: Options) -> Self {
+impl<F: RealFn1> Interp<F>
+{
+    pub fn new(
+        f: F,
+        opts: Options,
+    ) -> Self
+    {
         Self { opts, f }
     }
 
-    fn guess_is_ok(&mut self, guess_data: GuessData) -> Option<(f64, f64, f64)> {
+    fn guess_is_ok(
+        &mut self,
+        guess_data: GuessData,
+    ) -> Option<(f64, f64, f64)>
+    {
         //{{{ trace
         info!(target: "ls", "--- Entering guess_is_ok ---");
         trace!(target: "ls", "Data: {:?}", guess_data);
@@ -63,7 +75,8 @@ impl<F: RealFn1> Interp<F> {
         let c2 = self.opts.ls_opts.c2;
         let best_guess_opt = quadcubmin(&mut self.f, a, phi_a, dphi_a, b, phi_b, c, phi_c);
 
-        if best_guess_opt.is_none() {
+        if best_guess_opt.is_none()
+        {
             //{{{ trace
             info!(target: "ls", "No guess found");
             info!(target: "ls", "--- leaving guess_is_ok ---");
@@ -78,7 +91,8 @@ impl<F: RealFn1> Interp<F> {
             "Checking wolfe for alpha = {alpha} phi_alpha = {phi_alpha} dphi_alpha = {dphi_alpha}"
         );
         //}}}
-        if satisfies_wolfe(c1, c2, phi_a, dphi_a, alpha, phi_alpha, dphi_alpha).is_ok() {
+        if satisfies_wolfe(c1, c2, phi_a, dphi_a, alpha, phi_alpha, dphi_alpha).is_ok()
+        {
             //{{{ trace
             info!("Satisfies wolfe!");
             info!(target: "ls", "--- leaving guess_is_ok ---");
@@ -92,10 +106,17 @@ impl<F: RealFn1> Interp<F> {
     }
 }
 
-impl<F: RealFn1> LineSearch for Interp<F> {
+impl<F: RealFn1> LineSearch for Interp<F>
+{
     type Function = F;
 
-    fn search(&mut self, phi0: f64, dphi0: f64, alpha1: f64) -> Result<Returns, Error> {
+    fn search(
+        &mut self,
+        phi0: f64,
+        dphi0: f64,
+        alpha1: f64,
+    ) -> Result<Returns, Error>
+    {
         //{{{ trace
         error!(target: "ls", "--- Entering search ---");
         info!(target: "ls", "phi0={phi0} dphi0={dphi0}");
@@ -128,7 +149,8 @@ impl<F: RealFn1> LineSearch for Interp<F> {
             phi_b: phi_b_low,
             c: c_low,
             phi_c: phi_c_low,
-        }) {
+        })
+        {
             return Ok(Returns {
                 alpha,
                 phi_alpha,
@@ -136,7 +158,8 @@ impl<F: RealFn1> LineSearch for Interp<F> {
             });
         }
 
-        for i in 0..maxiter {
+        for i in 0..maxiter
+        {
             //{{{ trace
             info!(target: "ls", "---------------------------------- i = {i}");
             //}}}
@@ -156,7 +179,8 @@ impl<F: RealFn1> LineSearch for Interp<F> {
             //{{{ trace
             debug!(target: "ls", "Looking low:\n{guess_data_low:?}");
             //}}}
-            if let Some((alpha, phi_alpha, dphi_alpha)) = self.guess_is_ok(guess_data_low) {
+            if let Some((alpha, phi_alpha, dphi_alpha)) = self.guess_is_ok(guess_data_low)
+            {
                 //{{{ trace
                 info!(target: "ls", "Low guess found acceptable step: alpha = {alpha}, phi_alpha = {phi_alpha}, dphi_alpha = {dphi_alpha}");
                 info!(target: "ls", "--- leaving search() ----");
@@ -184,7 +208,8 @@ impl<F: RealFn1> LineSearch for Interp<F> {
             //{{{ trace
             debug!(target: "ls", "Looking high:\n{guess_data_high:?}");
             //}}}
-            if let Some((alpha, phi_alpha, dphi_alpha)) = self.guess_is_ok(guess_data_high) {
+            if let Some((alpha, phi_alpha, dphi_alpha)) = self.guess_is_ok(guess_data_high)
+            {
                 //{{{ trace
                 info!(target: "ls", "High guess found acceptable step: alpha = {alpha}, phi_alpha = {phi_alpha}, dphi_alpha = {dphi_alpha}");
                 info!(target: "ls", "--- leaving search() ----");
@@ -199,7 +224,11 @@ impl<F: RealFn1> LineSearch for Interp<F> {
         Err(LineSearchError::MaxIterations)
     }
 
-    fn update_fcn(&mut self, fcn: Self::Function) {
+    fn update_fcn(
+        &mut self,
+        fcn: Self::Function,
+    )
+    {
         self.f = fcn;
     }
 }

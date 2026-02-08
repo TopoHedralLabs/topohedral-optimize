@@ -25,20 +25,23 @@ use topohedral_tracing::*;
 //--------------------------------------------------------------------------------------------------
 
 #[derive(Copy, Clone)]
-pub enum Direction {
+pub enum Direction
+{
     Steepest,
     FletcherReeves,
     PolakRibiere,
 }
 
 #[derive(Copy, Clone)]
-pub struct Options {
+pub struct Options
+{
     pub uncon_opts: UnonstrainedOptions,
     pub direction: Direction,
     pub restart: u64,
 }
 
-pub struct ConjugateGradient<F: RealFn> {
+pub struct ConjugateGradient<F: RealFn>
+{
     fcn: Arc<Mutex<CountingRealFn<F>>>,
     x_init: F::Vector,
     grad_fx_init: F::Vector,
@@ -54,7 +57,12 @@ where
         + fmt::Display,
     f64: Mul<F::Vector, Output = F::Vector>,
 {
-    pub fn new(mut fcn: F, x0: F::Vector, opts: Options) -> Self {
+    pub fn new(
+        mut fcn: F,
+        x0: F::Vector,
+        opts: Options,
+    ) -> Self
+    {
         let grad_0 = fcn.grad(&x0);
         let fcn_shared = arc_real_fn(CountingRealFn::new(fcn));
         Self {
@@ -76,28 +84,33 @@ where
         norm_grad_fk_prev: f64,
         norm_grad_fk: f64,
         dir_k: &F::Vector,
-    ) -> F::Vector {
+    ) -> F::Vector
+    {
         //{{{ trace
         debug!(target: "cg", "\t--- Entering update_direction ---");
         trace!(target: "cg", "\t\n\ngrad_fk1 = \n{grad_fk_prev}\n\ngrad_fk = \n{grad_fk}\n\n");
         trace!(target: "cg", "\tnorm_grad_fk1 = {norm_grad_fk_prev:1.4e} norm_grad_fk = {norm_grad_fk:1.4e}");
         //}}}
         // direction updates
-        let beta = match self.opts.direction {
-            Direction::Steepest => {
+        let beta = match self.opts.direction
+        {
+            Direction::Steepest =>
+            {
                 //{{{ trace
                 debug!("Applying Steepest Descent update");
                 //}}}
                 0.0
             }
-            Direction::FletcherReeves => {
+            Direction::FletcherReeves =>
+            {
                 //{{{ trace
                 debug!(target: "cg", "Applying fletcher-reeves update");
                 //}}}
 
                 grad_fk.dot(grad_fk_prev) / norm_grad_fk_prev.powi(2)
             }
-            Direction::PolakRibiere => {
+            Direction::PolakRibiere =>
+            {
                 //{{{ trace
                 debug!(target: "cg", "Applying polak-ribiere update");
                 //}}}
@@ -116,14 +129,21 @@ where
         new_dir_k
     }
 
-    fn is_converged(&self, grad_norm: f64, grad_norm_init: f64) -> Option<ConvergedReason> {
+    fn is_converged(
+        &self,
+        grad_norm: f64,
+        grad_norm_init: f64,
+    ) -> Option<ConvergedReason>
+    {
         let rtol = self.opts.uncon_opts.grad_rtol;
         let rtol_converged = (grad_norm / grad_norm_init) < rtol;
-        if rtol_converged {
+        if rtol_converged
+        {
             return Some(ConvergedReason::Rtol);
         }
         let atol_converged = grad_norm < self.opts.uncon_opts.grad_atol;
-        if atol_converged {
+        if atol_converged
+        {
             return Some(ConvergedReason::Atol);
         }
         None
@@ -143,7 +163,8 @@ where
 {
     type Vector = F::Vector;
 
-    fn minimize(&mut self) -> Result<Returns<Self::Vector>, Error> {
+    fn minimize(&mut self) -> Result<Returns<Self::Vector>, Error>
+    {
         //{{{ trace
         info!(target: "cg", "--- Entering minimize() ---");
         //}}}
@@ -177,7 +198,8 @@ where
 
         let grad_fx_norm_init = self.grad_fx_init.norm();
 
-        for i in 1..max_iter {
+        for i in 1..max_iter
+        {
             //{{{ trace
             info!(target: "cg", "======================================================================== i = {i}");
             info!(target: "cg", "Current values fk = {fk:1.4e} grad_fk_norm = {grad_fk_norm:1.4e}");
@@ -189,7 +211,8 @@ where
             let mut dphi0 = grad_fk.dot(&direction);
             let needs_restart = i % self.opts.restart == 0;
             let not_decreaseing = dphi0 >= 0.0;
-            if needs_restart || not_decreaseing {
+            if needs_restart || not_decreaseing
+            {
                 //{{{ trace
                 info!(target: "cg", "\tDoing restart for reasons:  restart? {needs_restart} descent direction? {not_decreaseing}");
                 //}}}
@@ -215,7 +238,8 @@ where
             grad_fk_prev_norm = grad_fk_prev.norm();
             grad_fk_norm = grad_fk.norm();
 
-            if let Some(reason) = self.is_converged(grad_fk_norm, grad_fx_norm_init) {
+            if let Some(reason) = self.is_converged(grad_fk_norm, grad_fx_norm_init)
+            {
                 //{{{ trace
                 info!(target: "cg", "Converging with reason {reason:?}");
                 info!(target: "cg", "--- Leaving minimize() ---");

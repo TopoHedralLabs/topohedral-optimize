@@ -42,26 +42,39 @@ where
 {
     type Vector = SCVector<f64, N>;
 
-    fn eval(&mut self, x: &Self::Vector) -> f64 {
+    fn eval(
+        &mut self,
+        x: &Self::Vector,
+    ) -> f64
+    {
         let x1 = *x - self.center;
         let x2 = self.coeffs.matmul(&x1);
         x1.dot(&x2)
     }
 
-    fn grad(&mut self, x: &Self::Vector) -> Self::Vector {
+    fn grad(
+        &mut self,
+        x: &Self::Vector,
+    ) -> Self::Vector
+    {
         let mut out = SCVector::zeros();
         // first term
-        for i in 0..N {
+        for i in 0..N
+        {
             out[i] = 2.0 * self.coeffs[(i, i)] * x[i];
-            for j in 0..N {
-                if i != j {
+            for j in 0..N
+            {
+                if i != j
+                {
                     out[i] += (self.coeffs[(i, j)] + self.coeffs[(j, i)]) * x[j];
                 }
             }
         }
         // second and third terms
-        for i in 0..N {
-            for j in 0..N {
+        for i in 0..N
+        {
+            for j in 0..N
+            {
                 out[i] +=
                     self.center[j] * self.coeffs[(j, i)] + self.coeffs[(i, j)] * self.center[j];
             }
@@ -71,8 +84,10 @@ where
 }
 //}}}
 //{{{ impl QuadraticStatic<3>
-impl QuadraticStatic<3> {
-    fn new1() -> Self {
+impl QuadraticStatic<3>
+{
+    fn new1() -> Self
+    {
         let center = SCVector::<f64, 3>::zeros();
         let coeffs =
             SMatrix::<f64, 3, 3>::from_row_slice(&[5.0, 1.0, 2.0, 1.0, 5.0, 3.0, 2.0, 3.0, 5.0]);
@@ -82,7 +97,8 @@ impl QuadraticStatic<3> {
 //}}}
 //{{{ test: test_quadratic_static_3d
 #[test]
-fn test_quadratic_static_3d() {
+fn test_quadratic_static_3d()
+{
     let mut f = QuadraticStatic::<3>::new1();
 
     let x1 = SCVector::<f64, 3>::zeros();
@@ -90,7 +106,8 @@ fn test_quadratic_static_3d() {
     assert_relative_eq!(fx1, 0.0, epsilon = 1e-10);
     let grad_fx1 = f.grad(&x1);
     let exp_grad_fx1 = SCVector::<f64, 3>::zeros();
-    for (actual, expected) in grad_fx1.iter().zip(exp_grad_fx1.iter()) {
+    for (actual, expected) in grad_fx1.iter().zip(exp_grad_fx1.iter())
+    {
         assert_relative_eq!(*actual, *expected, epsilon = 1e-10);
     }
 
@@ -99,14 +116,16 @@ fn test_quadratic_static_3d() {
     assert_relative_eq!(fx2, 27.0);
     let grad_fx2 = f.grad(&x2);
     let exp_grad_fx2 = SCVector::<f64, 3>::from_col_slice(&[16.0, 18.0, 20.0]);
-    for (actual, expected) in grad_fx2.iter().zip(exp_grad_fx2.iter()) {
+    for (actual, expected) in grad_fx2.iter().zip(exp_grad_fx2.iter())
+    {
         assert_relative_eq!(*actual, *expected, epsilon = 1e-10);
     }
 }
 //}}}
 //{{{ test: test_quadratic_static_3d_line_search
 #[test]
-fn test_quadratic_static_3d_line_search() {
+fn test_quadratic_static_3d_line_search()
+{
     let mut line_fcn1 = LineSearchFcn {
         f: QuadraticStatic::<3>::new1(),
         x: SCVector::<f64, 3>::zeros(),
@@ -127,7 +146,8 @@ fn test_quadratic_static_3d_line_search() {
 //}}}
 //{{{ test: test_quadratic_static_rc_line_search
 #[test]
-fn test_quadratic_static_rc_line_search() {
+fn test_quadratic_static_rc_line_search()
+{
     let fcn1 = Rc::new(RefCell::new(QuadraticStatic::<3>::new1()));
     let x = SCVector::<f64, 3>::zeros();
     let dir = SCVector::<f64, 3>::from_col_slice(&[1.0, -2.0, 1.0]);
@@ -153,7 +173,8 @@ fn test_quadratic_static_rc_line_search() {
 //}}}
 //{{{ test: test_quadratic_static_arc_line_search
 #[test]
-fn test_quadratic_static_arc_line_search() {
+fn test_quadratic_static_arc_line_search()
+{
     let fcn1 = Arc::new(Mutex::new(QuadraticStatic::<3>::new1()));
 
     let x = SCVector::<f64, 3>::zeros();

@@ -16,7 +16,8 @@ use crate::RealFn1;
 //--------------------------------------------------------------------------------------------------
 
 #[derive(Copy, Clone)]
-pub enum Method {
+pub enum Method
+{
     Interp(interp::Options),
     Thuente(thuente::Options),
 }
@@ -24,8 +25,10 @@ pub enum Method {
 pub fn create<'a, F: RealFn1 + 'a>(
     fcn: F,
     method: Method,
-) -> Box<dyn LineSearch<Function = F> + 'a> {
-    match method {
+) -> Box<dyn LineSearch<Function = F> + 'a>
+{
+    match method
+    {
         Method::Interp(opts) => Box::new(interp::Interp { opts, f: fcn }),
         Method::Thuente(opts) => Box::new(thuente::Thuente::new(fcn, opts)),
     }

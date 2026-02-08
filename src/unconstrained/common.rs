@@ -15,7 +15,8 @@ use thiserror::Error;
 //--------------------------------------------------------------------------------------------------
 
 #[derive(Copy, Clone)]
-pub struct Options {
+pub struct Options
+{
     pub grad_rtol: f64,
     pub grad_atol: f64,
     pub max_iter: u64,
@@ -23,13 +24,15 @@ pub struct Options {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub enum ConvergedReason {
+pub enum ConvergedReason
+{
     Rtol,
     Atol,
 }
 
 #[derive(Copy, Clone, Debug)]
-pub struct Returns<Vector> {
+pub struct Returns<Vector>
+{
     pub xmin: Vector,
     pub fmin: f64,
     pub reason: ConvergedReason,
@@ -39,14 +42,16 @@ pub struct Returns<Vector> {
 }
 
 #[derive(Error, Debug)]
-pub enum Error {
+pub enum Error
+{
     #[error("Linear search failed with error {0}")]
     LineSearch(#[from] LineSearchError),
     #[error("Maximum iterations of {0} reached")]
     MaxIterations(usize),
 }
 
-pub trait UnconstrainedMinimizer {
+pub trait UnconstrainedMinimizer
+{
     type Vector;
     fn minimize(&mut self) -> Result<Returns<Self::Vector>, Error>;
 }

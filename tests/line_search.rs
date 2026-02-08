@@ -22,40 +22,56 @@ use topohedral_tracing::*;
 
 //{{{ fun: init_logger
 #[ctor]
-fn init_logger() {
+fn init_logger()
+{
     init().unwrap();
 }
 //}}}
 //{{{ collection Quadratic1D
 #[derive(Debug, Clone)]
-struct Quadratic1D {
+struct Quadratic1D
+{
     pub root1: f64,
     pub root2: f64,
 }
-impl Quadratic1D {
-    pub fn extrema(&self) -> f64 {
+impl Quadratic1D
+{
+    pub fn extrema(&self) -> f64
+    {
         (self.root1 + self.root2) / 2.0
     }
 }
-impl RealFn1 for Quadratic1D {
-    fn eval(&mut self, x: f64) -> f64 {
+impl RealFn1 for Quadratic1D
+{
+    fn eval(
+        &mut self,
+        x: f64,
+    ) -> f64
+    {
         (x - self.root1) * (x - self.root2)
     }
 
-    fn diff(&mut self, x: f64) -> f64 {
+    fn diff(
+        &mut self,
+        x: f64,
+    ) -> f64
+    {
         2.0 * x - (self.root1 + self.root2)
     }
 }
 //}}}
 //{{{ collection: Cubic1D
 #[derive(Debug, Clone)]
-struct Cubic1D {
+struct Cubic1D
+{
     pub root1: f64,
     pub root2: f64,
     pub root3: f64,
 }
-impl Cubic1D {
-    fn extrema(&self) -> [f64; 2] {
+impl Cubic1D
+{
+    fn extrema(&self) -> [f64; 2]
+    {
         let (r1, r2, r3) = (self.root1, self.root2, self.root3);
         let a = 3.0;
         let b = -2.0 * (r1 + r2 + r3);
@@ -65,12 +81,21 @@ impl Cubic1D {
         [v1, v2]
     }
 }
-impl RealFn1 for Cubic1D {
-    fn eval(&mut self, x: f64) -> f64 {
+impl RealFn1 for Cubic1D
+{
+    fn eval(
+        &mut self,
+        x: f64,
+    ) -> f64
+    {
         (x - self.root1) * (x - self.root2) * (x - self.root3)
     }
 
-    fn diff(&mut self, x: f64) -> f64 {
+    fn diff(
+        &mut self,
+        x: f64,
+    ) -> f64
+    {
         let mut out = 0.0;
         out += (x - self.root2) * (x - self.root3);
         out += (x - self.root1) * (x - self.root3);
@@ -81,16 +106,26 @@ impl RealFn1 for Cubic1D {
 //}}}
 //{{{ colleciton: RationalQuad1D
 #[derive(Clone, Copy, Debug)]
-struct RationalQuad1D {
+struct RationalQuad1D
+{
     beta: f64,
 }
-impl RealFn1 for RationalQuad1D {
-    fn eval(&mut self, x: f64) -> f64 {
+impl RealFn1 for RationalQuad1D
+{
+    fn eval(
+        &mut self,
+        x: f64,
+    ) -> f64
+    {
         let alpha = x;
         -alpha / (alpha.powi(2) + self.beta)
     }
 
-    fn diff(&mut self, x: f64) -> f64 {
+    fn diff(
+        &mut self,
+        x: f64,
+    ) -> f64
+    {
         let alpha = x;
         (alpha.powi(2) - self.beta) / (alpha.powi(2) + self.beta).powi(2)
     }
@@ -98,7 +133,8 @@ impl RealFn1 for RationalQuad1D {
 //}}}
 //{{{ collection: interp tests
 #[test]
-fn test_interp_quadratic_1d() {
+fn test_interp_quadratic_1d()
+{
     let mut q1 = Quadratic1D {
         root1: 1.0,
         root2: 2.0,
@@ -120,7 +156,8 @@ fn test_interp_quadratic_1d() {
 }
 
 #[test]
-fn test_interp_cubic_1d() {
+fn test_interp_cubic_1d()
+{
     let mut c1 = Cubic1D {
         root1: -1.0,
         root2: 0.0,
@@ -143,7 +180,8 @@ fn test_interp_cubic_1d() {
 }
 
 #[test]
-fn test_interp_fcn1() {
+fn test_interp_fcn1()
+{
     let mut fcn1 = RationalQuad1D { beta: 2.0 };
     let mut interp = Interp::new(
         fcn1,
@@ -162,7 +200,8 @@ fn test_interp_fcn1() {
 //}}}
 //{{{ collection: thuente tests
 #[test]
-fn test_thuente_rational() {
+fn test_thuente_rational()
+{
     let alpha_set = [1e-4, 500.0];
     let expected_vals = [
         (5.46100000e-01, -2.37618140e-01, -3.22193606e-01),
@@ -171,7 +210,8 @@ fn test_thuente_rational() {
 
     let mut fcn1 = RationalQuad1D { beta: 2.0 };
 
-    for (alpha, exp_vals) in alpha_set.iter().zip(expected_vals.iter()) {
+    for (alpha, exp_vals) in alpha_set.iter().zip(expected_vals.iter())
+    {
         let mut interp = Thuente::new(
             fcn1,
             ThuenteOptions {
@@ -192,7 +232,8 @@ fn test_thuente_rational() {
 }
 
 #[test]
-fn test_thuente_quadratic() {
+fn test_thuente_quadratic()
+{
     let root1 = 10.0;
     let root2 = 100.0;
 
@@ -204,7 +245,8 @@ fn test_thuente_quadratic() {
         (10.0, 0.0, -9.00000000e+01),
     ];
 
-    for (alpha, exp_vals) in alpha_set.iter().zip(expected_vals.iter()) {
+    for (alpha, exp_vals) in alpha_set.iter().zip(expected_vals.iter())
+    {
         let mut interp = Thuente::new(
             fcn1.clone(),
             ThuenteOptions {
