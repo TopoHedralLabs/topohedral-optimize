@@ -150,9 +150,9 @@ where
         let mut xk = self.x_init.clone();
         let mut xk_prev = self.x_init.clone();
         let mut grad_fk = self.fcn.grad(&xk);
-        let mut grad_fk_prev = grad_fk.clone();
+        let mut grad_fk_prev: Self::Vector;
         let mut grad_fk_norm: f64 = grad_fk.norm();
-        let mut grad_fk_prev_norm: f64 = grad_fk_prev.norm();
+        let mut grad_fk_prev_norm: f64;
         let mut fk: f64 = self.fcn.eval(&xk);
         let fk_prev_offset: f64 = <f64 as Mul>::mul(0.5, grad_fk_norm);
         let mut fk_prev = fk + fk_prev_offset;

@@ -117,8 +117,8 @@ impl<F: RealFn1> LineSearch for Interp<F> {
         let dphi_a = dphi0;
         let mut phi_b_low = self.f.eval(b_high);
         let mut phi_c_low = self.f.eval(c_high);
-        let mut phi_b_high = phi_b_low;
-        let mut phi_c_high = phi_b_high;
+        let mut phi_b_high;
+        let mut phi_c_high;
 
         if let Some((alpha, phi_alpha, dphi_alpha)) = self.guess_is_ok(GuessData {
             a,

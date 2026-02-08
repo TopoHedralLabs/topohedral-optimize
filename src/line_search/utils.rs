@@ -67,6 +67,7 @@ pub fn quadmin(a: f64, phi_a: f64, dphi_a: f64, b: f64, phi_b: f64) -> Option<f6
 }
 //}}}
 //{{{ fun: cubicmin2
+#[allow(dead_code)]
 pub fn cubicmin2(a: f64, phi_a: f64, dphi_a: f64, b: f64, phi_b: f64, dphi_b: f64) -> Option<f64> {
     //{{{ trace
     error!(target: "ls", "--- Entering cubicmin2 ---");
@@ -194,6 +195,7 @@ pub fn cubicmin3(
 }
 //}}}
 //{{{ fun: quadcubmin
+#[allow(clippy::too_many_arguments)]
 pub fn quadcubmin<F: RealFn1>(
     f: &mut F,
     a: f64,

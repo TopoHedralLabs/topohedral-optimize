@@ -33,6 +33,7 @@ where
 }
 //}}}
 //{{{ impl: RealFn for QuadraticStatic
+#[allow(clippy::identity_op)]
 impl<const N: usize> RealFn for QuadraticStatic<N>
 where
     [(); N * 1]:,
@@ -76,10 +77,6 @@ impl QuadraticStatic<3> {
         let coeffs =
             SMatrix::<f64, 3, 3>::from_row_slice(&[5.0, 1.0, 2.0, 1.0, 5.0, 3.0, 2.0, 3.0, 5.0]);
         Self { center, coeffs }
-    }
-
-    fn update_center(&mut self, new_center: SCVector<f64, 3>) {
-        self.center = new_center;
     }
 }
 //}}}

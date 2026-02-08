@@ -152,18 +152,10 @@ impl<F: RealFn1> Thuente<F> {
     fn iter_step(&mut self, cur_values: &Values) -> Values {
         error!(target: "ls", "--- Entering iter_step ---");
 
-        let &ThuenteData {
-            finit,
-            ginit: _,
-            gtest,
-            mut ftest,
-            width: _,
-            width1: _,
-            stmin: _,
-            stmax: _,
-        } = &self.data;
-
-        ftest = finit + cur_values.alpha * gtest;
+        let finit = self.data.finit;
+        let gtest = self.data.gtest;
+        self.data.ftest = finit + cur_values.alpha * gtest;
+        let ftest = self.data.ftest;
 
         if self.stage == 1 && cur_values.phi <= ftest && cur_values.dphi >= 0.0 {
             self.stage = 2;
@@ -328,9 +320,11 @@ fn bracket_step(args: &StepArgs) -> StepReturn {
     };
     // update interval with the minimizer
 
-    let mut ret = StepReturn::default();
-    ret.alpha = new_step;
-    ret.bracket = bracket;
+    let mut ret = StepReturn {
+        alpha: new_step,
+        bracket,
+        ..Default::default()
+    };
 
     // update interval containting the minimizer
     if args.interval_intpoint.phi > args.interval_endpoint_1.phi {
@@ -537,8 +531,6 @@ fn step_case3(args: &StepArgs) -> (f64, bool) {
         } else {
             quad_step
         };
-
-        
 
         if step_tmp > stx {
             (stp + 0.66 * (sty - stp)).min(step_tmp)

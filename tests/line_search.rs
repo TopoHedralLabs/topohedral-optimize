@@ -9,7 +9,7 @@ use topohedral_optimize::line_search::Thuente;
 use topohedral_optimize::line_search::ThuenteOptions;
 use topohedral_optimize::{
     line_search::{Interp, InterpOptions},
-    RealFn, RealFn1,
+    RealFn1,
 };
 //}}}
 //{{{ std imports
@@ -196,10 +196,7 @@ fn test_thuente_quadratic() {
     let root1 = 10.0;
     let root2 = 100.0;
 
-    let mut fcn1 = Quadratic1D {
-        root1,
-        root2,
-    };
+    let mut fcn1 = Quadratic1D { root1, root2 };
 
     let alpha_set = [1e-4, 10.0];
     let expected_vals = [
