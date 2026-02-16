@@ -31,6 +31,7 @@ pub struct Nocedal<F: RealFn1>
 
 impl<F: RealFn1> Nocedal<F>
 {
+    #[trace_fn]
     pub fn new(
         f: F,
         opts: Options,
@@ -43,6 +44,7 @@ impl<F: RealFn1> Nocedal<F>
 impl<F: RealFn1> LineSearch for Nocedal<F>
 {
     type Function = F;
+    #[trace_fn]
     fn search(
         &mut self,
         phi0: f64,
@@ -51,7 +53,6 @@ impl<F: RealFn1> LineSearch for Nocedal<F>
     ) -> Result<Returns, Error>
     {
         //{{{ trace
-        error!(target: "ls", "--- Entering line_search ---");
         trace!(target: "ls", "Entering with phi0 = {:1.4e} dphi0 = {:1.4e}", phi0, dphi0);
         //}}}
 
@@ -71,7 +72,7 @@ impl<F: RealFn1> LineSearch for Nocedal<F>
         for i in 0..max_iter
         {
             //{{{ trace
-            trace!(target: "ls", "\n\n--------------------------------------- nocedal it = {}", i);
+            trace!(target: "ls", "--------------------------------------- nocedal it = {}", i);
             trace!(target: "ls", "alpha0 = {:1.4e} alpha1 = {:1.4e}", alpha0, alpha1);
             trace!(target: "ls", "phi_a0 = {:1.4e} phi1 {:1.4e}", phi_a0, phi_a1);
             trace!(target: "ls", "dphi_aa0 = {:1.4e} dphi1 {:1.4e}", dphi_a0, dphi_a1);
@@ -81,7 +82,6 @@ impl<F: RealFn1> LineSearch for Nocedal<F>
             {
                 //{{{ trace
                 error!(target: "ls", "Too small step size detected");
-                error!("--- Leaving line_search ---");
                 //}}}
                 return Err(Error::StepSizeSmall);
             }
@@ -117,7 +117,6 @@ impl<F: RealFn1> LineSearch for Nocedal<F>
                     {
                         //{{{ trace
                         error!(target: "ls","Zoom failed");
-                        error!(target: "ls","--- Leaving line_search ---");
                         //}}}
                         return Err(Error::NotDecreasing);
                     }
@@ -126,7 +125,6 @@ impl<F: RealFn1> LineSearch for Nocedal<F>
 
                 //{{{ trace
                 error!(target: "ls", "Leaving with {:1.4e} {:1.4e} {:1.4e}", alpha_tmp, phi_tmp, dphi_tmp);
-                error!(target: "ls", "--- Leaving line_search ---");
                 //}}}
                 return Ok(Returns {
                     alpha: alpha_tmp,
@@ -142,7 +140,6 @@ impl<F: RealFn1> LineSearch for Nocedal<F>
                 //{{{ trace
                 trace!(target: "ls", "Does not satisfy curvature");
                 trace!(target: "ls","Returning alpha = {:1.4e} falpha = {:1.4e}", alpha1, phi_a1);
-                error!(target: "ls", "--- Leaving line_search ---");
                 //}}}
                 return Ok(Returns {
                     alpha: alpha1,
@@ -175,7 +172,6 @@ impl<F: RealFn1> LineSearch for Nocedal<F>
                     {
                         //{{{  trace
                         error!(target: "ls", "Zoom failed");
-                        error!(target: "ls", "--- Leaving line_search ---");
                         //}}}
                         return Err(Error::NotDecreasing);
                     }
@@ -190,7 +186,6 @@ impl<F: RealFn1> LineSearch for Nocedal<F>
                 };
                 //{{{ trace
                 error!(target: "ls", "Returning alpha = {:1.4e} falpha = {:1.4e}", alpha_tmp, phi_tmp);
-                error!(target: "ls", "--- Leaving line_search ---");
                 //}}}
                 return Ok(Returns {
                     alpha: alpha_tmp,
@@ -212,7 +207,6 @@ impl<F: RealFn1> LineSearch for Nocedal<F>
 
         //{{{ trace
         error!("Reached max number of iterations");
-        error!(target: "ls", "--- Leaving line_search ---");
         //}}}
         Ok(Returns {
             alpha: alpha1,
@@ -221,6 +215,7 @@ impl<F: RealFn1> LineSearch for Nocedal<F>
         })
     }
 
+    #[trace_fn]
     fn update_fcn(
         &mut self,
         fcn: Self::Function,
@@ -232,6 +227,7 @@ impl<F: RealFn1> LineSearch for Nocedal<F>
 
 //{{{ fun: zoom
 #[allow(clippy::too_many_arguments, clippy::identity_op)]
+#[trace_fn]
 fn zoom<F: RealFn1>(
     mut a_lo: f64,
     mut a_hi: f64,
@@ -248,7 +244,6 @@ fn zoom<F: RealFn1>(
 where
 {
     //{{{ trace
-    error!(target: "ls", "--- Entering zoom ---");
     trace!(target: "ls", "Entering with a_lo = {:1.4e} a_hi = {:1.4e} phi_lo = {:1.4e} phi_hi = {:1.4e}", a_lo, a_hi, phi_lo, phi_hi);
     trace!(target: "ls", "phi0 = {:1.4e} dphi0 = {:1.4e} c1 = {:1.4e} c2 = {:1.4e}", phi0, dphi0, c1, c2);
     //}}}
@@ -263,7 +258,7 @@ where
     loop
     {
         //{{{ trace
-        debug!(target: "ls", "\n\n...............zoom iter = {}", iter);
+        debug!(target: "ls", "...............zoom iter = {}", iter);
         trace!(target: "ls", "cchk = {:1.4e}  qchk = {:1.4e}", cchk, qchk);
         //}}}
 
@@ -348,7 +343,6 @@ where
                 trace!(target: "ls","Passed curvature condition");
                 error!(target: "ls", "Returning a_j = {:1.4e} phi_aj = {:1.4e} dphi_aj = {:1.4e}",
                       a_j, phi_aj, dphi_aj);
-                error!(target: "ls", "--- Leaving zoom ---");
                 //}}}
                 return Some((a_j, phi_aj, dphi_aj));
             }
@@ -375,7 +369,6 @@ where
         {
             //{{{ trace
             error!(target: "ls", "Reached max iterations in zoom");
-            error!(target: "ls", "--- Leaving zoom ---");
             //}}}
             return None;
         }
@@ -399,6 +392,7 @@ mod tests
 
     impl<F: Fn(f64) -> f64, G: Fn(f64) -> f64> ScalarFunction<F, G>
     {
+        #[trace_fn]
         pub fn new(
             f: F,
             df_dx: G,
@@ -410,6 +404,7 @@ mod tests
 
     impl<F: Fn(f64) -> f64, G: Fn(f64) -> f64> RealFn1 for ScalarFunction<F, G>
     {
+        #[trace_fn]
         fn eval(
             &mut self,
             x: f64,
@@ -418,6 +413,7 @@ mod tests
             (self.f)(x)
         }
 
+        #[trace_fn]
         fn diff(
             &mut self,
             x: f64,
@@ -429,6 +425,7 @@ mod tests
 
     //{{{ collection: zoom tests
     #[test]
+    #[trace_fn]
     fn test_zoom_quad_left()
     {
         let f = |x: f64| (x - 2.0).powi(2);
@@ -449,6 +446,7 @@ mod tests
     }
 
     #[test]
+    #[trace_fn]
     fn test_zoom_quad_center()
     {
         let f = |x: f64| (x - 2.0).powi(2);
@@ -475,6 +473,7 @@ mod tests
     }
 
     #[test]
+    #[trace_fn]
     fn test_zoom_quad_right_none()
     {
         let f = |x: f64| (x - 2.0).powi(2);
@@ -497,6 +496,7 @@ mod tests
     }
 
     #[test]
+    #[trace_fn]
     fn test_zoom_quad_right_some()
     {
         let f = |x: f64| (x - 2.0).powi(2);

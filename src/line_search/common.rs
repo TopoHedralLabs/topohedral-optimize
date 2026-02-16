@@ -12,6 +12,7 @@ use std::ops::{Add, Mul};
 //{{{ dep imports
 use thiserror::Error;
 use topohedral_linalg::VectorOps;
+use topohedral_tracing::*;
 //}}}
 //--------------------------------------------------------------------------------------------------
 
@@ -27,6 +28,7 @@ pub struct LineSearchFcn<F: RealFn>
 //{{{ impl LineSearchFcn
 impl<F: RealFn> LineSearchFcn<F>
 {
+    #[trace_fn]
     pub fn new(
         f: F,
         x: F::Vector,
@@ -44,6 +46,7 @@ where
     F::Vector: VectorOps<ScalarType = f64> + Add<Output = F::Vector>,
     f64: Mul<F::Vector, Output = F::Vector>,
 {
+    #[trace_fn]
     fn eval(
         &mut self,
         alpha: f64,
@@ -53,6 +56,7 @@ where
         self.f.eval(&x)
     }
 
+    #[trace_fn]
     fn diff(
         &mut self,
         alpha: f64,
@@ -104,6 +108,7 @@ pub struct Options
 //{{{ impl: Default for Options
 impl Default for Options
 {
+    #[trace_fn]
     fn default() -> Self
     {
         Self {

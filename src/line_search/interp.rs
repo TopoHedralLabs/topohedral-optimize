@@ -44,6 +44,7 @@ pub struct Interp<F: RealFn1>
 
 impl<F: RealFn1> Interp<F>
 {
+    #[trace_fn]
     pub fn new(
         f: F,
         opts: Options,
@@ -52,13 +53,13 @@ impl<F: RealFn1> Interp<F>
         Self { opts, f }
     }
 
+    #[trace_fn]
     fn guess_is_ok(
         &mut self,
         guess_data: GuessData,
     ) -> Option<(f64, f64, f64)>
     {
         //{{{ trace
-        info!(target: "ls", "--- Entering guess_is_ok ---");
         trace!(target: "ls", "Data: {:?}", guess_data);
         //}}}
         let GuessData {
@@ -79,7 +80,6 @@ impl<F: RealFn1> Interp<F>
         {
             //{{{ trace
             info!(target: "ls", "No guess found");
-            info!(target: "ls", "--- leaving guess_is_ok ---");
             //}}}
             return None;
         }
@@ -95,13 +95,9 @@ impl<F: RealFn1> Interp<F>
         {
             //{{{ trace
             info!("Satisfies wolfe!");
-            info!(target: "ls", "--- leaving guess_is_ok ---");
             //}}}
             return Some((alpha, phi_alpha, dphi_alpha));
         }
-        //{{{ trace
-        info!(target: "ls", "--- leaving guess_is_ok ---");
-        //}}}
         None
     }
 }
@@ -110,6 +106,7 @@ impl<F: RealFn1> LineSearch for Interp<F>
 {
     type Function = F;
 
+    #[trace_fn]
     fn search(
         &mut self,
         phi0: f64,
@@ -118,7 +115,6 @@ impl<F: RealFn1> LineSearch for Interp<F>
     ) -> Result<Returns, Error>
     {
         //{{{ trace
-        error!(target: "ls", "--- Entering search ---");
         info!(target: "ls", "phi0={phi0} dphi0={dphi0}");
         //}}}
         let Options {
@@ -183,7 +179,6 @@ impl<F: RealFn1> LineSearch for Interp<F>
             {
                 //{{{ trace
                 info!(target: "ls", "Low guess found acceptable step: alpha = {alpha}, phi_alpha = {phi_alpha}, dphi_alpha = {dphi_alpha}");
-                info!(target: "ls", "--- leaving search() ----");
                 //}}}
                 return Ok(Returns {
                     alpha,
@@ -212,7 +207,6 @@ impl<F: RealFn1> LineSearch for Interp<F>
             {
                 //{{{ trace
                 info!(target: "ls", "High guess found acceptable step: alpha = {alpha}, phi_alpha = {phi_alpha}, dphi_alpha = {dphi_alpha}");
-                info!(target: "ls", "--- leaving search() ----");
                 //}}}
                 return Ok(Returns {
                     alpha,
@@ -224,6 +218,7 @@ impl<F: RealFn1> LineSearch for Interp<F>
         Err(LineSearchError::MaxIterations)
     }
 
+    #[trace_fn]
     fn update_fcn(
         &mut self,
         fcn: Self::Function,
