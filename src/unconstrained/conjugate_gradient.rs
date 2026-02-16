@@ -57,6 +57,7 @@ where
         + fmt::Display,
     f64: Mul<F::Vector, Output = F::Vector>,
 {
+    #[trace_fn]
     pub fn new(
         mut fcn: F,
         x0: F::Vector,
@@ -77,6 +78,7 @@ where
     /// current and previous gradients, and the current search direction.
     /// The update formula used depends on the `DirectionMethod` specified in the
     /// `Opts` struct.
+    #[trace_fn]
     fn update_direction(
         &self,
         grad_fk_prev: &F::Vector,
@@ -87,9 +89,7 @@ where
     ) -> F::Vector
     {
         //{{{ trace
-        debug!(target: "cg", "\t--- Entering update_direction ---");
-        trace!(target: "cg", "\t\n\ngrad_fk1 = \n{grad_fk_prev}\n\ngrad_fk = \n{grad_fk}\n\n");
-        trace!(target: "cg", "\tnorm_grad_fk1 = {norm_grad_fk_prev:1.4e} norm_grad_fk = {norm_grad_fk:1.4e}");
+        trace!(target: "cg", "norm_grad_fk1 = {norm_grad_fk_prev:1.4e} norm_grad_fk = {norm_grad_fk:1.4e}");
         //}}}
         // direction updates
         let beta = match self.opts.direction
@@ -124,11 +124,11 @@ where
         let new_dir_k = beta * dir_k.clone() - grad_fk.clone();
         //{{{ trace
         debug!(target: "cg", "beta = {:1.4e}", beta);
-        debug!(target: "cg", "--- Leaving update_direction ---");
         //}}}
         new_dir_k
     }
 
+    #[trace_fn]
     fn is_converged(
         &self,
         grad_norm: f64,
@@ -163,11 +163,9 @@ where
 {
     type Vector = F::Vector;
 
+    #[trace_fn]
     fn minimize(&mut self) -> Result<Returns<Self::Vector>, Error>
     {
-        //{{{ trace
-        info!(target: "cg", "--- Entering minimize() ---");
-        //}}}
         let mut xk = self.x_init.clone();
         let mut xk_prev = self.x_init.clone();
         let mut grad_fk = self.fcn.grad(&xk);
@@ -182,7 +180,6 @@ where
         //{{{ trace
         info!(target: "cg", "Initial values upon entry: ");
         info!(target: "cg", "f0 = {fk:1.4e} norm_f0 = {grad_fk_norm:1.4e}");
-        trace!(target: "cg", "\n\nx0 = \n{xk}\n\ngrad_f0 = \n{grad_fk}\n\n");
         //}}}
 
         let max_iter = self.opts.uncon_opts.max_iter;
@@ -206,7 +203,6 @@ where
             info!(target: "cg","Convergence measures:");
             info!(target: "cg", "\t||∇f(k)|| / ||∇f(0)|| = {:1.4e} ", grad_fk_norm / grad_fx_norm_init);
             info!(target: "cg", "\t||x(k) - x(k-1)|| = {:1.4e}", (xk.clone() - xk_prev.clone()).norm());
-            trace!(target: "cg", "\n\nxk = \n{xk}\n\ndir = \n{direction}\n\n");
             //}}}
             let mut dphi0 = grad_fk.dot(&direction);
             let needs_restart = i % self.opts.restart == 0;
@@ -242,7 +238,6 @@ where
             {
                 //{{{ trace
                 info!(target: "cg", "Converging with reason {reason:?}");
-                info!(target: "cg", "--- Leaving minimize() ---");
                 //}}}
 
                 let fcn_lock = self.fcn.lock().unwrap();
@@ -271,8 +266,7 @@ where
         }
         //{{{ trace
         let maxiter = self.opts.uncon_opts.max_iter;
-        info!("Did not converge within {maxiter} iterations");
-        info!(target: "cg", "--- Leaving minimize() ---");
+        info!(target: "cg", "Did not converge within {maxiter} iterations");
         //}}}
         Err(Error::MaxIterations(self.opts.uncon_opts.max_iter as usize))
     }

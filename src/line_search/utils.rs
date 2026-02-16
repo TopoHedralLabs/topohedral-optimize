@@ -24,6 +24,7 @@ const SMALL: f64 = 1e-32;
 /// phi_q(x) = beta (x - a)^2 + gamma (x - a) + delta
 ///
 /// And finds the minimum of this function ananlytically.
+#[trace_fn]
 pub fn quadmin(
     a: f64,
     phi_a: f64,
@@ -33,7 +34,6 @@ pub fn quadmin(
 ) -> Option<f64>
 {
     //{{{ trace
-    error!(target: "ls", "--- Entering quadmin ---");
     trace!(target: "ls", "Entering with phi_a = {:1.4e}, phi_b = {:1.4e}, dphi_a = {:1.4e}, b = {:1.4e}", phi_a, phi_b, dphi_a, b);
     //}}}
     let delta = phi_a;
@@ -48,7 +48,6 @@ pub fn quadmin(
     {
         //{{{ trace
         trace!(target: "ls", "db * db too small");
-        error!(target: "ls", "--- Leaving quadmin ---");
         //}}}
         return None;
     }
@@ -62,7 +61,6 @@ pub fn quadmin(
     {
         //{{{ trace
         trace!(target: "ls", "2 * beta too small");
-        error!(target: "ls", "--- Leaving quadmin ---");
         //}}}
         return None;
     }
@@ -70,13 +68,13 @@ pub fn quadmin(
     let alpha_min = a - gamma / (2.0 * beta);
     //{{{ trace
     error!(target: "ls", "Returning alpha_min = {:1.4e}", alpha_min);
-    error!(target: "ls", "--- Leaving quadmin ---");
     //}}}
     Some(alpha_min)
 }
 //}}}
 //{{{ fun: cubicmin2
 #[allow(dead_code)]
+#[trace_fn]
 pub fn cubicmin2(
     a: f64,
     phi_a: f64,
@@ -87,7 +85,6 @@ pub fn cubicmin2(
 ) -> Option<f64>
 {
     //{{{ trace
-    error!(target: "ls", "--- Entering cubicmin2 ---");
     trace!(target: "ls", "Entering with a = {:1.4e}, b = {:1.4e}", a, b);
     trace!(target: "ls", "phi_a = {:1.4e}, phi_b = {:1.4e}", phi_a, phi_b);
     trace!(target: "ls", "dphi_a = {:1.4e}, dphi_b = {:1.4e}", dphi_a, dphi_b);
@@ -150,6 +147,7 @@ pub fn cubicmin2(
 /// phi_cu(x) = beta(x - a)^3 + gamma (x - a)^2 + delta (x - a) + epsilon
 ///
 /// And finds the minimum of this function ananlytically.
+#[trace_fn]
 pub fn cubicmin3(
     a: f64,
     phi_a: f64,
@@ -161,7 +159,6 @@ pub fn cubicmin3(
 ) -> Option<f64>
 {
     //{{{ trace
-    error!(target: "ls", "--- Entering cubicmin3 ---");
     trace!(target: "ls", "Enterin with a = {:1.4e}, b = {:1.4e}, c = {:1.4e}", a, b, c);
     trace!(target: "ls", "phi_a = {:1.4e}, phi_b = {:1.4e}, phi_c = {:1.4e}", phi_a, phi_b, phi_c);
     //}}}
@@ -176,7 +173,6 @@ pub fn cubicmin3(
     {
         //{{{ trace
         trace!(target: "ls", "Denominator is too small");
-        error!(target: "ls", "--- Leaving cubicmin ---");
         //}}}
         return None;
     }
@@ -199,7 +195,6 @@ pub fn cubicmin3(
     {
         //{{{ trace
         error!(target: "ls", "3 * beta too small");
-        error!(target: "ls", "--- Leaving cubicmin ---");
         //}}}
         return None;
     }
@@ -207,13 +202,11 @@ pub fn cubicmin3(
     let alpha_min = a + (-gamma + radical) / (3.0 * beta);
     //{{{ trace
     error!(target: "ls", "Returning alpha_min = {:1.4e}", alpha_min);
-    error!(target: "ls", "--- Leaving cubicmin ---");
     //}}}
     if alpha_min.is_nan()
     {
         //{{{ trace
         error!("Final result is Nan, returning None");
-        error!(target: "ls", "--- Leaving cubicmin ---");
         //}}}
         return None;
     }
@@ -222,6 +215,7 @@ pub fn cubicmin3(
 //}}}
 //{{{ fun: quadcubmin
 #[allow(clippy::too_many_arguments)]
+#[trace_fn]
 pub fn quadcubmin<F: RealFn1>(
     f: &mut F,
     a: f64,
@@ -233,9 +227,6 @@ pub fn quadcubmin<F: RealFn1>(
     phi_c: f64,
 ) -> Option<(f64, f64)>
 {
-    //{{{ trace
-    info!(target: "ls", "--- entering quadcubmin ---");
-    //}}}
     let to_pair = |x: &Option<f64>| -> Option<(f64, f64)> {
         x.as_ref().map(|alpha| (*alpha, f.eval(*alpha)))
     };
@@ -257,7 +248,6 @@ pub fn quadcubmin<F: RealFn1>(
     {
         //{{{ trace
         info!(target: "ls", "No value found");
-        info!(target: "ls", "--- leaving quadcubmin ---");
         //}}}
         return None;
     }
@@ -265,12 +255,12 @@ pub fn quadcubmin<F: RealFn1>(
     let (alpha_min, fmin) = opt_min_value.unwrap();
     //{{{ trace
     trace!(target: "ls", "returning alpha ={alpha_min:1.4e}");
-    info!(target: "ls", "--- leaving quadcubmin ---");
     //}}}
     Some((alpha_min, fmin))
 }
 //}}}
 //{{{ fun: satisfies_armijo
+#[trace_fn]
 pub fn satisfies_armijo(
     c1: f64,
     alpha: f64,
@@ -287,6 +277,7 @@ pub fn satisfies_armijo(
 }
 //}}}
 //{{{ fun:  satisfies_curvature
+#[trace_fn]
 pub fn satisfies_curvature(
     c2: f64,
     dphi0: f64,
@@ -301,6 +292,7 @@ pub fn satisfies_curvature(
 }
 //}}}
 //{{{ fun: satisfies_wolfe
+#[trace_fn]
 pub fn satisfies_wolfe(
     c1: f64,
     c2: f64,
@@ -326,6 +318,7 @@ pub fn satisfies_wolfe(
 }
 //}}}
 //{{{ fun: initial_step
+#[trace_fn]
 pub fn initial_step(
     phi1: f64,
     phi0: f64,
@@ -333,14 +326,12 @@ pub fn initial_step(
 ) -> f64
 {
     //{{{ trace
-    trace!(target: "ls", "--entering initial_step ---");
     trace!(target: "ls", "phi1 = {phi1:1.4e}, phi0 = {phi0:1.4e} dphi1 = {dphi1:1.4e}");
     //}}}
     let stp1: f64 = 1.0;
     let stp2: f64 = 2.02 * (phi1 - phi0) / dphi1;
     //{{{ trace
     trace!(target: "ls", "stp1 = {stp1} stp2 = {stp2}");
-    trace!(target: "ls", "--leaving initial_step ---");
     //}}}
     stp1.min(stp2)
 }

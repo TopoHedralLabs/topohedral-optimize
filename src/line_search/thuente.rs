@@ -36,6 +36,7 @@ struct Values
 //{{{ impl: Values
 impl Values
 {
+    #[trace_fn]
     fn modify_forward(
         &mut self,
         gtest: f64,
@@ -45,6 +46,7 @@ impl Values
         self.dphi -= gtest;
     }
 
+    #[trace_fn]
     fn modify_back(
         &mut self,
         gtest: f64,
@@ -86,6 +88,7 @@ pub struct Thuente<F: RealFn1>
 impl<F: RealFn1> Thuente<F>
 {
     //{{{ fn: new
+    #[trace_fn]
     pub fn new(
         f: F,
         opts: Options,
@@ -111,30 +114,35 @@ impl<F: RealFn1> Thuente<F>
     }
     //}}}
     //{{{ fn: interval_width
+    #[trace_fn]
     fn interval_width(&self) -> f64
     {
         (self.interval_endpoint1.alpha - self.interval_endpoint2.alpha).abs()
     }
     //}}}
     //{{{ fn: interval_midpoint
+    #[trace_fn]
     fn interval_midpoint(&self) -> f64
     {
         0.5 * (self.interval_endpoint1.alpha + self.interval_endpoint2.alpha)
     }
     //}}}
     //{{{ fn: interval_min
+    #[trace_fn]
     fn interval_min(&self) -> f64
     {
         f64::min(self.interval_endpoint1.alpha, self.interval_endpoint2.alpha)
     }
     //}}}
     //{{{ fn: interval_max
+    #[trace_fn]
     fn interval_max(&self) -> f64
     {
         f64::max(self.interval_endpoint1.alpha, self.interval_endpoint2.alpha)
     }
     //}}}
     //{{{ fn: initialize
+    #[trace_fn]
     fn initialize(
         &mut self,
         phi0: f64,
@@ -176,13 +184,12 @@ impl<F: RealFn1> Thuente<F>
     }
     //}}}
     //{{{ fn: iter_step
+    #[trace_fn]
     fn iter_step(
         &mut self,
         cur_values: &Values,
     ) -> Values
     {
-        error!(target: "ls", "--- Entering iter_step ---");
-
         let finit = self.data.finit;
         let gtest = self.data.gtest;
         self.data.ftest = finit + cur_values.alpha * gtest;
@@ -288,6 +295,7 @@ impl<F: RealFn1> Thuente<F>
     }
     //}}}
     //{{{ fn: convergence_reached
+    #[trace_fn]
     fn convergence_reached(
         &self,
         values: &Values,
@@ -311,6 +319,7 @@ impl<F: RealFn1> LineSearch for Thuente<F>
 {
     type Function = F;
 
+    #[trace_fn]
     fn search(
         &mut self,
         phi0: f64,
@@ -319,7 +328,6 @@ impl<F: RealFn1> LineSearch for Thuente<F>
     ) -> Result<Returns, Error>
     {
         //{{{ trace
-        error!(target: "ls", "--- Entering search ---");
         info!(target: "ls", "phi0={phi0:1.3e} dphi0={dphi0:1.3e} alpha1 = {alpha1:1.3e}");
         //}}}
         self.initialize(phi0, dphi0, alpha1);
@@ -339,7 +347,6 @@ impl<F: RealFn1> LineSearch for Thuente<F>
             {
                 //{{{ trace
                 trace!(target: "ls", "reached convergence");
-                error!(target: "ls", "--- Leaving search ---");
                 //}}}
                 return Ok(Returns {
                     alpha: cur_step.alpha,
@@ -352,10 +359,10 @@ impl<F: RealFn1> LineSearch for Thuente<F>
         }
 
         trace!(target: "ls", "Max iterations reached, min not found");
-        error!(target: "ls", "--- Leaving search ---");
         Err(Error::NoStepFound)
     }
 
+    #[trace_fn]
     fn update_fcn(
         &mut self,
         fcn: Self::Function,
@@ -366,9 +373,9 @@ impl<F: RealFn1> LineSearch for Thuente<F>
 }
 //}}}
 //{{{ fn: bracket_step
+#[trace_fn]
 fn bracket_step(args: &StepArgs) -> StepReturn
 {
-    error!(target: "ls", "--- entering bracket_step ---");
     let (new_step, bracket) = match find_step_case(args)
     {
         1 => step_case1(args),
@@ -405,7 +412,6 @@ fn bracket_step(args: &StepArgs) -> StepReturn
         }
     }
 
-    error!(target: "ls", "--- leaving bracket_step ---");
     ret
 }
 //}}}
@@ -422,6 +428,7 @@ struct StepArgs
 }
 impl StepArgs
 {
+    #[trace_fn]
     fn deriv_sign_is_opposite(&self) -> bool
     {
         let sign_intpint = self.interval_intpoint.dphi.signum();
@@ -441,6 +448,7 @@ struct StepReturn
 }
 //}}}
 //{{{ fn: find_step_case
+#[trace_fn]
 fn find_step_case(args: &StepArgs) -> u8
 {
     let cur_phi_is_greater = args.interval_intpoint.phi > args.interval_endpoint_1.phi;
@@ -475,9 +483,9 @@ fn find_step_case(args: &StepArgs) -> u8
 /// If the cubic step is closer to stx than the quadratic step, the
 /// cubic step is taken, otherwise the average of the cubic and
 /// quadratic steps is taken.
+#[trace_fn]
 fn step_case1(args: &StepArgs) -> (f64, bool)
 {
-    error!(target: "ls", "--- entering step_case1 ---");
     let &Values {
         alpha: stx,
         phi: fx,
@@ -509,7 +517,6 @@ fn step_case1(args: &StepArgs) -> (f64, bool)
         0.5 * (quad_step + cubic_step)
     };
 
-    error!(target: "ls", "--- leaving step_case1 ---");
     (step, bracket)
 }
 //}}}
@@ -518,9 +525,9 @@ fn step_case1(args: &StepArgs) -> (f64, bool)
 /// sign. The minimum is bracketed. If the cubic step is farther from
 /// stp than the secant step, the cubic step is taken, otherwise the
 /// secant step is taken.
+#[trace_fn]
 fn step_case2(args: &StepArgs) -> (f64, bool)
 {
-    error!(target: "ls", "--- entering step_case2 ---");
     let &Values {
         alpha: stx,
         phi: fx,
@@ -552,15 +559,13 @@ fn step_case2(args: &StepArgs) -> (f64, bool)
         quad_step
     };
 
-    error!(target: "ls", "--- leaving step_case2 ---");
     (step, bracket)
 }
 //}}}
 //{{{ fn: step_case_3
+#[trace_fn]
 fn step_case3(args: &StepArgs) -> (f64, bool)
 {
-    error!(target: "ls", "--- entering step_case3 ---");
-
     let &Values {
         alpha: stx,
         phi: fx,
@@ -650,14 +655,13 @@ fn step_case3(args: &StepArgs) -> (f64, bool)
         step_tmp.clamp(args.step_min, args.step_max)
     };
 
-    error!(target: "ls", "--- leaving step_case3 ---");
     (step, args.bracketed)
 }
 //}}}
 //{{{ fn: step_case_4
+#[trace_fn]
 fn step_case4(args: &StepArgs) -> (f64, bool)
 {
-    error!(target: "ls", "--- entering step_case4 ---");
     let &Values {
         alpha: stx,
         phi: _,
@@ -695,7 +699,6 @@ fn step_case4(args: &StepArgs) -> (f64, bool)
     let r = p / q;
     let cubic_step = stp + r * (sty - stp);
 
-    error!(target: "ls", "--- leaving step_case4 ---");
     (cubic_step, args.bracketed)
 }
 //}}}

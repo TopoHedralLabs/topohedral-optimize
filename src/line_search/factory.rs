@@ -13,6 +13,7 @@ use crate::RealFn1;
 //{{{ std imports
 //}}}
 //{{{ dep imports
+use topohedral_tracing::*;
 //}}}
 //--------------------------------------------------------------------------------------------------
 
@@ -24,6 +25,7 @@ pub enum Method
     Nocedal(nocedal::Options),
 }
 
+#[trace_fn]
 pub fn create<'a, F: RealFn1 + 'a>(
     fcn: F,
     method: Method,
