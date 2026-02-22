@@ -15,6 +15,7 @@ use crate::RealFn;
 //}}}
 //{{{ std imports
 use std::sync::{Arc, Mutex};
+use topohedral_linalg::dmatrix::DMatrix;
 //}}}
 //{{{ dep imports
 use topohedral_linalg::{dvector::DVector, VectorOps};
@@ -238,11 +239,6 @@ impl<F: RealFn> UnconstrainedMinimizer for ConjugateGradient<F>
                 grad_fk_norm,
                 &direction,
             );
-
-            //{{{ trace
-            trace!(target: "cg", "fk_prev = {fk_prev:1.4e}, fk = {fk:1.4e}");
-            trace!(target: "cg", "grad_fk_prev_norm = {grad_fk_prev_norm:1.4e}, fk = {grad_fk_norm:1.4e}");
-            //}}}
         }
         //{{{ trace
         let maxiter = self.opts.uncon_opts.max_iter;
