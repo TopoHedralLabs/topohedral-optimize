@@ -13,6 +13,7 @@
 
 mod common;
 mod conjugate_gradient;
+mod quasi_newton;
 
 pub use common::{
     ConvergedReason as UnconstrainedConvergedReason, Error as UnconstrainedError,
