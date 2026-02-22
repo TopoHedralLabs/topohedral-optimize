@@ -13,12 +13,12 @@ use topohedral_optimize::unconstrained::{
 use topohedral_optimize::RealFn;
 //}}}
 //{{{ std imports
-use std::ops::Sub;
 //}}}
 //{{{ dep imports
 use ctor::ctor;
 use rstest::rstest;
-use topohedral_linalg::{scvector::SCVector, VectorOps};
+use topohedral_linalg::dvector::{DVector, VecType};
+use topohedral_linalg::VectorOps;
 use topohedral_tracing::*;
 //}}}
 
@@ -29,24 +29,28 @@ fn init_logger()
     init().unwrap();
 }
 //}}}
+//{{{ fun: colvec
+fn colvec(values: &[f64]) -> DVector<f64>
+{
+    DVector::<f64>::from_slice_vec(values, values.len(), VecType::Col)
+}
+//}}}
 //{{{ struct: Quadratic
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 struct Quadratic
 {
-    xmin: SCVector<f64, 5>,
+    xmin: DVector<f64>,
 }
 //}}}
 //{{{ impl: RealFn for Quadratic
 impl RealFn for Quadratic
 {
-    type Vector = SCVector<f64, 5>;
-
     fn eval(
         &mut self,
-        x: &Self::Vector,
+        x: &DVector<f64>,
     ) -> f64
     {
-        let tmp: Self::Vector = (x - &self.xmin).into();
+        let tmp = x.clone() - self.xmin.clone();
         let mut out = 0.0;
         for i in 0..5
         {
@@ -57,11 +61,11 @@ impl RealFn for Quadratic
 
     fn grad(
         &mut self,
-        x_in: &Self::Vector,
-    ) -> Self::Vector
+        x_in: &DVector<f64>,
+    ) -> DVector<f64>
     {
-        let tmp: Self::Vector = (x_in - &self.xmin).into();
-        let mut out = Self::Vector::zeros();
+        let tmp = x_in.clone() - self.xmin.clone();
+        let mut out = DVector::<f64>::zeros_cvec(5, VecType::Col);
         for i in 0..5
         {
             out[i] = 2.0 * tmp[i];
@@ -71,23 +75,21 @@ impl RealFn for Quadratic
 }
 //}}}
 //{{{ struct: Quartic
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 struct Quartic
 {
-    xmin: SCVector<f64, 5>,
+    xmin: DVector<f64>,
 }
 //}}}
 //{{{ impl: RealFn for Quartic
 impl RealFn for Quartic
 {
-    type Vector = SCVector<f64, 5>;
-
     fn eval(
         &mut self,
-        x: &Self::Vector,
+        x: &DVector<f64>,
     ) -> f64
     {
-        let tmp: Self::Vector = (x - &self.xmin).into();
+        let tmp = x.clone() - self.xmin.clone();
         let mut out = 0.0;
         for i in 0..5
         {
@@ -98,11 +100,11 @@ impl RealFn for Quartic
 
     fn grad(
         &mut self,
-        x_in: &Self::Vector,
-    ) -> Self::Vector
+        x_in: &DVector<f64>,
+    ) -> DVector<f64>
     {
-        let tmp: Self::Vector = (x_in - &self.xmin).into();
-        let mut out = Self::Vector::zeros();
+        let tmp = x_in.clone() - self.xmin.clone();
+        let mut out = DVector::<f64>::zeros_cvec(5, VecType::Col);
         for i in 0..5
         {
             out[i] = 4.0 * tmp[i].powi(3);
@@ -131,11 +133,9 @@ impl Rosenbrock
 //{{{ impl: RealFn for Rosenbrock
 impl RealFn for Rosenbrock
 {
-    type Vector = SCVector<f64, 2>;
-
     fn eval(
         &mut self,
-        xvec: &Self::Vector,
+        xvec: &DVector<f64>,
     ) -> f64
     {
         let x = xvec[0];
@@ -145,14 +145,14 @@ impl RealFn for Rosenbrock
 
     fn grad(
         &mut self,
-        xvec: &Self::Vector,
-    ) -> Self::Vector
+        xvec: &DVector<f64>,
+    ) -> DVector<f64>
     {
         let a = self.a;
         let b = self.b;
         let x = xvec[0];
         let y = xvec[1];
-        let mut out = SCVector::<f64, 2>::zeros();
+        let mut out = DVector::<f64>::zeros_cvec(2, VecType::Col);
         out[0] = -2.0 * (a - x) - 4.0 * b * x * (y - x.powi(2));
         out[1] = 2.0 * b * (y - x.powi(2));
         out
@@ -160,13 +160,12 @@ impl RealFn for Rosenbrock
 }
 //}}}
 //{{{ fun: assert_returns
-fn assert_returns<T>(
-    ret: &UnconstrainedReturns<T>,
-    exp_ret: &UnconstrainedReturns<T>,
+fn assert_returns(
+    ret: &UnconstrainedReturns,
+    exp_ret: &UnconstrainedReturns,
     xmin_tol: f64,
     fmin_tol: f64,
-) where
-    T: VectorOps<ScalarType = f64> + Sub<Output = T> + Clone,
+)
 {
     assert!((ret.xmin.clone() - exp_ret.xmin.clone()).norm() < xmin_tol);
     assert!((ret.fmin - exp_ret.fmin).abs() < fmin_tol);
@@ -366,10 +365,10 @@ const NOCEDAL_PR: ConjugateGradientOptions = ConjugateGradientOptions {
 #[rstest]
 //{{{ case: test_quadratic_interp_steepest
 #[case::test_quadratic_interp_steepest(
-    SCVector::<f64, 5>::from_col_slice(&[0.0, 0.0, 0.0, 0.0, 0.0]),
+    colvec(&[0.0, 0.0, 0.0, 0.0, 0.0]),
     INTERP_STEEPEST,
     UnconstrainedReturns{
-        xmin:  SCVector::<f64, 5>::from_col_slice(&[1000.0, -100.0, 0.0, 567.0, -23.0]),
+        xmin:  colvec(&[1000.0, -100.0, 0.0, 567.0, -23.0]),
         fmin: 0.0,
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 1,
@@ -380,10 +379,10 @@ const NOCEDAL_PR: ConjugateGradientOptions = ConjugateGradientOptions {
 //}}}
 //{{{ case: test_quadratic_thuente_steepest
 #[case::test_quadratic_thuente_steepest(
-    SCVector::<f64, 5>::from_col_slice(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
+    colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
     THUENTE_STEEPEST,
     UnconstrainedReturns{
-        xmin:  SCVector::<f64, 5>::from_col_slice(&[1000.0, -100.0, 0.0, 567.0, -23.0]),
+        xmin:  colvec(&[1000.0, -100.0, 0.0, 567.0, -23.0]),
         fmin: 0.0,
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 1,
@@ -394,10 +393,10 @@ const NOCEDAL_PR: ConjugateGradientOptions = ConjugateGradientOptions {
 //}}}
 //{{{ case: test_quadratic_interp_fr
 #[case::test_quadratic_interp_fr(
-    SCVector::<f64, 5>::from_col_slice(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
+    colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
     INTERP_FR,
     UnconstrainedReturns{
-        xmin:  SCVector::<f64, 5>::from_col_slice(&[1000.0, -100.0, 0.0, 567.0, -23.0]),
+        xmin:  colvec(&[1000.0, -100.0, 0.0, 567.0, -23.0]),
         fmin: 0.0,
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 1,
@@ -408,10 +407,10 @@ const NOCEDAL_PR: ConjugateGradientOptions = ConjugateGradientOptions {
 //}}}
 //{{{ case: test_quadratic_thuente_fr
 #[case::test_quadratic_thuente_fr(
-    SCVector::<f64, 5>::from_col_slice(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
+    colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
     THUENTE_FR,
     UnconstrainedReturns{
-        xmin:  SCVector::<f64, 5>::from_col_slice(&[1000.0, -100.0, 0.0, 567.0, -23.0]),
+        xmin:  colvec(&[1000.0, -100.0, 0.0, 567.0, -23.0]),
         fmin: 0.0,
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 1,
@@ -422,10 +421,10 @@ const NOCEDAL_PR: ConjugateGradientOptions = ConjugateGradientOptions {
 //}}}
 //{{{ case: test_quadratic_interp_pr
 #[case::test_quadratic_interp_pr(
-    SCVector::<f64, 5>::from_col_slice(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
+    colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
     INTERP_PR,
     UnconstrainedReturns{
-        xmin:  SCVector::<f64, 5>::from_col_slice(&[1000.0, -100.0, 0.0, 567.0, -23.0]),
+        xmin:  colvec(&[1000.0, -100.0, 0.0, 567.0, -23.0]),
         fmin: 0.0,
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 1,
@@ -436,10 +435,10 @@ const NOCEDAL_PR: ConjugateGradientOptions = ConjugateGradientOptions {
 //}}}
 //{{{ case: test_quadratic_thuente_pr
 #[case::test_quadratic_interp_pr(
-    SCVector::<f64, 5>::from_col_slice(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
+    colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
     THUENTE_PR,
     UnconstrainedReturns{
-        xmin:  SCVector::<f64, 5>::from_col_slice(&[1000.0, -100.0, 0.0, 567.0, -23.0]),
+        xmin:  colvec(&[1000.0, -100.0, 0.0, 567.0, -23.0]),
         fmin: 0.0,
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 1,
@@ -450,10 +449,10 @@ const NOCEDAL_PR: ConjugateGradientOptions = ConjugateGradientOptions {
 //}}}
 //{{{ case: test_quadratic_nocedal_steepest
 #[case::test_quadratic_nocedal_steepest(
-    SCVector::<f64, 5>::from_col_slice(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
+    colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
     NOCEDAL_STEEPEST,
     UnconstrainedReturns{
-        xmin:  SCVector::<f64, 5>::from_col_slice(&[1000.0, -100.0, 0.0, 567.0, -23.0]),
+        xmin:  colvec(&[1000.0, -100.0, 0.0, 567.0, -23.0]),
         fmin: 0.0,
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 2,
@@ -464,10 +463,10 @@ const NOCEDAL_PR: ConjugateGradientOptions = ConjugateGradientOptions {
 //}}}
 //{{{ case: test_quadratic_nocedal_fr
 #[case::test_quadratic_nocedal_fr(
-    SCVector::<f64, 5>::from_col_slice(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
+    colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
     NOCEDAL_FR,
     UnconstrainedReturns{
-        xmin:  SCVector::<f64, 5>::from_col_slice(&[1000.0, -100.0, 0.0, 567.0, -23.0]),
+        xmin:  colvec(&[1000.0, -100.0, 0.0, 567.0, -23.0]),
         fmin: 0.0,
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 2,
@@ -478,10 +477,10 @@ const NOCEDAL_PR: ConjugateGradientOptions = ConjugateGradientOptions {
 //}}}
 //{{{ case: test_quadratic_nocedal_pr
 #[case::test_quadratic_nocedal_pr(
-    SCVector::<f64, 5>::from_col_slice(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
+    colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
     NOCEDAL_PR,
     UnconstrainedReturns{
-        xmin:  SCVector::<f64, 5>::from_col_slice(&[1000.0, -100.0, 0.0, 567.0, -23.0]),
+        xmin:  colvec(&[1000.0, -100.0, 0.0, 567.0, -23.0]),
         fmin: 0.0,
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 2,
@@ -491,13 +490,13 @@ const NOCEDAL_PR: ConjugateGradientOptions = ConjugateGradientOptions {
 )]
 //}}}
 fn test_qudratic(
-    #[case] x0: SCVector<f64, 5>,
+    #[case] x0: DVector<f64>,
     #[case] opts: ConjugateGradientOptions,
-    #[case] exp_ret: UnconstrainedReturns<SCVector<f64, 5>>,
+    #[case] exp_ret: UnconstrainedReturns,
 )
 {
     let quad = Quadratic {
-        xmin: SCVector::<f64, 5>::from_col_slice(&[1000.0, -100.0, 0.0, 567.0, -23.0]),
+        xmin: colvec(&[1000.0, -100.0, 0.0, 567.0, -23.0]),
     };
     let mut cg = ConjugateGradient::new(quad, x0, opts);
     let ret = cg.minimize().unwrap();
@@ -510,10 +509,10 @@ fn test_qudratic(
 #[rstest]
 //{{{ case: test_quartic_interp_steepest
 #[case::test_quartic_interp_steepest(
-    SCVector::<f64, 5>::from_col_slice(&[0.0, 0.0, 0.0, 0.0, 0.0]),
+    colvec(&[0.0, 0.0, 0.0, 0.0, 0.0]),
     INTERP_STEEPEST,
     UnconstrainedReturns{
-        xmin:  SCVector::<f64, 5>::from_col_slice(&[10.0, 10.0, 10.0, 10.0, 10.0]),
+        xmin:  colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
         fmin: 0.0,
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 14,
@@ -524,10 +523,10 @@ fn test_qudratic(
 //}}}
 //{{{ case: test_quartic_thuente_steepest
 #[case::test_quartic_thuente_steepest(
-    SCVector::<f64, 5>::from_col_slice(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
+    colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
     THUENTE_STEEPEST,
     UnconstrainedReturns{
-        xmin:  SCVector::<f64, 5>::from_col_slice(&[10.0, 10.0, 10.0, 10.0, 10.0]),
+        xmin:  colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
         fmin: 0.0,
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 12,
@@ -538,10 +537,10 @@ fn test_qudratic(
 //}}}
 //{{{ case: test_quartic_interp_fr
 #[case::test_quartic_interp_fr(
-    SCVector::<f64, 5>::from_col_slice(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
+    colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
     INTERP_FR,
     UnconstrainedReturns{
-        xmin:  SCVector::<f64, 5>::from_col_slice(&[10.0, 10.0, 10.0, 10.0, 10.0]),
+        xmin:  colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
         fmin: 0.0,
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 16,
@@ -552,10 +551,10 @@ fn test_qudratic(
 //}}}
 //{{{ case: test_quartic_thuente_fr
 #[case::test_quartic_thuente_fr(
-    SCVector::<f64, 5>::from_col_slice(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
+    colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
     THUENTE_FR,
     UnconstrainedReturns{
-        xmin:  SCVector::<f64, 5>::from_col_slice(&[10.0, 10.0, 10.0, 10.0, 10.0]),
+        xmin:  colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
         fmin: 0.0,
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 13,
@@ -566,10 +565,10 @@ fn test_qudratic(
 //}}}
 //{{{ case: test_quartic_interp_pr
 #[case::test_quartic_interp_pr(
-    SCVector::<f64, 5>::from_col_slice(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
+    colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
     INTERP_PR,
     UnconstrainedReturns{
-        xmin:  SCVector::<f64, 5>::from_col_slice(&[10.0, 10.0, 10.0, 10.0, 10.0]),
+        xmin:  colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
         fmin: 0.0,
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 14,
@@ -580,10 +579,10 @@ fn test_qudratic(
 //}}}
 //{{{ case: test_quartic_thuente_pr
 #[case::test_quartic_thuente_pr(
-    SCVector::<f64, 5>::from_col_slice(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
+    colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
     THUENTE_PR,
     UnconstrainedReturns{
-        xmin:  SCVector::<f64, 5>::from_col_slice(&[10.0, 10.0, 10.0, 10.0, 10.0]),
+        xmin:  colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
         fmin: 0.0,
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 12,
@@ -594,10 +593,10 @@ fn test_qudratic(
 //}}}
 //{{{ case: test_quartic_nocedal_steepest
 #[case::test_quartic_nocedal_steepest(
-    SCVector::<f64, 5>::from_col_slice(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
+    colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
     NOCEDAL_STEEPEST,
     UnconstrainedReturns{
-        xmin:  SCVector::<f64, 5>::from_col_slice(&[10.0, 10.0, 10.0, 10.0, 10.0]),
+        xmin:  colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
         fmin: 0.0,
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 19,
@@ -608,10 +607,10 @@ fn test_qudratic(
 //}}}
 //{{{ case: test_quartic_nocedal_fr
 #[case::test_quartic_nocedal_fr(
-    SCVector::<f64, 5>::from_col_slice(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
+    colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
     NOCEDAL_FR,
     UnconstrainedReturns{
-        xmin:  SCVector::<f64, 5>::from_col_slice(&[10.0, 10.0, 10.0, 10.0, 10.0]),
+        xmin:  colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
         fmin: 0.0,
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 16,
@@ -622,10 +621,10 @@ fn test_qudratic(
 //}}}
 //{{{ case: test_quartic_nocedal_pr
 #[case::test_quartic_nocedal_pr(
-    SCVector::<f64, 5>::from_col_slice(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
+    colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
     NOCEDAL_PR,
     UnconstrainedReturns{
-        xmin:  SCVector::<f64, 5>::from_col_slice(&[10.0, 10.0, 10.0, 10.0, 10.0]),
+        xmin:  colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
         fmin: 0.0,
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 20,
@@ -635,13 +634,13 @@ fn test_qudratic(
 )]
 //}}}
 fn test_quartic(
-    #[case] x0: SCVector<f64, 5>,
+    #[case] x0: DVector<f64>,
     #[case] mut opts: ConjugateGradientOptions,
-    #[case] exp_ret: UnconstrainedReturns<SCVector<f64, 5>>,
+    #[case] exp_ret: UnconstrainedReturns,
 )
 {
     let quart = Quartic {
-        xmin: SCVector::<f64, 5>::from_col_slice(&[10.0, 10.0, 10.0, 10.0, 10.0]),
+        xmin: colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
     };
     opts.uncon_opts.grad_rtol = 1e-12;
     opts.uncon_opts.grad_atol = 1e-12;
@@ -656,10 +655,10 @@ fn test_quartic(
 #[rstest]
 //{{{ case: test_rosenbrock_interp_fr
 #[case::test_rosenbrock_interp_pr(
-    SCVector::<f64, 2>::from_col_slice(&[0.0, 3.0]),
+    colvec(&[0.0, 3.0]),
     INTERP_FR,
     UnconstrainedReturns{
-        xmin:  SCVector::<f64, 2>::from_col_slice(&[1.0, 1.0]),
+        xmin:  colvec(&[1.0, 1.0]),
         fmin: 0.0,
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 2538,
@@ -670,10 +669,10 @@ fn test_quartic(
 //}}}
 //{{{ case: test_rosenbrock_thuente_fr
 #[case::test_rosenbrock_thuente_fr(
-    SCVector::<f64, 2>::from_col_slice(&[0.0, 3.0]),
+    colvec(&[0.0, 3.0]),
     THUENTE_FR,
     UnconstrainedReturns{
-        xmin:  SCVector::<f64, 2>::from_col_slice(&[1.0, 1.0]),
+        xmin:  colvec(&[1.0, 1.0]),
         fmin: 0.0,
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 119,
@@ -684,10 +683,10 @@ fn test_quartic(
 //}}}
 //{{{ case: test_rosenbrock_interp_pr
 #[case::test_rosenbrock_interp_pr(
-    SCVector::<f64, 2>::from_col_slice(&[0.0, 3.0]),
+    colvec(&[0.0, 3.0]),
     INTERP_PR,
     UnconstrainedReturns{
-        xmin:  SCVector::<f64, 2>::from_col_slice(&[1.0, 1.0]),
+        xmin:  colvec(&[1.0, 1.0]),
         fmin: 0.0,
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 16,
@@ -698,10 +697,10 @@ fn test_quartic(
 //}}}
 //{{{ case: test_rosenbrock_thuente_pr
 #[case::test_rosenbrock_thuente_pr(
-    SCVector::<f64, 2>::from_col_slice(&[0.0, 3.0]),
+    colvec(&[0.0, 3.0]),
     THUENTE_PR,
     UnconstrainedReturns{
-        xmin:  SCVector::<f64, 2>::from_col_slice(&[1.0, 1.0]),
+        xmin:  colvec(&[1.0, 1.0]),
         fmin: 0.0,
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 19,
@@ -712,10 +711,10 @@ fn test_quartic(
 //}}}
 //{{{ case: test_rosenbrock_nocedal_fr
 #[case::test_rosenbrock_nocedal_fr(
-    SCVector::<f64, 2>::from_col_slice(&[0.0, 3.0]),
+    colvec(&[0.0, 3.0]),
     NOCEDAL_FR,
     UnconstrainedReturns{
-        xmin:  SCVector::<f64, 2>::from_col_slice(&[1.0, 1.0]),
+        xmin:  colvec(&[1.0, 1.0]),
         fmin: 0.0,
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 245,
@@ -726,10 +725,10 @@ fn test_quartic(
 //}}}
 //{{{ case: test_rosenbrock_nocedal_pr
 #[case::test_rosenbrock_nocedal_pr(
-    SCVector::<f64, 2>::from_col_slice(&[0.0, 3.0]),
+    colvec(&[0.0, 3.0]),
     NOCEDAL_PR,
     UnconstrainedReturns{
-        xmin:  SCVector::<f64, 2>::from_col_slice(&[1.0, 1.0]),
+        xmin:  colvec(&[1.0, 1.0]),
         fmin: 0.0,
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 24,
@@ -739,9 +738,9 @@ fn test_quartic(
 )]
 //}}}
 fn test_rosenbrock(
-    #[case] x0: SCVector<f64, 2>,
+    #[case] x0: DVector<f64>,
     #[case] mut opts: ConjugateGradientOptions,
-    #[case] exp_ret: UnconstrainedReturns<SCVector<f64, 2>>,
+    #[case] exp_ret: UnconstrainedReturns,
 )
 {
     let rosenbrock = Rosenbrock::new();

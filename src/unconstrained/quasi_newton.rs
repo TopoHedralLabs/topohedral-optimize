@@ -13,12 +13,10 @@ use crate::unconstrained::UnconstrainedMinimizer;
 use crate::{common::arc_real_fn, common::CountingRealFn, RealFn};
 //}}}
 //{{{ std imports
-use std::fmt;
-use std::ops::{Add, Div, Mul, Neg, Sub};
 use std::sync::{Arc, Mutex};
 //}}}
 //{{{ dep imports
-use topohedral_linalg::{dmatrix::DMatrix, VectorOps};
+use topohedral_linalg::{dmatrix::DMatrix, dvector::DVector, VectorOps};
 use topohedral_tracing::*;
 //}}}
 //--------------------------------------------------------------------------------------------------
@@ -41,24 +39,17 @@ pub struct Options
 pub struct QuasiNewton<F: RealFn>
 {
     fcn: Arc<Mutex<CountingRealFn<F>>>,
-    x_init: F::Vector,
-    grad_fx_init: F::Vector,
+    x_init: DVector<f64>,
+    grad_fx_init: DVector<f64>,
     opts: Options,
 }
 
 impl<F: RealFn> QuasiNewton<F>
-where
-    F::Vector: VectorOps<ScalarType = f64>
-        + Add<Output = F::Vector>
-        + Sub<Output = F::Vector>
-        + Clone
-        + fmt::Display,
-    f64: Mul<F::Vector, Output = F::Vector>,
 {
     #[trace_fn]
     pub fn new(
         mut fcn: F,
-        x0: F::Vector,
+        x0: DVector<f64>,
         opts: Options,
     ) -> Self
     {
@@ -96,10 +87,10 @@ where
     #[trace_fn]
     fn update_hessian(
         &self,
-        xk_prev: F::Vector,
-        xk: F::Vector,
-        grad_fk_prev: F::Vector,
-        grad_fk: F::Vector,
+        xk_prev: DVector<f64>,
+        xk: DVector<f64>,
+        grad_fk_prev: DVector<f64>,
+        grad_fk: DVector<f64>,
         identity: &DMatrix<f64>,
         hess_k: &mut DMatrix<f64>,
     )
@@ -120,29 +111,18 @@ where
 }
 
 impl<F: RealFn> UnconstrainedMinimizer for QuasiNewton<F>
-where
-    F::Vector: VectorOps<ScalarType = f64>
-        + Add<Output = F::Vector>
-        + Sub<Output = F::Vector>
-        + Neg<Output = F::Vector>
-        + Div<Output = F::Vector>
-        + Clone
-        + fmt::Display,
-    f64: Mul<F::Vector, Output = F::Vector>,
 {
-    type Vector = F::Vector;
-
     #[trace_fn]
-    fn minimize(&mut self) -> Result<Returns<Self::Vector>, Error>
+    fn minimize(&mut self) -> Result<Returns, Error>
     {
         let mut xk = self.x_init.clone();
         let mut xk_prev = self.x_init.clone();
         let mut grad_fk = self.fcn.grad(&xk);
-        let mut grad_fk_prev: Self::Vector;
+        let mut grad_fk_prev: DVector<f64>;
         let mut grad_fk_norm: f64 = grad_fk.norm();
         let mut grad_fk_prev_norm: f64;
         let mut fk: f64 = self.fcn.eval(&xk);
-        let fk_prev_offset: f64 = <f64 as Mul>::mul(0.5, grad_fk_norm);
+        let fk_prev_offset: f64 = 0.5 * grad_fk_norm;
         let mut fk_prev = fk + fk_prev_offset;
         let mut direction = -grad_fk.clone();
         let mut xk = self.x_init.clone();
