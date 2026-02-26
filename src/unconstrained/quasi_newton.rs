@@ -130,9 +130,14 @@ impl<F: RealFn> QuasiNewton<F>
                 *sk = xk - xk_prev;
                 *yk = grad_fk - grad_fk_prev;
                 let rho_k = 1.0 / (sk.dot(&yk));
-                *mat1 = (identity - rho_k * &sk.matmul(&yk.transpose())).into();
-                *mat2 = (identity - rho_k * &yk.matmul(&sk.transpose())).into();
-                *mat3 = rho_k * sk.matmul(&sk.transpose());
+
+                *mat1 = sk.matmul(yk.transpose());
+                *mat1 *= rho_k;
+                *mat1 = (identity - mat1).into();
+                // *mat1 = (identity - rho_k * ).into::<DMatrix<f64>>();
+                // *mat2 = (identity - rho_k * &(yk.matmul(&sk.transpose()))).into();
+
+                // *mat3 = rho_k * sk.matmul(&sk.transpose());
 
                 let hess_k_prev = hess_k.clone();
                 *hess_k = mat1.matmul(&hess_k_prev).matmul(mat2);
