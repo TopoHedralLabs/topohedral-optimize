@@ -114,33 +114,33 @@ impl<F: RealFn> QuasiNewton<F>
         hess_k: &mut DMatrix<f64>,
     )
     {
-        let Data {
-            ref identity,
-            ref mut mat1,
-            ref mut mat2,
-            ref mut mat3,
-            ref mut sk,
-            ref mut yk,
-        } = self.data;
-
         match self.opts.method
         {
             UpdateMethod::BFGS =>
             {
-                *sk = xk - xk_prev;
-                *yk = grad_fk - grad_fk_prev;
-                let rho_k = 1.0 / (sk.dot(&yk));
+                self.data.sk = xk - xk_prev;
 
-                *mat1 = sk.matmul(yk.transpose());
-                *mat1 *= rho_k;
-                *mat1 = (identity - mat1).into();
-                // *mat1 = (identity - rho_k * ).into::<DMatrix<f64>>();
-                // *mat2 = (identity - rho_k * &(yk.matmul(&sk.transpose()))).into();
+                self.data.yk = grad_fk - grad_fk_prev;
 
-                // *mat3 = rho_k * sk.matmul(&sk.transpose());
+                let rho_k = 1.0 / (self.data.sk.dot(&self.data.yk));
 
-                let hess_k_prev = hess_k.clone();
-                *hess_k = mat1.matmul(&hess_k_prev).matmul(mat2);
+                self.data.mat1 = (&self.data.identity
+                    - rho_k * &self.data.sk.matmul(self.data.yk.transpose()))
+                    .into();
+
+                self.data.mat2 = (&self.data.identity
+                    - rho_k * &self.data.yk.matmul(self.data.sk.transpose()))
+                    .into();
+
+                self.data.mat3 = (rho_k * self.data.sk.matmul(self.data.sk.transpose())).into();
+
+                *hess_k = (&self
+                    .data
+                    .mat1
+                    .matmul(hess_k.clone())
+                    .matmul(&self.data.mat2)
+                    + &self.data.mat3)
+                    .into();
             }
             UpdateMethod::DFP =>
             {
