@@ -137,8 +137,7 @@ impl<F: RealFn> QuasiNewton<F>
                 *hess_k = (&self
                     .data
                     .mat1
-                    .matmul(hess_k.clone())
-                    .matmul(&self.data.mat2)
+                    .matmul(hess_k.clone().matmul(&self.data.mat2))
                     + &self.data.mat3)
                     .into();
             }

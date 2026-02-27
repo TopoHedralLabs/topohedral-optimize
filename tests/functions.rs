@@ -4,6 +4,7 @@
 
 //{{{ crate imports
 use topohedral_optimize::{line_search::LineSearchFcn, RealFn, RealFn1};
+
 //}}}
 //{{{ std imports
 use std::cell::RefCell;
