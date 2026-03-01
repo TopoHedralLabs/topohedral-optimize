@@ -24,15 +24,15 @@ def draw_function(f):
     plt.show()
 
 def quartic():
-    xmin = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
+    xmin = np.array([10, 10, 10, 10, 10])
     def f(x):
         out = 0.0
         for i in range(len(x)):
             out += (x[i] - xmin[i])**4
         return out
 
-    x0 = np.array([10.0, -10.0, 0.0 , 57.0, -23.0])
-    out = opt.minimize(f, x0, method='CG', tol=1e-10,  options={'disp': True, 'return_all': True})
+    x0 = np.array([100.0, -100.0, 3.0, 1e-6, 0.0])
+    out = opt.minimize(f, x0, method='BFGS', tol=1e-10,  options={'disp': True, 'return_all': True})
     print(out)
 
 
@@ -76,7 +76,8 @@ def rosenbrock():
 
 
     # draw_function(f)
-    out = opt.minimize(f, [0, 3], jac=grad_f, method='CG', options={'disp': True, 'return_all': True})
+    # out = opt.minimize(f, [0, 3], jac=grad_f, method='CG', options={'disp': True, 'return_all': True})
+    out = opt.minimize(f, [0, 3], jac=grad_f, method='BFGS', options={'disp': True, 'return_all': True})
 
     for vec in out.allvecs:
         print(vec)
@@ -84,8 +85,8 @@ def rosenbrock():
 
 
 def main():
-    # quartic()
-    rosenbrock()
+    quartic()
+    # rosenbrock()
 
 
 if __name__ == "__main__":
