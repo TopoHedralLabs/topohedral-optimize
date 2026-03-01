@@ -234,7 +234,7 @@ const NOCEDAL_BFGS: QuasiNewtonOptions = QuasiNewtonOptions {
         }),
     },
     method: UpdateMethod::BFGS,
-    restart: 100,
+    restart: 10,
 };
 //}}}
 
@@ -322,9 +322,9 @@ fn test_qudratic(
         xmin:  colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
         fmin: 0.0,
         reason: UnconstrainedConvergedReason::Rtol,
-        num_iterations: 103,
-        num_fun_evals: 131,
-        num_grad_evals: 226
+        num_iterations: 66,
+        num_fun_evals: 92,
+        num_grad_evals: 150
     }
 )]
 //}}}
@@ -399,9 +399,9 @@ fn test_quartic(
         xmin: colvec(&[1.0, 1.0]),
         fmin: 0.0,
         reason: UnconstrainedConvergedReason::Rtol,
-        num_iterations: 24,
-        num_fun_evals: 39,
-        num_grad_evals: 51
+        num_iterations: 25,
+        num_fun_evals: 53,
+        num_grad_evals: 60
     }
 )]
 //}}}
