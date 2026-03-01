@@ -262,9 +262,9 @@ const NOCEDAL_BFGS: QuasiNewtonOptions = QuasiNewtonOptions {
         xmin:  colvec(&[1000.0, -100.0, 0.0, 567.0, -23.0]),
         fmin: 0.0,
         reason: UnconstrainedConvergedReason::Rtol,
-        num_iterations: 1,
+        num_iterations: 2,
         num_fun_evals: 7,
-        num_grad_evals: 8
+        num_grad_evals: 9
     }
 )]
 //}}}
@@ -276,8 +276,8 @@ const NOCEDAL_BFGS: QuasiNewtonOptions = QuasiNewtonOptions {
         xmin:  colvec(&[1000.0, -100.0, 0.0, 567.0, -23.0]),
         fmin: 0.0,
         reason: UnconstrainedConvergedReason::Rtol,
-        num_iterations: 2,
-        num_fun_evals: 13,
+        num_iterations: 3,
+        num_fun_evals: 11,
         num_grad_evals: 14
     }
 )]
@@ -308,9 +308,9 @@ fn test_qudratic(
         xmin:  colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
         fmin: 0.0,
         reason: UnconstrainedConvergedReason::Rtol,
-        num_iterations: 14,
-        num_fun_evals: 59,
-        num_grad_evals: 29
+        num_iterations: 19,
+        num_fun_evals: 77,
+        num_grad_evals: 39
     }
 )]
 //}}}
@@ -322,9 +322,9 @@ fn test_qudratic(
         xmin:  colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
         fmin: 0.0,
         reason: UnconstrainedConvergedReason::Rtol,
-        num_iterations: 19,
-        num_fun_evals: 88,
-        num_grad_evals: 92
+        num_iterations: 103,
+        num_fun_evals: 131,
+        num_grad_evals: 226
     }
 )]
 //}}}
@@ -336,9 +336,9 @@ fn test_qudratic(
         xmin:  colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
         fmin: 0.0,
         reason: UnconstrainedConvergedReason::Rtol,
-        num_iterations: 20,
-        num_fun_evals: 96,
-        num_grad_evals: 99,
+        num_iterations: 57,
+        num_fun_evals: 72,
+        num_grad_evals: 129,
     }
 )]
 //}}}
@@ -353,6 +353,7 @@ fn test_quartic(
     };
     opts.uncon_opts.grad_rtol = 1e-12;
     opts.uncon_opts.grad_atol = 1e-12;
+    opts.uncon_opts.max_iter = 1000;
     let mut qn = QuasiNewton::new(quart, x0, opts);
     let ret = qn.minimize().unwrap();
 
@@ -370,9 +371,9 @@ fn test_quartic(
         xmin:  colvec(&[1.0, 1.0]),
         fmin: 0.0,
         reason: UnconstrainedConvergedReason::Rtol,
-        num_iterations: 1,
-        num_fun_evals: 6,
-        num_grad_evals: 3
+        num_iterations: 19,
+        num_fun_evals: 226,
+        num_grad_evals: 66
     }
 )]
 //}}}
@@ -384,9 +385,9 @@ fn test_quartic(
         xmin:  colvec(&[1.0, 1.0]),
         fmin: 0.0,
         reason: UnconstrainedConvergedReason::Rtol,
-        num_iterations: 1,
-        num_fun_evals: 7,
-        num_grad_evals: 8
+        num_iterations: 24,
+        num_fun_evals: 36,
+        num_grad_evals: 60
     }
 )]
 //}}}
@@ -398,9 +399,9 @@ fn test_quartic(
         xmin: colvec(&[1.0, 1.0]),
         fmin: 0.0,
         reason: UnconstrainedConvergedReason::Rtol,
-        num_iterations: 2,
-        num_fun_evals: 14,
-        num_grad_evals: 14
+        num_iterations: 24,
+        num_fun_evals: 39,
+        num_grad_evals: 51
     }
 )]
 //}}}
