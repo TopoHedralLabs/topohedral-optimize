@@ -5,48 +5,58 @@
 
 //{{{ crate imports
 use super::common::Options as UnonstrainedOptions;
-use super::common::{Error, Returns, UnconstrainedMinimizer};
-use crate::common::{arc_real_fn, CountingRealFn};
+use super::common::{ConvergedReason, Error, Returns};
 use crate::line_search as ls;
 use crate::line_search::initial_step;
 use crate::line_search::LineSearchFcn;
-use crate::unconstrained::common::ConvergedReason;
-use crate::RealFn;
+use crate::unconstrained::UnconstrainedMinimizer;
+use crate::{common::arc_real_fn, common::CountingRealFn, RealFn};
 //}}}
 //{{{ std imports
 use std::sync::{Arc, Mutex};
+use topohedral_linalg::MatrixOps;
 //}}}
 //{{{ dep imports
-use topohedral_linalg::{dvector::DVector, VectorOps};
+use topohedral_linalg::{dmatrix::DMatrix, dvector::DVector, dvector::VecType, MatMul, VectorOps};
 use topohedral_tracing::*;
 //}}}
 //--------------------------------------------------------------------------------------------------
 
 #[derive(Copy, Clone)]
-pub enum Direction
+pub enum UpdateMethod
 {
-    Steepest,
-    FletcherReeves,
-    PolakRibiere,
+    BFGS,
+    DFP,
 }
 
 #[derive(Copy, Clone)]
 pub struct Options
 {
     pub uncon_opts: UnonstrainedOptions,
-    pub direction: Direction,
+    pub method: UpdateMethod,
     pub restart: u64,
 }
 
-pub struct ConjugateGradient<F: RealFn>
+struct Data
+{
+    identity: DMatrix<f64>,
+    mat1: DMatrix<f64>,
+    mat2: DMatrix<f64>,
+    mat3: DMatrix<f64>,
+    sk: DVector<f64>,
+    yk: DVector<f64>,
+}
+
+pub struct QuasiNewton<F: RealFn>
 {
     fcn: Arc<Mutex<CountingRealFn<F>>>,
     x_init: DVector<f64>,
     grad_fx_init: DVector<f64>,
     opts: Options,
+    data: Data,
 }
 
-impl<F: RealFn> ConjugateGradient<F>
+impl<F: RealFn> QuasiNewton<F>
 {
     #[trace_fn]
     pub fn new(
@@ -62,61 +72,15 @@ impl<F: RealFn> ConjugateGradient<F>
             x_init: x0.clone(),
             grad_fx_init: grad_0,
             opts,
+            data: Data {
+                identity: DMatrix::<f64>::identity(x0.len(), x0.len()),
+                mat1: DMatrix::<f64>::zeros(x0.len(), x0.len()),
+                mat2: DMatrix::<f64>::zeros(x0.len(), x0.len()),
+                mat3: DMatrix::<f64>::zeros(x0.len(), x0.len()),
+                sk: DVector::zeros_cvec(x0.len(), VecType::Col),
+                yk: DVector::zeros_cvec(x0.len(), VecType::Col),
+            },
         }
-    }
-
-    /// Updates the search direction for the conjugate gradient method based on the
-    /// current and previous gradients, and the current search direction.
-    /// The update formula used depends on the `DirectionMethod` specified in the
-    /// `Opts` struct.
-    #[trace_fn]
-    fn update_direction(
-        &self,
-        grad_fk_prev: &DVector<f64>,
-        grad_fk: &DVector<f64>,
-        norm_grad_fk_prev: f64,
-        norm_grad_fk: f64,
-        dir_k: &DVector<f64>,
-    ) -> DVector<f64>
-    {
-        //{{{ trace
-        trace!(target: "cg", "norm_grad_fk1 = {norm_grad_fk_prev:1.4e} norm_grad_fk = {norm_grad_fk:1.4e}");
-        //}}}
-        // direction updates
-        let beta = match self.opts.direction
-        {
-            Direction::Steepest =>
-            {
-                //{{{ trace
-                debug!("Applying Steepest Descent update");
-                //}}}
-                0.0
-            }
-            Direction::FletcherReeves =>
-            {
-                //{{{ trace
-                debug!(target: "cg", "Applying fletcher-reeves update");
-                //}}}
-
-                grad_fk.dot(grad_fk_prev) / norm_grad_fk_prev.powi(2)
-            }
-            Direction::PolakRibiere =>
-            {
-                //{{{ trace
-                debug!(target: "cg", "Applying polak-ribiere update");
-                //}}}
-                let yk = grad_fk.clone() - grad_fk_prev.clone();
-                let mut beta_tmp = grad_fk.dot(&yk) / norm_grad_fk_prev.powi(2);
-                beta_tmp = beta_tmp.max(0.0);
-                beta_tmp
-            }
-        };
-
-        let new_dir_k = beta * dir_k.clone() - grad_fk.clone();
-        //{{{ trace
-        debug!(target: "cg", "beta = {:1.4e}", beta);
-        //}}}
-        new_dir_k
     }
 
     #[trace_fn]
@@ -139,28 +103,71 @@ impl<F: RealFn> ConjugateGradient<F>
         }
         None
     }
+
+    #[trace_fn]
+    fn update_hessian(
+        &mut self,
+        xk_prev: DVector<f64>,
+        xk: DVector<f64>,
+        grad_fk_prev: DVector<f64>,
+        grad_fk: DVector<f64>,
+        hess_k: &mut DMatrix<f64>,
+    )
+    {
+        match self.opts.method
+        {
+            UpdateMethod::BFGS =>
+            {
+                let Data {
+                    identity,
+                    mat1,
+                    mat2,
+                    mat3,
+                    sk,
+                    yk,
+                } = &mut self.data;
+
+                *sk = xk - xk_prev;
+
+                *yk = grad_fk - grad_fk_prev;
+
+                let rho_k = 1.0 / (sk.dot(yk));
+
+                *mat1 = (&*identity - rho_k * &sk.matmul(yk.transpose())).into();
+
+                *mat2 = (&*identity - rho_k * &yk.matmul(sk.transpose())).into();
+
+                *mat3 = rho_k * sk.matmul(sk.transpose());
+
+                *hess_k = (&mat1.matmul(hess_k.clone().matmul(mat2)) + &*mat3).into();
+            }
+            UpdateMethod::DFP =>
+            {
+                todo!()
+            }
+        }
+    }
 }
 
-impl<F: RealFn> UnconstrainedMinimizer for ConjugateGradient<F>
+impl<F: RealFn> UnconstrainedMinimizer for QuasiNewton<F>
 {
     #[trace_fn]
     fn minimize(&mut self) -> Result<Returns, Error>
     {
-        let mut xk = self.x_init.clone();
+        let xk = self.x_init.clone();
         let mut xk_prev = self.x_init.clone();
         let mut grad_fk = self.fcn.grad(&xk);
         let mut grad_fk_prev: DVector<f64>;
         let mut grad_fk_norm: f64 = grad_fk.norm();
-        let mut grad_fk_prev_norm: f64;
         let mut fk: f64 = self.fcn.eval(&xk);
         let fk_prev_offset: f64 = 0.5 * grad_fk_norm;
         let mut fk_prev = fk + fk_prev_offset;
         let mut direction = -grad_fk.clone();
+        let mut xk = self.x_init.clone();
 
-        //{{{ trace
-        info!(target: "cg", "Initial values upon entry: ");
-        info!(target: "cg", "f0 = {fk:1.4e} norm_f0 = {grad_fk_norm:1.4e}");
-        //}}}
+        let n = xk.len();
+
+        let mut hess_k = DMatrix::<f64>::identity(n, n);
 
         let max_iter = self.opts.uncon_opts.max_iter;
 
@@ -178,11 +185,11 @@ impl<F: RealFn> UnconstrainedMinimizer for ConjugateGradient<F>
         for i in 1..max_iter
         {
             //{{{ trace
-            info!(target: "cg", "======================================================================== i = {i}");
-            info!(target: "cg", "Current values fk = {fk:1.4e} grad_fk_norm = {grad_fk_norm:1.4e}");
-            info!(target: "cg","Convergence measures:");
-            info!(target: "cg", "\t||∇f(k)|| / ||∇f(0)|| = {:1.4e} ", grad_fk_norm / grad_fx_norm_init);
-            info!(target: "cg", "\t||x(k) - x(k-1)|| = {:1.4e}", (xk.clone() - xk_prev.clone()).norm());
+            info!(target: "qn", "======================================================================== i = {i}");
+            info!(target: "qn", "Current values fk = {fk:1.4e} grad_fk_norm = {grad_fk_norm:1.4e}");
+            info!(target: "qn","Convergence measures:");
+            info!(target: "qn", "\t||∇f(k)|| / ||∇f(0)|| = {:1.4e} ", grad_fk_norm / grad_fx_norm_init);
+            info!(target: "qn", "\t||x(k) - x(k-1)|| = {:1.4e}", (xk.clone() - xk_prev.clone()).norm());
             //}}}
             let mut dphi0 = grad_fk.dot(&direction);
             let needs_restart = i % self.opts.restart == 0;
@@ -190,7 +197,7 @@ impl<F: RealFn> UnconstrainedMinimizer for ConjugateGradient<F>
             if needs_restart || not_decreaseing
             {
                 //{{{ trace
-                info!(target: "cg", "\tDoing restart for reasons:  restart? {needs_restart} descent direction? {not_decreaseing}");
+                info!(target: "qn", "\tDoing restart for reasons:  restart? {needs_restart} descent direction? {not_decreaseing}");
                 //}}}
                 direction = -grad_fk.clone();
                 dphi0 = grad_fk.dot(&direction);
@@ -198,26 +205,29 @@ impl<F: RealFn> UnconstrainedMinimizer for ConjugateGradient<F>
 
             let line_search_fcn =
                 LineSearchFcn::new(self.fcn.clone(), xk.clone(), direction.clone());
+
             line_searcher.update_fcn(line_search_fcn);
 
             let phi0 = fk;
             let old_phi0 = fk_prev;
-            let alpha1: f64 = initial_step(phi0, old_phi0, dphi0);
-            info!(target: "cg", "alpha1 = {alpha1}");
-            let ls_ret = line_searcher.search(phi0, dphi0, alpha1)?;
+
+            let alpha_init: f64 = initial_step(phi0, old_phi0, dphi0);
+            let ls_ret = line_searcher.search(phi0, dphi0, alpha_init)?;
+
             xk_prev = xk.clone();
             xk += ls_ret.alpha * direction.clone();
+
             fk_prev = fk;
             fk = ls_ret.phi_alpha;
+
             grad_fk_prev = grad_fk.clone();
             grad_fk = self.fcn.grad(&xk);
-            grad_fk_prev_norm = grad_fk_prev.norm();
             grad_fk_norm = grad_fk.norm();
 
             if let Some(reason) = self.is_converged(grad_fk_norm, grad_fx_norm_init)
             {
                 //{{{ trace
-                info!(target: "cg", "Converging with reason {reason:?}");
+                info!(target: "qn", "Converging with reason {reason:?}");
                 //}}}
 
                 let fcn_lock = self.fcn.lock().unwrap();
@@ -231,17 +241,19 @@ impl<F: RealFn> UnconstrainedMinimizer for ConjugateGradient<F>
                 });
             }
 
-            direction = self.update_direction(
-                &grad_fk_prev,
-                &grad_fk,
-                grad_fk_prev_norm,
-                grad_fk_norm,
-                &direction,
+            self.update_hessian(
+                xk_prev.clone(),
+                xk.clone(),
+                grad_fk_prev.clone(),
+                grad_fk.clone(),
+                &mut hess_k,
             );
+
+            direction = -hess_k.matmul(&grad_fk);
         }
         //{{{ trace
         let maxiter = self.opts.uncon_opts.max_iter;
-        info!(target: "cg", "Did not converge within {maxiter} iterations");
+        info!(target: "qn", "Did not converge within {maxiter} iterations");
         //}}}
         Err(Error::MaxIterations(self.opts.uncon_opts.max_iter as usize))
     }

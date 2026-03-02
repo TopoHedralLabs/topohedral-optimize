@@ -11,6 +11,7 @@ use crate::line_search::LineSearchMethod;
 //}}}
 //{{{ dep imports
 use thiserror::Error;
+use topohedral_linalg::dvector::DVector;
 //}}}
 //--------------------------------------------------------------------------------------------------
 
@@ -30,10 +31,10 @@ pub enum ConvergedReason
     Atol,
 }
 
-#[derive(Copy, Clone, Debug)]
-pub struct Returns<Vector>
+#[derive(Clone, Debug)]
+pub struct Returns
 {
-    pub xmin: Vector,
+    pub xmin: DVector<f64>,
     pub fmin: f64,
     pub reason: ConvergedReason,
     pub num_iterations: usize,
@@ -52,6 +53,5 @@ pub enum Error
 
 pub trait UnconstrainedMinimizer
 {
-    type Vector;
-    fn minimize(&mut self) -> Result<Returns<Self::Vector>, Error>;
+    fn minimize(&mut self) -> Result<Returns, Error>;
 }

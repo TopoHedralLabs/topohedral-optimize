@@ -12,6 +12,7 @@ use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 //}}}
 //{{{ dep imports
+use topohedral_linalg::dvector::DVector;
 //}}}
 //--------------------------------------------------------------------------------------------------
 
@@ -32,16 +33,14 @@ pub trait RealFn1
 //{{{ trait: RealFn
 pub trait RealFn: Clone + Debug
 {
-    type Vector;
-
     fn eval(
         &mut self,
-        x: &Self::Vector,
+        x: &DVector<f64>,
     ) -> f64;
     fn grad(
         &mut self,
-        x: &Self::Vector,
-    ) -> Self::Vector;
+        x: &DVector<f64>,
+    ) -> DVector<f64>;
 }
 //}}}
 //{{{ impl: RealFn for Rc<RefCell<T>>
@@ -49,11 +48,9 @@ impl<T> RealFn for Rc<RefCell<T>>
 where
     T: RealFn,
 {
-    type Vector = T::Vector;
-
     fn eval(
         &mut self,
-        x: &Self::Vector,
+        x: &DVector<f64>,
     ) -> f64
     {
         self.borrow_mut().eval(x)
@@ -61,8 +58,8 @@ where
 
     fn grad(
         &mut self,
-        x: &Self::Vector,
-    ) -> Self::Vector
+        x: &DVector<f64>,
+    ) -> DVector<f64>
     {
         self.borrow_mut().grad(x)
     }
@@ -73,11 +70,9 @@ impl<T> RealFn for Arc<Mutex<T>>
 where
     T: RealFn,
 {
-    type Vector = T::Vector;
-
     fn eval(
         &mut self,
-        x: &Self::Vector,
+        x: &DVector<f64>,
     ) -> f64
     {
         self.lock().unwrap().eval(x)
@@ -85,8 +80,8 @@ where
 
     fn grad(
         &mut self,
-        x: &Self::Vector,
-    ) -> Self::Vector
+        x: &DVector<f64>,
+    ) -> DVector<f64>
     {
         self.lock().unwrap().grad(x)
     }
@@ -104,11 +99,9 @@ pub(crate) struct CountingRealFn<F: RealFn>
 //{{{ impl: RealFn for CountingRealFcn
 impl<F: RealFn> RealFn for CountingRealFn<F>
 {
-    type Vector = F::Vector;
-
     fn eval(
         &mut self,
-        x: &Self::Vector,
+        x: &DVector<f64>,
     ) -> f64
     {
         self.num_func_evals += 1;
@@ -117,8 +110,8 @@ impl<F: RealFn> RealFn for CountingRealFn<F>
 
     fn grad(
         &mut self,
-        x: &Self::Vector,
-    ) -> Self::Vector
+        x: &DVector<f64>,
+    ) -> DVector<f64>
     {
         self.num_grad_evals += 1;
         self.fcn.grad(x)

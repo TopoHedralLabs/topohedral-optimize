@@ -7,10 +7,10 @@
 use crate::{RealFn, RealFn1};
 //}}}
 //{{{ std imports
-use std::ops::{Add, Mul};
 //}}}
 //{{{ dep imports
 use thiserror::Error;
+use topohedral_linalg::dvector::DVector;
 use topohedral_linalg::VectorOps;
 use topohedral_tracing::*;
 //}}}
@@ -21,8 +21,8 @@ use topohedral_tracing::*;
 pub struct LineSearchFcn<F: RealFn>
 {
     pub f: F,
-    pub x: F::Vector,
-    pub dir: F::Vector,
+    pub x: DVector<f64>,
+    pub dir: DVector<f64>,
 }
 //}}}
 //{{{ impl LineSearchFcn
@@ -31,8 +31,8 @@ impl<F: RealFn> LineSearchFcn<F>
     #[trace_fn]
     pub fn new(
         f: F,
-        x: F::Vector,
-        dir: F::Vector,
+        x: DVector<f64>,
+        dir: DVector<f64>,
     ) -> Self
     {
         Self { f, x, dir }
@@ -41,10 +41,6 @@ impl<F: RealFn> LineSearchFcn<F>
 //}}}
 //{{{ impl: RealFn1 for LineSearchFcn
 impl<F: RealFn> RealFn1 for LineSearchFcn<F>
-where
-    F: RealFn,
-    F::Vector: VectorOps<ScalarType = f64> + Add<Output = F::Vector>,
-    f64: Mul<F::Vector, Output = F::Vector>,
 {
     #[trace_fn]
     fn eval(
