@@ -118,28 +118,28 @@ impl<F: RealFn> QuasiNewton<F>
         {
             UpdateMethod::BFGS =>
             {
-                self.data.sk = xk - xk_prev;
+                let Data {
+                    identity,
+                    mat1,
+                    mat2,
+                    mat3,
+                    sk,
+                    yk,
+                } = &mut self.data;
 
-                self.data.yk = grad_fk - grad_fk_prev;
+                *sk = xk - xk_prev;
 
-                let rho_k = 1.0 / (self.data.sk.dot(&self.data.yk));
+                *yk = grad_fk - grad_fk_prev;
 
-                self.data.mat1 = (&self.data.identity
-                    - rho_k * &self.data.sk.matmul(self.data.yk.transpose()))
-                    .into();
+                let rho_k = 1.0 / (sk.dot(yk));
 
-                self.data.mat2 = (&self.data.identity
-                    - rho_k * &self.data.yk.matmul(self.data.sk.transpose()))
-                    .into();
+                *mat1 = (&*identity - rho_k * &sk.matmul(yk.transpose())).into();
 
-                self.data.mat3 = rho_k * self.data.sk.matmul(self.data.sk.transpose());
+                *mat2 = (&*identity - rho_k * &yk.matmul(sk.transpose())).into();
 
-                *hess_k = (&self
-                    .data
-                    .mat1
-                    .matmul(hess_k.clone().matmul(&self.data.mat2))
-                    + &self.data.mat3)
-                    .into();
+                *mat3 = rho_k * sk.matmul(sk.transpose());
+
+                *hess_k = (&mat1.matmul(hess_k.clone().matmul(mat2)) + &*mat3).into();
             }
             UpdateMethod::DFP =>
             {
