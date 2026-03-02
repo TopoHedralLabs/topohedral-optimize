@@ -132,7 +132,7 @@ impl<F: RealFn> QuasiNewton<F>
                     - rho_k * &self.data.yk.matmul(self.data.sk.transpose()))
                     .into();
 
-                self.data.mat3 = (rho_k * self.data.sk.matmul(self.data.sk.transpose())).into();
+                self.data.mat3 = rho_k * self.data.sk.matmul(self.data.sk.transpose());
 
                 *hess_k = (&self
                     .data
@@ -154,7 +154,7 @@ impl<F: RealFn> UnconstrainedMinimizer for QuasiNewton<F>
     #[trace_fn]
     fn minimize(&mut self) -> Result<Returns, Error>
     {
-        let mut xk = self.x_init.clone();
+        let xk = self.x_init.clone();
         let mut xk_prev = self.x_init.clone();
         let mut grad_fk = self.fcn.grad(&xk);
         let mut grad_fk_prev: DVector<f64>;
@@ -215,7 +215,7 @@ impl<F: RealFn> UnconstrainedMinimizer for QuasiNewton<F>
             let ls_ret = line_searcher.search(phi0, dphi0, alpha_init)?;
 
             xk_prev = xk.clone();
-            xk = xk + ls_ret.alpha * direction.clone();
+            xk += ls_ret.alpha * direction.clone();
 
             fk_prev = fk;
             fk = ls_ret.phi_alpha;

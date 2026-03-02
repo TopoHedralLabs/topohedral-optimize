@@ -15,7 +15,6 @@ use crate::RealFn;
 //}}}
 //{{{ std imports
 use std::sync::{Arc, Mutex};
-use topohedral_linalg::dmatrix::DMatrix;
 //}}}
 //{{{ dep imports
 use topohedral_linalg::{dvector::DVector, VectorOps};
@@ -207,7 +206,7 @@ impl<F: RealFn> UnconstrainedMinimizer for ConjugateGradient<F>
             info!(target: "cg", "alpha1 = {alpha1}");
             let ls_ret = line_searcher.search(phi0, dphi0, alpha1)?;
             xk_prev = xk.clone();
-            xk = xk + ls_ret.alpha * direction.clone();
+            xk += ls_ret.alpha * direction.clone();
             fk_prev = fk;
             fk = ls_ret.phi_alpha;
             grad_fk_prev = grad_fk.clone();
