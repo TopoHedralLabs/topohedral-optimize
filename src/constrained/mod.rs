@@ -1,6 +1,5 @@
-//! Short Description of module
+//! Module implementing a set of constrained optimisation algorithms
 //!
-//! Longer description of module
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
@@ -10,11 +9,6 @@
 //{{{ dep imports
 //}}}
 //--------------------------------------------------------------------------------------------------
-#![allow(incomplete_features)]
-#![feature(generic_const_exprs)]
 
-mod common;
-pub use common::{rc_real_fn, RcRealFn, RealFn, RealFn1};
-pub mod constrained;
-pub mod line_search;
-pub mod unconstrained;
+mod augmented_lagrangian;
+mod constraints;
