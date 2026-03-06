@@ -1,14 +1,13 @@
 #![feature(generic_const_exprs)]
 #![allow(incomplete_features)]
-#![feature(impl_trait_in_assoc_type)]
 
 //{{{ crate imports
 use topohedral_optimize::line_search::{
     InterpOptions, LineSearchMethod, LineSearchOptions, NocedalOptions, ThuenteOptions,
 };
 use topohedral_optimize::unconstrained::{
-    QuasiNewton, QuasiNewtonOptions, UnconstrainedConvergedReason, UnconstrainedMinimizer,
-    UnconstrainedReturns, UnonstrainedOptions, UpdateMethod,
+    create, Method, QuasiNewton, QuasiNewtonOptions, UnconstrainedConvergedReason,
+    UnconstrainedMinimizer, UnconstrainedReturns, UnonstrainedOptions, UpdateMethod,
 };
 use topohedral_optimize::RealFn;
 //}}}
@@ -421,7 +420,8 @@ fn test_rosenbrock(
         interp_opts.scale_factor = 1.2;
     }
 
-    let mut qn = QuasiNewton::new(rosenbrock, x0, opts);
+    // let mut qn = QuasiNewton::new(rosenbrock, x0, opts);
+    let mut qn = create(rosenbrock, x0, Method::QuasiNewton(opts));
 
     let ret = qn.minimize().unwrap();
     println!("{ret:?}");
