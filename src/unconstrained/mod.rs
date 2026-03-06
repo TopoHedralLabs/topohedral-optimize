@@ -13,6 +13,7 @@
 
 mod common;
 mod conjugate_gradient;
+mod factory;
 mod quasi_newton;
 
 pub use common::{
@@ -23,3 +24,5 @@ pub use common::{
 pub use conjugate_gradient::{ConjugateGradient, Direction, Options as ConjugateGradientOptions};
 
 pub use quasi_newton::{Options as QuasiNewtonOptions, QuasiNewton, UpdateMethod};
+
+pub use factory::{create, Method};
