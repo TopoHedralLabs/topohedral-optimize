@@ -12,9 +12,13 @@ use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 //}}}
 //{{{ dep imports
+use topohedral_linalg::dmatrix::DMatrix;
 use topohedral_linalg::dvector::DVector;
 //}}}
 //--------------------------------------------------------------------------------------------------
+
+pub type Vector = DVector<f64>;
+pub type Matrix = DMatrix<f64>;
 
 //{{{ trait: RealFn1
 /// 1D real-valued function trait
@@ -35,12 +39,12 @@ pub trait RealFn: Clone + Debug
 {
     fn eval(
         &mut self,
-        x: &DVector<f64>,
+        x: &Vector,
     ) -> f64;
     fn grad(
         &mut self,
-        x: &DVector<f64>,
-    ) -> DVector<f64>;
+        x: &Vector,
+    ) -> Vector;
 }
 //}}}
 //{{{ impl: RealFn for Rc<RefCell<T>>
@@ -50,7 +54,7 @@ where
 {
     fn eval(
         &mut self,
-        x: &DVector<f64>,
+        x: &Vector,
     ) -> f64
     {
         self.borrow_mut().eval(x)
@@ -58,8 +62,8 @@ where
 
     fn grad(
         &mut self,
-        x: &DVector<f64>,
-    ) -> DVector<f64>
+        x: &Vector,
+    ) -> Vector
     {
         self.borrow_mut().grad(x)
     }
@@ -72,7 +76,7 @@ where
 {
     fn eval(
         &mut self,
-        x: &DVector<f64>,
+        x: &Vector,
     ) -> f64
     {
         self.lock().unwrap().eval(x)
@@ -80,8 +84,8 @@ where
 
     fn grad(
         &mut self,
-        x: &DVector<f64>,
-    ) -> DVector<f64>
+        x: &Vector,
+    ) -> Vector
     {
         self.lock().unwrap().grad(x)
     }
@@ -101,7 +105,7 @@ impl<F: RealFn> RealFn for CountingRealFn<F>
 {
     fn eval(
         &mut self,
-        x: &DVector<f64>,
+        x: &Vector,
     ) -> f64
     {
         self.num_func_evals += 1;
@@ -110,8 +114,8 @@ impl<F: RealFn> RealFn for CountingRealFn<F>
 
     fn grad(
         &mut self,
-        x: &DVector<f64>,
-    ) -> DVector<f64>
+        x: &Vector,
+    ) -> Vector
     {
         self.num_grad_evals += 1;
         self.fcn.grad(x)
@@ -150,3 +154,18 @@ pub fn arc_real_fn<F: RealFn>(fcn: F) -> ArcRealFn<F>
 {
     Arc::new(Mutex::new(fcn))
 } //}}}
+  //{{{ trait: RealVectorFn
+pub trait RealVectorFn: Clone + Debug
+{
+    fn eval(
+        &mut self,
+        x: &Vector,
+        val: &mut Vector,
+    );
+    fn grad(
+        &mut self,
+        x: &Vector,
+        val: &mut DMatrix<f64>,
+    );
+}
+//}}}

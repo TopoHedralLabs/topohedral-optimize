@@ -9,7 +9,7 @@ use topohedral_optimize::unconstrained::{
     create, Method, QuasiNewton, QuasiNewtonOptions, UnconstrainedConvergedReason,
     UnconstrainedMinimizer, UnconstrainedReturns, UnonstrainedOptions, UpdateMethod,
 };
-use topohedral_optimize::RealFn;
+use topohedral_optimize::{RealFn, Vector};
 //}}}
 //{{{ std imports
 //}}}
@@ -29,7 +29,7 @@ fn init_logger()
 }
 //}}}
 //{{{ fun: colvec
-fn colvec(values: &[f64]) -> DVector<f64>
+fn colvec(values: &[f64]) -> Vector
 {
     DVector::<f64>::from_slice_vec(values, values.len(), VecType::Col)
 }
@@ -38,7 +38,7 @@ fn colvec(values: &[f64]) -> DVector<f64>
 #[derive(Debug, Clone)]
 struct Quadratic
 {
-    xmin: DVector<f64>,
+    xmin: Vector,
 }
 //}}}
 //{{{ impl: RealFn for Quadratic
@@ -46,7 +46,7 @@ impl RealFn for Quadratic
 {
     fn eval(
         &mut self,
-        x: &DVector<f64>,
+        x: &Vector,
     ) -> f64
     {
         let tmp = x.clone() - self.xmin.clone();
@@ -60,8 +60,8 @@ impl RealFn for Quadratic
 
     fn grad(
         &mut self,
-        x_in: &DVector<f64>,
-    ) -> DVector<f64>
+        x_in: &Vector,
+    ) -> Vector
     {
         let tmp = x_in.clone() - self.xmin.clone();
         let mut out = DVector::<f64>::zeros_cvec(5, VecType::Col);
@@ -77,7 +77,7 @@ impl RealFn for Quadratic
 #[derive(Debug, Clone)]
 struct Quartic
 {
-    xmin: DVector<f64>,
+    xmin: Vector,
 }
 //}}}
 //{{{ impl: RealFn for Quartic
@@ -85,7 +85,7 @@ impl RealFn for Quartic
 {
     fn eval(
         &mut self,
-        x: &DVector<f64>,
+        x: &Vector,
     ) -> f64
     {
         let tmp = x.clone() - self.xmin.clone();
@@ -99,8 +99,8 @@ impl RealFn for Quartic
 
     fn grad(
         &mut self,
-        x_in: &DVector<f64>,
-    ) -> DVector<f64>
+        x_in: &Vector,
+    ) -> Vector
     {
         let tmp = x_in.clone() - self.xmin.clone();
         let mut out = DVector::<f64>::zeros_cvec(5, VecType::Col);
@@ -134,7 +134,7 @@ impl RealFn for Rosenbrock
 {
     fn eval(
         &mut self,
-        xvec: &DVector<f64>,
+        xvec: &Vector,
     ) -> f64
     {
         let x = xvec[0];
@@ -144,8 +144,8 @@ impl RealFn for Rosenbrock
 
     fn grad(
         &mut self,
-        xvec: &DVector<f64>,
-    ) -> DVector<f64>
+        xvec: &Vector,
+    ) -> Vector
     {
         let a = self.a;
         let b = self.b;
@@ -282,7 +282,7 @@ const NOCEDAL_BFGS: QuasiNewtonOptions = QuasiNewtonOptions {
 )]
 //}}}
 fn test_qudratic(
-    #[case] x0: DVector<f64>,
+    #[case] x0: Vector,
     #[case] opts: QuasiNewtonOptions,
     #[case] exp_ret: UnconstrainedReturns,
 )
@@ -342,7 +342,7 @@ fn test_qudratic(
 )]
 //}}}
 fn test_quartic(
-    #[case] x0: DVector<f64>,
+    #[case] x0: Vector,
     #[case] mut opts: QuasiNewtonOptions,
     #[case] exp_ret: UnconstrainedReturns,
 )
@@ -405,7 +405,7 @@ fn test_quartic(
 )]
 //}}}
 fn test_rosenbrock(
-    #[case] x0: DVector<f64>,
+    #[case] x0: Vector,
     #[case] mut opts: QuasiNewtonOptions,
     #[case] exp_ret: UnconstrainedReturns,
 )

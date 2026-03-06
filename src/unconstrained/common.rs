@@ -6,12 +6,12 @@
 //{{{ crate imports
 use crate::line_search::LineSearchError;
 use crate::line_search::LineSearchMethod;
+use crate::Vector;
 //}}}
 //{{{ std imports
 //}}}
 //{{{ dep imports
 use thiserror::Error;
-use topohedral_linalg::dvector::DVector;
 //}}}
 //--------------------------------------------------------------------------------------------------
 
@@ -34,7 +34,7 @@ pub enum ConvergedReason
 #[derive(Clone, Debug)]
 pub struct Returns
 {
-    pub xmin: DVector<f64>,
+    pub xmin: Vector,
     pub fmin: f64,
     pub reason: ConvergedReason,
     pub num_iterations: usize,

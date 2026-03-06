@@ -10,7 +10,7 @@ use crate::line_search as ls;
 use crate::line_search::initial_step;
 use crate::line_search::LineSearchFcn;
 use crate::unconstrained::UnconstrainedMinimizer;
-use crate::{common::arc_real_fn, common::CountingRealFn, RealFn};
+use crate::{common::arc_real_fn, common::CountingRealFn, RealFn, Vector};
 //}}}
 //{{{ std imports
 use std::sync::{Arc, Mutex};
@@ -43,15 +43,15 @@ struct Data
     mat1: DMatrix<f64>,
     mat2: DMatrix<f64>,
     mat3: DMatrix<f64>,
-    sk: DVector<f64>,
-    yk: DVector<f64>,
+    sk: Vector,
+    yk: Vector,
 }
 
 pub struct QuasiNewton<F: RealFn>
 {
     fcn: Arc<Mutex<CountingRealFn<F>>>,
-    x_init: DVector<f64>,
-    grad_fx_init: DVector<f64>,
+    x_init: Vector,
+    grad_fx_init: Vector,
     opts: Options,
     data: Data,
 }
@@ -61,7 +61,7 @@ impl<F: RealFn> QuasiNewton<F>
     #[trace_fn]
     pub fn new(
         mut fcn: F,
-        x0: DVector<f64>,
+        x0: Vector,
         opts: Options,
     ) -> Self
     {
@@ -107,10 +107,10 @@ impl<F: RealFn> QuasiNewton<F>
     #[trace_fn]
     fn update_hessian(
         &mut self,
-        xk_prev: DVector<f64>,
-        xk: DVector<f64>,
-        grad_fk_prev: DVector<f64>,
-        grad_fk: DVector<f64>,
+        xk_prev: Vector,
+        xk: Vector,
+        grad_fk_prev: Vector,
+        grad_fk: Vector,
         hess_k: &mut DMatrix<f64>,
     )
     {
@@ -157,7 +157,7 @@ impl<F: RealFn> UnconstrainedMinimizer for QuasiNewton<F>
         let xk = self.x_init.clone();
         let mut xk_prev = self.x_init.clone();
         let mut grad_fk = self.fcn.grad(&xk);
-        let mut grad_fk_prev: DVector<f64>;
+        let mut grad_fk_prev: Vector;
         let mut grad_fk_norm: f64 = grad_fk.norm();
         let mut fk: f64 = self.fcn.eval(&xk);
         let fk_prev_offset: f64 = 0.5 * grad_fk_norm;

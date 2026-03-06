@@ -14,7 +14,7 @@
 #![feature(generic_const_exprs)]
 
 mod common;
-pub use common::{rc_real_fn, RcRealFn, RealFn, RealFn1};
+pub use common::{rc_real_fn, RcRealFn, RealFn, RealFn1, Vector};
 pub mod constrained;
 pub mod line_search;
 pub mod unconstrained;

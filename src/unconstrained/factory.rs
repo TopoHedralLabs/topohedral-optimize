@@ -11,12 +11,11 @@ use super::conjugate_gradient::ConjugateGradient;
 use super::conjugate_gradient::Options as ConjugateGradientOptions;
 use super::quasi_newton::Options as QuasiNewtonOptions;
 use super::quasi_newton::QuasiNewton;
-use crate::common::RealFn;
+use crate::{RealFn, Vector};
 //}}}
 //{{{ std imports
 //}}}
 //{{{ dep imports
-use topohedral_linalg::dvector::DVector;
 //}}}
 //--------------------------------------------------------------------------------------------------
 
@@ -30,7 +29,7 @@ pub enum Method
 #[trace_fn]
 pub fn create<'a, F: RealFn + 'a>(
     fcn: F,
-    x0: DVector<f64>,
+    x0: Vector,
     method: Method,
 ) -> Box<dyn UnconstrainedMinimizer + 'a>
 {

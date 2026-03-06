@@ -3,7 +3,7 @@
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
-use topohedral_optimize::{line_search::LineSearchFcn, RealFn, RealFn1};
+use topohedral_optimize::{line_search::LineSearchFcn, RealFn, RealFn1, Vector};
 
 //}}}
 //{{{ std imports
@@ -19,7 +19,7 @@ use topohedral_linalg::{MatMul, VectorOps};
 //}}}
 //--------------------------------------------------------------------------------------------------
 
-fn colvec(values: &[f64]) -> DVector<f64>
+fn colvec(values: &[f64]) -> Vector
 {
     DVector::<f64>::from_slice_vec(values, values.len(), VecType::Col)
 }
@@ -28,7 +28,7 @@ fn colvec(values: &[f64]) -> DVector<f64>
 #[derive(Debug, Clone)]
 struct QuadraticDynamic
 {
-    center: DVector<f64>,
+    center: Vector,
     coeffs: DMatrix<f64>,
 }
 //}}}
@@ -37,7 +37,7 @@ impl RealFn for QuadraticDynamic
 {
     fn eval(
         &mut self,
-        x: &DVector<f64>,
+        x: &Vector,
     ) -> f64
     {
         let x1 = x.clone() - self.center.clone();
@@ -47,8 +47,8 @@ impl RealFn for QuadraticDynamic
 
     fn grad(
         &mut self,
-        x: &DVector<f64>,
-    ) -> DVector<f64>
+        x: &Vector,
+    ) -> Vector
     {
         let n = x.len();
         let mut out = DVector::<f64>::zeros_cvec(n, VecType::Col);

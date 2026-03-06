@@ -11,13 +11,13 @@ use crate::line_search as ls;
 use crate::line_search::initial_step;
 use crate::line_search::LineSearchFcn;
 use crate::unconstrained::common::ConvergedReason;
-use crate::RealFn;
+use crate::{RealFn, Vector};
 //}}}
 //{{{ std imports
 use std::sync::{Arc, Mutex};
 //}}}
 //{{{ dep imports
-use topohedral_linalg::{dvector::DVector, VectorOps};
+use topohedral_linalg::VectorOps;
 use topohedral_tracing::*;
 //}}}
 //--------------------------------------------------------------------------------------------------
@@ -41,8 +41,8 @@ pub struct Options
 pub struct ConjugateGradient<F: RealFn>
 {
     fcn: Arc<Mutex<CountingRealFn<F>>>,
-    x_init: DVector<f64>,
-    grad_fx_init: DVector<f64>,
+    x_init: Vector,
+    grad_fx_init: Vector,
     opts: Options,
 }
 
@@ -51,7 +51,7 @@ impl<F: RealFn> ConjugateGradient<F>
     #[trace_fn]
     pub fn new(
         mut fcn: F,
-        x0: DVector<f64>,
+        x0: Vector,
         opts: Options,
     ) -> Self
     {
@@ -72,12 +72,12 @@ impl<F: RealFn> ConjugateGradient<F>
     #[trace_fn]
     fn update_direction(
         &self,
-        grad_fk_prev: &DVector<f64>,
-        grad_fk: &DVector<f64>,
+        grad_fk_prev: &Vector,
+        grad_fk: &Vector,
         norm_grad_fk_prev: f64,
         norm_grad_fk: f64,
-        dir_k: &DVector<f64>,
-    ) -> DVector<f64>
+        dir_k: &Vector,
+    ) -> Vector
     {
         //{{{ trace
         trace!(target: "cg", "norm_grad_fk1 = {norm_grad_fk_prev:1.4e} norm_grad_fk = {norm_grad_fk:1.4e}");
@@ -149,7 +149,7 @@ impl<F: RealFn> UnconstrainedMinimizer for ConjugateGradient<F>
         let mut xk = self.x_init.clone();
         let mut xk_prev = self.x_init.clone();
         let mut grad_fk = self.fcn.grad(&xk);
-        let mut grad_fk_prev: DVector<f64>;
+        let mut grad_fk_prev: Vector;
         let mut grad_fk_norm: f64 = grad_fk.norm();
         let mut grad_fk_prev_norm: f64;
         let mut fk: f64 = self.fcn.eval(&xk);
