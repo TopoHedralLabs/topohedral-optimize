@@ -173,6 +173,9 @@ pub fn arc_real_fn<F: RealFn>(fcn: F) -> ArcRealFn<F>
 //{{{ trait: RealVectorFn
 pub trait RealVectorFn: Clone + Debug
 {
+    fn dimension_domain(&self) -> usize;
+    fn dimension_range(&self) -> usize;
+
     fn eval(
         &mut self,
         x: &Vector,
@@ -190,6 +193,16 @@ impl<T> RealVectorFn for Rc<RefCell<T>>
 where
     T: RealVectorFn,
 {
+    fn dimension_domain(&self) -> usize
+    {
+        self.borrow().dimension_domain()
+    }
+
+    fn dimension_range(&self) -> usize
+    {
+        self.borrow().dimension_range()
+    }
+
     fn eval(
         &mut self,
         x: &Vector,
@@ -214,6 +227,16 @@ impl<T> RealVectorFn for Arc<Mutex<T>>
 where
     T: RealVectorFn,
 {
+    fn dimension_domain(&self) -> usize
+    {
+        self.lock().unwrap().dimension_domain()
+    }
+
+    fn dimension_range(&self) -> usize
+    {
+        self.lock().unwrap().dimension_range()
+    }
+
     fn eval(
         &mut self,
         x: &Vector,

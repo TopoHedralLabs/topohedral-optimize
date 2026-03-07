@@ -240,6 +240,16 @@ struct LinearVectorDynamic
 //{{{ impl: RealVectorFn for LinearVectorDynamic
 impl RealVectorFn for LinearVectorDynamic
 {
+    fn dimension_domain(&self) -> usize
+    {
+        self.cols
+    }
+
+    fn dimension_range(&self) -> usize
+    {
+        self.rows
+    }
+
     fn eval(
         &mut self,
         x: &Vector,
