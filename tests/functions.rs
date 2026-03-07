@@ -65,6 +65,11 @@ struct QuadraticDynamic
 //{{{ impl: RealFn for QuadraticDynamic
 impl RealFn for QuadraticDynamic
 {
+    fn dimension(&self) -> usize
+    {
+        self.center.len()
+    }
+
     fn eval(
         &mut self,
         x: &Vector,

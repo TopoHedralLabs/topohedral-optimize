@@ -37,6 +37,7 @@ pub trait RealFn1
 //{{{ trait: RealFn
 pub trait RealFn: Clone + Debug
 {
+    fn dimension(&self) -> usize;
     fn eval(
         &mut self,
         x: &Vector,
@@ -52,6 +53,11 @@ impl<T> RealFn for Rc<RefCell<T>>
 where
     T: RealFn,
 {
+    fn dimension(&self) -> usize
+    {
+        self.borrow().dimension()
+    }
+
     fn eval(
         &mut self,
         x: &Vector,
@@ -74,6 +80,11 @@ impl<T> RealFn for Arc<Mutex<T>>
 where
     T: RealFn,
 {
+    fn dimension(&self) -> usize
+    {
+        self.lock().unwrap().dimension()
+    }
+
     fn eval(
         &mut self,
         x: &Vector,
@@ -103,6 +114,11 @@ pub(crate) struct CountingRealFn<F: RealFn>
 //{{{ impl: RealFn for CountingRealFcn
 impl<F: RealFn> RealFn for CountingRealFn<F>
 {
+    fn dimension(&self) -> usize
+    {
+        self.fcn.dimension()
+    }
+
     fn eval(
         &mut self,
         x: &Vector,

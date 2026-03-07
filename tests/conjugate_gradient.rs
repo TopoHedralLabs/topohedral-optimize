@@ -44,6 +44,11 @@ struct Quadratic
 //{{{ impl: RealFn for Quadratic
 impl RealFn for Quadratic
 {
+    fn dimension(&self) -> usize
+    {
+        self.xmin.len()
+    }
+
     fn eval(
         &mut self,
         x: &Vector,
@@ -83,6 +88,11 @@ struct Quartic
 //{{{ impl: RealFn for Quartic
 impl RealFn for Quartic
 {
+    fn dimension(&self) -> usize
+    {
+        self.xmin.len()
+    }
+
     fn eval(
         &mut self,
         x: &Vector,
@@ -132,6 +142,11 @@ impl Rosenbrock
 //{{{ impl: RealFn for Rosenbrock
 impl RealFn for Rosenbrock
 {
+    fn dimension(&self) -> usize
+    {
+        2
+    }
+
     fn eval(
         &mut self,
         xvec: &Vector,
