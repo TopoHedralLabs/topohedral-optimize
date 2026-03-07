@@ -14,7 +14,10 @@
 #![feature(generic_const_exprs)]
 
 mod common;
-pub use common::{rc_real_fn, RcRealFn, RealFn, RealFn1, Vector};
+pub use common::{
+    arc_real_vector_fn, rc_real_fn, rc_real_vector_fn, ArcRealVectorFn, RcRealFn, RcRealVectorFn,
+    RealFn, RealFn1, RealVectorFn, Vector,
+};
 pub mod constrained;
 pub mod line_search;
 pub mod unconstrained;

@@ -154,7 +154,7 @@ pub fn arc_real_fn<F: RealFn>(fcn: F) -> ArcRealFn<F>
 {
     Arc::new(Mutex::new(fcn))
 } //}}}
-  //{{{ trait: RealVectorFn
+//{{{ trait: RealVectorFn
 pub trait RealVectorFn: Clone + Debug
 {
     fn eval(
@@ -167,5 +167,73 @@ pub trait RealVectorFn: Clone + Debug
         x: &Vector,
         val: &mut DMatrix<f64>,
     );
+}
+//}}}
+//{{{ impl: RealVectorFn for Rc<RefCell<T>>
+impl<T> RealVectorFn for Rc<RefCell<T>>
+where
+    T: RealVectorFn,
+{
+    fn eval(
+        &mut self,
+        x: &Vector,
+        val: &mut Vector,
+    )
+    {
+        self.borrow_mut().eval(x, val)
+    }
+
+    fn grad(
+        &mut self,
+        x: &Vector,
+        val: &mut DMatrix<f64>,
+    )
+    {
+        self.borrow_mut().grad(x, val)
+    }
+}
+//}}}
+//{{{ impl: RealVectorFn for Arc<Mutex<T>>
+impl<T> RealVectorFn for Arc<Mutex<T>>
+where
+    T: RealVectorFn,
+{
+    fn eval(
+        &mut self,
+        x: &Vector,
+        val: &mut Vector,
+    )
+    {
+        self.lock().unwrap().eval(x, val)
+    }
+
+    fn grad(
+        &mut self,
+        x: &Vector,
+        val: &mut DMatrix<f64>,
+    )
+    {
+        self.lock().unwrap().grad(x, val)
+    }
+}
+//}}}
+//{{{ type: aliases for Rc<RefCell<F>> and Arc<Mutex<F>>
+/// Type alias for a vector-valued function wrapped in Rc<RefCell<F>>
+pub type RcRealVectorFn<F> = Rc<RefCell<F>>;
+/// Type alias for a vector-valued function wrapped in Arc<Mutex<F>>
+pub type ArcRealVectorFn<F> = Arc<Mutex<F>>;
+//}}}
+//{{{ fun: rc_real_vector_fn
+/// Creates a new reference-counted vector-valued function using Rc<RefCell>
+pub fn rc_real_vector_fn<F: RealVectorFn>(fcn: F) -> RcRealVectorFn<F>
+{
+    Rc::new(RefCell::new(fcn))
+}
+//}}}
+//{{{ fun: arc_real_vector_fn
+/// Creates a new thread-safe reference-counted vector-valued function using Arc<Mutex>
+pub fn arc_real_vector_fn<F: RealVectorFn>(fcn: F) -> ArcRealVectorFn<F>
+{
+    Arc::new(Mutex::new(fcn))
 }
 //}}}
