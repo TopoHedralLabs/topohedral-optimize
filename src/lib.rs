@@ -1,6 +1,16 @@
-//! Short Description of module
+//! Toppohedral-optimize is an optimisation library written entirely in rust. Part of the topohedral
+//! collection of libraries.
 //!
-//! Longer description of module
+//! The library supports:
+//! - Approximate Line-Search algorithms, contained in the [`line_search`] module:
+//!     - More-Thuente
+//!     - Nocedal
+//!     - Backtracking + polynomial interpolation
+//! - multidimensional, unconstrained optimisation and has the following algorithms:
+//!     - Conjugate Gradient with a selection of direction implementations
+//!     - Quasi-Newton with a selection of Heassian-update implementations
+//! - multidimensionsional, constrained optimisation with the following algorithms:
+//!     - Augmented Lagrangian Method.
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
@@ -15,8 +25,8 @@
 
 mod common;
 pub use common::{
-    arc_real_vector_fn, rc_real_fn, rc_real_vector_fn, ArcRealVectorFn, RcRealFn, RcRealVectorFn,
-    RealFn, RealFn1, RealVectorFn, Vector,
+    arc_real_vector_fn, rc_real_fn, rc_real_vector_fn, ArcRealVectorFn, Matrix, RcRealFn,
+    RcRealVectorFn, RealFn, RealFn1, RealVectorFn, Vector,
 };
 pub mod constrained;
 pub mod line_search;
