@@ -1,5 +1,6 @@
-//! Module implementing a set of constrained optimisation algorithms
+//! Short Description of module
 //!
+//! Longer description of module
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
@@ -9,9 +10,3 @@
 //{{{ dep imports
 //}}}
 //--------------------------------------------------------------------------------------------------
-
-mod augmented_lagrangian;
-mod common;
-mod constraints;
-
-pub use augmented_lagrangian::AugmentedLagrangianFcn;

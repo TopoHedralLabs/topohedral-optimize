@@ -12,7 +12,7 @@ serde_json = "1.0"
 log = "0.4.29"
 thiserror = "2.0.17"
 topohedral-tracing = { version = "0.1.0", registry = "cloudsmith"}
-topohedral-linalg= { version = "1.6.0", registry = "cloudsmith"}
+topohedral-linalg= { version = "1.7.0", registry = "cloudsmith"}
 
 [dev-dependencies]
 ctor = "0.6.3"

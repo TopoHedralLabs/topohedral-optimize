@@ -170,7 +170,7 @@ pub fn arc_real_fn<F: RealFn>(fcn: F) -> ArcRealFn<F>
 {
     Arc::new(Mutex::new(fcn))
 } //}}}
-//{{{ trait: RealVectorFn
+  //{{{ trait: RealVectorFn
 pub trait RealVectorFn: Clone + Debug
 {
     fn dimension_domain(&self) -> usize;
@@ -184,7 +184,7 @@ pub trait RealVectorFn: Clone + Debug
     fn grad(
         &mut self,
         x: &Vector,
-        val: &mut DMatrix<f64>,
+        val: &mut Matrix,
     );
 }
 //}}}
@@ -215,7 +215,7 @@ where
     fn grad(
         &mut self,
         x: &Vector,
-        val: &mut DMatrix<f64>,
+        val: &mut Matrix,
     )
     {
         self.borrow_mut().grad(x, val)

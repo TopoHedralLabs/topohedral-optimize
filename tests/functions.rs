@@ -4,8 +4,8 @@
 
 //{{{ crate imports
 use topohedral_optimize::{
-    arc_real_vector_fn, line_search::LineSearchFcn, rc_real_vector_fn, ArcRealVectorFn, RealFn,
-    RealFn1, RealVectorFn, RcRealVectorFn, Vector,
+    arc_real_vector_fn, line_search::LineSearchFcn, rc_real_vector_fn, ArcRealVectorFn,
+    RcRealVectorFn, RealFn, RealFn1, RealVectorFn, Vector,
 };
 
 //}}}
@@ -258,10 +258,10 @@ impl RealVectorFn for LinearVectorDynamic
     {
         for i in 0..self.rows
         {
-            val[i] = self.bias[i];
+            (*val)[i] = self.bias[i];
             for j in 0..self.cols
             {
-                val[i] += self.jacobian[(i, j)] * x[j];
+                (*val)[i] += self.jacobian[(i, j)] * x[j];
             }
         }
     }
@@ -276,7 +276,7 @@ impl RealVectorFn for LinearVectorDynamic
         {
             for j in 0..self.cols
             {
-                val[(i, j)] = self.jacobian[(i, j)];
+                (*val)[(i, j)] = self.jacobian[(i, j)];
             }
         }
     }
@@ -328,8 +328,7 @@ fn test_linear_vector_dynamic()
 #[test]
 fn test_linear_vector_dynamic_rc()
 {
-    let fcn: RcRealVectorFn<LinearVectorDynamic> =
-        rc_real_vector_fn(LinearVectorDynamic::new1());
+    let fcn: RcRealVectorFn<LinearVectorDynamic> = rc_real_vector_fn(LinearVectorDynamic::new1());
     run_linear_vector_checks(fcn);
 }
 //}}}
@@ -337,8 +336,7 @@ fn test_linear_vector_dynamic_rc()
 #[test]
 fn test_linear_vector_dynamic_arc()
 {
-    let fcn: ArcRealVectorFn<LinearVectorDynamic> =
-        arc_real_vector_fn(LinearVectorDynamic::new1());
+    let fcn: ArcRealVectorFn<LinearVectorDynamic> = arc_real_vector_fn(LinearVectorDynamic::new1());
     run_linear_vector_checks(fcn);
 }
 //}}}

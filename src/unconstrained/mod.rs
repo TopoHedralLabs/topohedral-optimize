@@ -25,4 +25,4 @@ pub use conjugate_gradient::{ConjugateGradient, Direction, Options as ConjugateG
 
 pub use quasi_newton::{Options as QuasiNewtonOptions, QuasiNewton, UpdateMethod};
 
-pub use factory::{create, Method};
+pub use factory::{create, Method as UnconstrainedMethod};

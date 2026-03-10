@@ -6,7 +6,7 @@ use topohedral_optimize::line_search::{
     InterpOptions, LineSearchMethod, LineSearchOptions, NocedalOptions, ThuenteOptions,
 };
 use topohedral_optimize::unconstrained::{
-    create, Method, QuasiNewton, QuasiNewtonOptions, UnconstrainedConvergedReason,
+    create, QuasiNewton, QuasiNewtonOptions, UnconstrainedConvergedReason, UnconstrainedMethod,
     UnconstrainedMinimizer, UnconstrainedReturns, UnonstrainedOptions, UpdateMethod,
 };
 use topohedral_optimize::{RealFn, Vector};
@@ -436,7 +436,7 @@ fn test_rosenbrock(
     }
 
     // let mut qn = QuasiNewton::new(rosenbrock, x0, opts);
-    let mut qn = create(rosenbrock, x0, Method::QuasiNewton(opts));
+    let mut qn = create(rosenbrock, x0, UnconstrainedMethod::QuasiNewton(opts));
 
     let ret = qn.minimize().unwrap();
     println!("{ret:?}");

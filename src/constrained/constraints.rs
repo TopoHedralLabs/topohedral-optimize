@@ -4,9 +4,120 @@
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
+use crate::{RealVectorFn, Vector};
 //}}}
 //{{{ std imports
+use std::collections::HashMap;
 //}}}
 //{{{ dep imports
 //}}}
 //--------------------------------------------------------------------------------------------------
+
+#[derive(Debug, Clone)]
+pub struct BoundsConstraints
+{
+    bounds: HashMap<usize, (Option<f64>, Option<f64>)>,
+}
+
+impl BoundsConstraints
+{
+    pub fn add_bounds(
+        &mut self,
+        variable_index: usize,
+        lower_bound: Option<f64>,
+        upper_bound: Option<f64>,
+    )
+    {
+        self.bounds
+            .insert(variable_index, (lower_bound, upper_bound));
+    }
+
+    fn num_eq_constraints(&self) -> usize
+    {
+        0
+    }
+
+    fn nun_ieq_constraints(&self) -> usize
+    {
+        let mut num_constraints = 0;
+        for (_, (lower_bound, upper_bound)) in &self.bounds
+        {
+            if lower_bound.is_some()
+            {
+                num_constraints += 1;
+            }
+            if upper_bound.is_some()
+            {
+                num_constraints += 1;
+            }
+        }
+        num_constraints
+    }
+}
+
+impl RealVectorFn for BoundsConstraints
+{
+    fn dimension_domain(&self) -> usize
+    {
+        todo!()
+    }
+
+    fn dimension_range(&self) -> usize
+    {
+        todo!()
+    }
+
+    fn eval(
+        &mut self,
+        x: &Vector,
+        val: &mut Vector,
+    )
+    {
+        todo!()
+    }
+
+    fn grad(
+        &mut self,
+        x: &Vector,
+        val: &mut crate::Matrix,
+    )
+    {
+        todo!()
+    }
+}
+
+pub struct LinearConstraints
+{
+    eq_constraints: HashMap<usize, (f64, Vector)>,
+    ieq_constraints: HashMap<usize, (Option<f64>, Option<f64>, Vector)>,
+}
+
+impl LinearConstraints
+{
+    fn num_eq_constraints(&self) -> usize
+    {
+        0
+    }
+
+    fn nun_ieq_constraints(&self) -> usize
+    {
+        let mut num_constraints = 0;
+        for (_, (lower_bound, upper_bound, _)) in &self.ieq_constraints
+        {
+            if lower_bound.is_some()
+            {
+                num_constraints += 1;
+            }
+            if upper_bound.is_some()
+            {
+                num_constraints += 1;
+            }
+        }
+        num_constraints
+    }
+}
+
+pub struct Constraints
+{
+    bound_constraints: Option<BoundsConstraints>,
+}
