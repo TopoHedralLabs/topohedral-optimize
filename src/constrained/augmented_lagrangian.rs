@@ -235,7 +235,7 @@ pub struct AugmentedLagrangian<F1: RealFn, F2: RealVectorFn>
     opts: Options,
 }
 //}}}
-//{{{ impl AugmentedLagrangian
+//{{{ impl: AugmentedLagrangian
 impl<F1: RealFn, F2: RealVectorFn> AugmentedLagrangian<F1, F2> {}
 //}}}
 //{{{ impl: ConstrainedMinimizer for AugmentedLagrangian

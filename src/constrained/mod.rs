@@ -10,8 +10,12 @@
 //}}}
 //--------------------------------------------------------------------------------------------------
 
+//{{{ mod: submodules
 mod augmented_lagrangian;
 mod common;
 mod constraints;
+//}}}
 
+//{{{ pub use: exports
 pub use augmented_lagrangian::AugmentedLagrangianFcn;
+//}}}

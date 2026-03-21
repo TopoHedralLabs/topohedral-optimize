@@ -22,13 +22,15 @@ use topohedral_tracing::*;
 //}}}
 //--------------------------------------------------------------------------------------------------
 
+//{{{ enum: UpdateMethod
 #[derive(Copy, Clone)]
 pub enum UpdateMethod
 {
     BFGS,
     DFP,
 }
-
+//}}}
+//{{{ struct: Options
 #[derive(Copy, Clone)]
 pub struct Options
 {
@@ -36,7 +38,8 @@ pub struct Options
     pub method: UpdateMethod,
     pub restart: u64,
 }
-
+//}}}
+//{{{ struct: Data
 struct Data
 {
     identity: DMatrix<f64>,
@@ -46,7 +49,8 @@ struct Data
     sk: Vector,
     yk: Vector,
 }
-
+//}}}
+//{{{ struct: QuasiNewton
 pub struct QuasiNewton<F: RealFn>
 {
     fcn: Arc<Mutex<CountingRealFn<F>>>,
@@ -55,7 +59,8 @@ pub struct QuasiNewton<F: RealFn>
     opts: Options,
     data: Data,
 }
-
+//}}}
+//{{{ impl: QuasiNewton
 impl<F: RealFn> QuasiNewton<F>
 {
     #[trace_fn]
@@ -148,7 +153,8 @@ impl<F: RealFn> QuasiNewton<F>
         }
     }
 }
-
+//}}}
+//{{{ impl: UnconstrainedMinimizer for QuasiNewton
 impl<F: RealFn> UnconstrainedMinimizer for QuasiNewton<F>
 {
     #[trace_fn]
@@ -258,3 +264,4 @@ impl<F: RealFn> UnconstrainedMinimizer for QuasiNewton<F>
         Err(Error::MaxIterations(self.opts.uncon_opts.max_iter as usize))
     }
 }
+//}}}

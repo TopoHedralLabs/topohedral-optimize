@@ -19,13 +19,15 @@ use crate::{RealFn, Vector};
 //}}}
 //--------------------------------------------------------------------------------------------------
 
+//{{{ enum: Method
 #[derive(Copy, Clone)]
 pub enum Method
 {
     ConjugateGradient(ConjugateGradientOptions),
     QuasiNewton(QuasiNewtonOptions),
 }
-
+//}}}
+//{{{ fun: create
 #[trace_fn]
 pub fn create<'a, F: RealFn + 'a>(
     fcn: F,
@@ -39,3 +41,4 @@ pub fn create<'a, F: RealFn + 'a>(
         Method::QuasiNewton(opts) => Box::new(QuasiNewton::new(fcn, x0, opts)),
     }
 }
+//}}}

@@ -22,6 +22,7 @@ use topohedral_tracing::*;
 //}}}
 //--------------------------------------------------------------------------------------------------
 
+//{{{ enum: Direction
 #[derive(Copy, Clone)]
 pub enum Direction
 {
@@ -29,7 +30,8 @@ pub enum Direction
     FletcherReeves,
     PolakRibiere,
 }
-
+//}}}
+//{{{ struct: Options
 #[derive(Copy, Clone)]
 pub struct Options
 {
@@ -37,7 +39,8 @@ pub struct Options
     pub direction: Direction,
     pub restart: u64,
 }
-
+//}}}
+//{{{ struct: ConjugateGradient
 pub struct ConjugateGradient<F: RealFn>
 {
     fcn: Arc<Mutex<CountingRealFn<F>>>,
@@ -45,7 +48,8 @@ pub struct ConjugateGradient<F: RealFn>
     grad_fx_init: Vector,
     opts: Options,
 }
-
+//}}}
+//{{{ impl: ConjugateGradient
 impl<F: RealFn> ConjugateGradient<F>
 {
     #[trace_fn]
@@ -140,7 +144,8 @@ impl<F: RealFn> ConjugateGradient<F>
         None
     }
 }
-
+//}}}
+//{{{ impl: UnconstrainedMinimizer for ConjugateGradient
 impl<F: RealFn> UnconstrainedMinimizer for ConjugateGradient<F>
 {
     #[trace_fn]
@@ -246,3 +251,4 @@ impl<F: RealFn> UnconstrainedMinimizer for ConjugateGradient<F>
         Err(Error::MaxIterations(self.opts.uncon_opts.max_iter as usize))
     }
 }
+//}}}

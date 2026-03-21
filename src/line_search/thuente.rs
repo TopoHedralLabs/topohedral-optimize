@@ -415,7 +415,7 @@ fn bracket_step(args: &StepArgs) -> StepReturn
     ret
 }
 //}}}
-//{{{ coll: StepArgs
+//{{{ struct: StepArgs
 #[derive(Default, Debug)]
 struct StepArgs
 {

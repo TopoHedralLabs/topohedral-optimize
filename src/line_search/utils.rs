@@ -276,7 +276,7 @@ pub fn satisfies_armijo(
     phi1 <= phi0 + c1 * alpha * dphi0
 }
 //}}}
-//{{{ fun:  satisfies_curvature
+//{{{ fun: satisfies_curvature
 #[trace_fn]
 pub fn satisfies_curvature(
     c2: f64,

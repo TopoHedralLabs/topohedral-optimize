@@ -15,7 +15,7 @@ use topohedral_tracing::*;
 //}}}
 //--------------------------------------------------------------------------------------------------
 
-//{{{ struct LineSearchFcn
+//{{{ struct: LineSearchFcn
 #[derive(Debug, Clone)]
 pub struct LineSearchFcn<F: RealFn>
 {
@@ -24,7 +24,7 @@ pub struct LineSearchFcn<F: RealFn>
     pub dir: Vector,
 }
 //}}}
-//{{{ impl LineSearchFcn
+//{{{ impl: LineSearchFcn
 impl<F: RealFn> LineSearchFcn<F>
 {
     #[trace_fn]

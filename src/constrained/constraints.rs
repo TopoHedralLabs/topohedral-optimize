@@ -13,12 +13,15 @@ use std::collections::HashMap;
 //}}}
 //--------------------------------------------------------------------------------------------------
 
+//{{{ struct: BoundsConstraints
 #[derive(Debug, Clone)]
 pub struct BoundsConstraints
 {
     bounds: HashMap<usize, (Option<f64>, Option<f64>)>,
 }
+//}}}
 
+//{{{ impl: BoundsConstraints
 impl BoundsConstraints
 {
     pub fn add_bounds(
@@ -54,7 +57,9 @@ impl BoundsConstraints
         num_constraints
     }
 }
+//}}}
 
+//{{{ impl: RealVectorFn for BoundsConstraints
 impl RealVectorFn for BoundsConstraints
 {
     fn dimension_domain(&self) -> usize
@@ -85,13 +90,17 @@ impl RealVectorFn for BoundsConstraints
         todo!()
     }
 }
+//}}}
 
+//{{{ struct: LinearConstraints
 pub struct LinearConstraints
 {
     eq_constraints: HashMap<usize, (f64, Vector)>,
     ieq_constraints: HashMap<usize, (Option<f64>, Option<f64>, Vector)>,
 }
+//}}}
 
+//{{{ impl: LinearConstraints
 impl LinearConstraints
 {
     fn num_eq_constraints(&self) -> usize
@@ -116,8 +125,11 @@ impl LinearConstraints
         num_constraints
     }
 }
+//}}}
 
+//{{{ struct: Constraints
 pub struct Constraints
 {
     bound_constraints: Option<BoundsConstraints>,
 }
+//}}}

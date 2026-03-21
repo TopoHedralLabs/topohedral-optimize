@@ -14,6 +14,7 @@ use thiserror::Error;
 //}}}
 //--------------------------------------------------------------------------------------------------
 
+//{{{ struct: Options
 #[derive(Copy, Clone)]
 pub struct Options
 {
@@ -23,14 +24,18 @@ pub struct Options
     pub max_iter: u64,
     pub uncon_method: UnconstrainedMethod,
 }
+//}}}
 
+//{{{ enum: ConvergedReason
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum ConvergedReason
 {
     Rtol,
     Atol,
 }
+//}}}
 
+//{{{ struct: Returns
 #[derive(Clone, Debug)]
 pub struct Returns
 {
@@ -43,15 +48,20 @@ pub struct Returns
     pub num_fun_evals: usize,
     pub num_grad_evals: usize,
 }
+//}}}
 
+//{{{ enum: Error
 #[derive(Error, Debug)]
 pub enum Error
 {
     #[error("Unconstrianed minimization failed with error {0}")]
     UnconstrainedError(#[from] UnconstrainedError),
 }
+//}}}
 
+//{{{ trait: ConstrainedMinimizer
 pub trait ConstrainedMinimizer
 {
     fn minimize(&mut self) -> Result<Returns, Error>;
 }
+//}}}

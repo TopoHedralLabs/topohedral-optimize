@@ -15,6 +15,7 @@ use topohedral_tracing::*;
 //}}}
 //--------------------------------------------------------------------------------------------------
 
+//{{{ struct: Options
 #[derive(Copy, Clone, Default, Debug)]
 pub struct Options
 {
@@ -22,13 +23,15 @@ pub struct Options
     pub maxiter: usize,
     pub zoom_maxiter: usize,
 }
-
+//}}}
+//{{{ struct: Nocedal
 pub struct Nocedal<F: RealFn1>
 {
     pub opts: Options,
     pub(crate) f: F,
 }
-
+//}}}
+//{{{ impl: Nocedal
 impl<F: RealFn1> Nocedal<F>
 {
     #[trace_fn]
@@ -40,7 +43,8 @@ impl<F: RealFn1> Nocedal<F>
         Self { f, opts }
     }
 }
-
+//}}}
+//{{{ impl: LineSearch for Nocedal
 impl<F: RealFn1> LineSearch for Nocedal<F>
 {
     type Function = F;
@@ -224,7 +228,7 @@ impl<F: RealFn1> LineSearch for Nocedal<F>
         self.f = fcn;
     }
 }
-
+//}}}
 //{{{ fun: zoom
 #[allow(clippy::too_many_arguments, clippy::identity_op)]
 #[trace_fn]

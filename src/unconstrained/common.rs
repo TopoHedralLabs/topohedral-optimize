@@ -15,6 +15,7 @@ use thiserror::Error;
 //}}}
 //--------------------------------------------------------------------------------------------------
 
+//{{{ struct: Options
 #[derive(Copy, Clone)]
 pub struct Options
 {
@@ -23,14 +24,16 @@ pub struct Options
     pub max_iter: u64,
     pub ls_method: LineSearchMethod,
 }
-
+//}}}
+//{{{ enum: ConvergedReason
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum ConvergedReason
 {
     Rtol,
     Atol,
 }
-
+//}}}
+//{{{ struct: Returns
 #[derive(Clone, Debug)]
 pub struct Returns
 {
@@ -41,7 +44,8 @@ pub struct Returns
     pub num_fun_evals: usize,
     pub num_grad_evals: usize,
 }
-
+//}}}
+//{{{ enum: Error
 #[derive(Error, Debug)]
 pub enum Error
 {
@@ -50,8 +54,10 @@ pub enum Error
     #[error("Maximum iterations of {0} reached")]
     MaxIterations(usize),
 }
-
+//}}}
+//{{{ trait: UnconstrainedMinimizer
 pub trait UnconstrainedMinimizer
 {
     fn minimize(&mut self) -> Result<Returns, Error>;
 }
+//}}}

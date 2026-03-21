@@ -16,6 +16,7 @@ use topohedral_tracing::*;
 //}}}
 //--------------------------------------------------------------------------------------------------
 
+//{{{ struct: GuessData
 #[derive(Copy, Clone, Debug)]
 struct GuessData
 {
@@ -27,7 +28,8 @@ struct GuessData
     c: f64,
     phi_c: f64,
 }
-
+//}}}
+//{{{ struct: Options
 #[derive(Debug, Copy, Clone)]
 pub struct Options
 {
@@ -35,13 +37,15 @@ pub struct Options
     pub scale_factor: f64,
     pub maxiter: usize,
 }
-
+//}}}
+//{{{ struct: Interp
 pub struct Interp<F: RealFn1>
 {
     pub opts: Options,
     pub(crate) f: F,
 }
-
+//}}}
+//{{{ impl: Interp
 impl<F: RealFn1> Interp<F>
 {
     #[trace_fn]
@@ -101,7 +105,8 @@ impl<F: RealFn1> Interp<F>
         None
     }
 }
-
+//}}}
+//{{{ impl: LineSearch for Interp
 impl<F: RealFn1> LineSearch for Interp<F>
 {
     type Function = F;
@@ -227,3 +232,4 @@ impl<F: RealFn1> LineSearch for Interp<F>
         self.f = fcn;
     }
 }
+//}}}

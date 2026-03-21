@@ -23,11 +23,17 @@
 #![allow(incomplete_features)]
 #![feature(generic_const_exprs)]
 
+//{{{ mod: submodules
 mod common;
+//}}}
+//{{{ pub use: common exports
 pub use common::{
     arc_real_vector_fn, rc_real_fn, rc_real_vector_fn, ArcRealVectorFn, Matrix, RcRealFn,
     RcRealVectorFn, RealFn, RealFn1, RealVectorFn, Vector,
 };
+//}}}
+//{{{ pub mod: public modules
 pub mod constrained;
 pub mod line_search;
 pub mod unconstrained;
+//}}}

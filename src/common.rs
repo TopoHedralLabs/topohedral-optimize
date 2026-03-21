@@ -17,9 +17,10 @@ use topohedral_linalg::dvector::DVector;
 //}}}
 //--------------------------------------------------------------------------------------------------
 
+//{{{ type: core aliases
 pub type Vector = DVector<f64>;
 pub type Matrix = DMatrix<f64>;
-
+//}}}
 //{{{ trait: RealFn1
 /// 1D real-valued function trait
 pub trait RealFn1
@@ -102,7 +103,7 @@ where
     }
 }
 //}}}
-//{{{ struct: CountingRealFcn
+//{{{ struct: CountingRealFn
 #[derive(Clone, Debug)]
 pub(crate) struct CountingRealFn<F: RealFn>
 {
@@ -111,7 +112,7 @@ pub(crate) struct CountingRealFn<F: RealFn>
     pub num_grad_evals: usize,
 }
 //}}}
-//{{{ impl: RealFn for CountingRealFcn
+//{{{ impl: RealFn for CountingRealFn
 impl<F: RealFn> RealFn for CountingRealFn<F>
 {
     fn dimension(&self) -> usize
@@ -138,7 +139,7 @@ impl<F: RealFn> RealFn for CountingRealFn<F>
     }
 }
 //}}}
-//{{{ impl: CountingRealFcn
+//{{{ impl: CountingRealFn
 impl<F: RealFn> CountingRealFn<F>
 {
     pub fn new(fcn: F) -> Self
@@ -169,8 +170,9 @@ pub fn rc_real_fn<F: RealFn>(fcn: F) -> RcRealFn<F>
 pub fn arc_real_fn<F: RealFn>(fcn: F) -> ArcRealFn<F>
 {
     Arc::new(Mutex::new(fcn))
-} //}}}
-  //{{{ trait: RealVectorFn
+}
+//}}}
+//{{{ trait: RealVectorFn
 pub trait RealVectorFn: Clone + Debug
 {
     fn dimension_domain(&self) -> usize;
