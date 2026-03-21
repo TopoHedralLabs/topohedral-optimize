@@ -18,6 +18,7 @@ use topohedral_linalg::dvector::VecType::Col;
 //}}}
 //--------------------------------------------------------------------------------------------------
 
+//{{{ struct: ConstraintData
 #[derive(Debug, Clone)]
 struct ConstraintData<F: RealVectorFn>
 {
@@ -27,7 +28,8 @@ struct ConstraintData<F: RealVectorFn>
     pub constraint_values: Vector,
     pub constraint_gradients: Matrix,
 }
-
+//}}}
+//{{{ impl: ConstraintData
 impl<F: RealVectorFn> ConstraintData<F>
 {
     pub fn new(fcn: F) -> Self
@@ -62,7 +64,8 @@ impl<F: RealVectorFn> ConstraintData<F>
         self.function.grad(x, &mut self.constraint_gradients);
     }
 }
-
+//}}}
+//{{{ fun: eq_penalty_value
 fn eq_penalty_value<F: RealVectorFn>(constaint_data: &ConstraintData<F>) -> f64
 {
     let n = constaint_data.function.dimension_range();
@@ -76,7 +79,8 @@ fn eq_penalty_value<F: RealVectorFn>(constaint_data: &ConstraintData<F>) -> f64
     }
     constraint_value
 }
-
+//}}}
+//{{{ fun: eq_penalty_gradient
 fn eq_penalty_gradient<F: RealVectorFn>(constaint_data: &ConstraintData<F>) -> Vector
 {
     let dim = constaint_data.function.dimension_domain();
@@ -93,7 +97,8 @@ fn eq_penalty_gradient<F: RealVectorFn>(constaint_data: &ConstraintData<F>) -> V
     }
     constraint_gradient
 }
-
+//}}}
+//{{{ fun: ieq_penalty_value
 fn ieq_penalty_value<F: RealVectorFn>(constaint_data: &ConstraintData<F>) -> f64
 {
     let n = constaint_data.function.dimension_domain();
@@ -107,7 +112,8 @@ fn ieq_penalty_value<F: RealVectorFn>(constaint_data: &ConstraintData<F>) -> f64
     }
     constraint_value
 }
-
+//}}}
+//{{{ fun: ieq_penalty_gradient
 fn ieq_penalty_gradient<F: RealVectorFn>(constaint_data: &ConstraintData<F>) -> Vector
 {
     let dim = constaint_data.function.dimension_domain();
@@ -124,7 +130,8 @@ fn ieq_penalty_gradient<F: RealVectorFn>(constaint_data: &ConstraintData<F>) -> 
     }
     constraint_gradient
 }
-
+//}}}
+//{{{ struct: AugmentedLagrangianFcn
 #[derive(Debug, Clone)]
 pub struct AugmentedLagrangianFcn<F1: RealFn, F2: RealVectorFn>
 {
@@ -132,7 +139,8 @@ pub struct AugmentedLagrangianFcn<F1: RealFn, F2: RealVectorFn>
     eq_constraint_data: Option<ConstraintData<F2>>,
     ieq_constraint_data: Option<ConstraintData<F2>>,
 }
-
+//}}}
+//{{{ impl: AugmentedLagrangianFcn
 impl<F1: RealFn, F2: RealVectorFn> AugmentedLagrangianFcn<F1, F2>
 {
     pub fn new(
@@ -160,7 +168,8 @@ impl<F1: RealFn, F2: RealVectorFn> AugmentedLagrangianFcn<F1, F2>
         }
     }
 }
-
+//}}}
+//{{{ impl: RealFn for AugmentedLagrangianFcn
 impl<F1: RealFn, F2: RealVectorFn> RealFn for AugmentedLagrangianFcn<F1, F2>
 {
     fn dimension(&self) -> usize
@@ -210,12 +219,14 @@ impl<F1: RealFn, F2: RealVectorFn> RealFn for AugmentedLagrangianFcn<F1, F2>
         grad_aug_lag
     }
 }
-
+//}}}
+//{{{ struct: AugmentedLagrangianData
 struct AugmentedLagrangianData
 {
     max_constraint_violation: f64,
 }
-
+//}}}
+//{{{ struct: AugmentedLagrangian
 pub struct AugmentedLagrangian<F1: RealFn, F2: RealVectorFn>
 {
     fcn: Arc<Mutex<CountingRealFn<AugmentedLagrangianFcn<F1, F2>>>>,
@@ -223,7 +234,11 @@ pub struct AugmentedLagrangian<F1: RealFn, F2: RealVectorFn>
     fcn_grad_init: Vector,
     opts: Options,
 }
-
+//}}}
+//{{{ impl AugmentedLagrangian
+impl<F1: RealFn, F2: RealVectorFn> AugmentedLagrangian<F1, F2> {}
+//}}}
+//{{{ impl: ConstrainedMinimizer for AugmentedLagrangian
 impl<F1: RealFn, F2: RealVectorFn> ConstrainedMinimizer for AugmentedLagrangian<F1, F2>
 {
     fn minimize(&mut self) -> Result<super::common::Returns, super::common::Error>
@@ -231,3 +246,4 @@ impl<F1: RealFn, F2: RealVectorFn> ConstrainedMinimizer for AugmentedLagrangian<
         todo!()
     }
 }
+//}}}
