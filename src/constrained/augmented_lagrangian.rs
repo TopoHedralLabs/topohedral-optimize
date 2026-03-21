@@ -23,7 +23,7 @@ struct ConstraintData<F: RealVectorFn>
 {
     pub function: F,
     pub penalties: Vector,
-    pub multipliers: Vector,
+    pub shifts: Vector,
     pub constraint_values: Vector,
     pub constraint_gradients: Matrix,
 }
@@ -40,7 +40,7 @@ impl<F: RealVectorFn> ConstraintData<F>
         Self {
             function: fcn,
             penalties: zero_vector.clone(),
-            multipliers: zero_vector.clone(),
+            shifts: zero_vector.clone(),
             constraint_values: zero_vector.clone(),
             constraint_gradients: zero_matrix,
         }
@@ -51,15 +51,7 @@ impl<F: RealVectorFn> ConstraintData<F>
         x: &Vector,
     )
     {
-        let ConstraintData {
-            function,
-            penalties: _,
-            multipliers: _,
-            constraint_values,
-            constraint_gradients: _,
-        } = self;
-
-        function.eval(x, constraint_values);
+        self.function.eval(x, &mut self.constraint_values);
     }
 
     fn evaluate_gradients(
@@ -67,33 +59,25 @@ impl<F: RealVectorFn> ConstraintData<F>
         x: &Vector,
     )
     {
-        let ConstraintData {
-            function,
-            penalties: _,
-            multipliers: _,
-            constraint_values: _,
-            constraint_gradients,
-        } = self;
-
-        function.grad(x, constraint_gradients);
+        self.function.grad(x, &mut self.constraint_gradients);
     }
 }
 
-fn evaluate_eq_constraint<F: RealVectorFn>(constaint_data: &ConstraintData<F>) -> f64
+fn eq_penalty_value<F: RealVectorFn>(constaint_data: &ConstraintData<F>) -> f64
 {
     let n = constaint_data.function.dimension_range();
     let mut constraint_value = 0.0;
     for i in 0..n
     {
-        let rho_i = constaint_data.penalties[i];
-        let lambda_i = constaint_data.multipliers[i];
-        let g_i = constaint_data.constraint_values[i];
-        constraint_value += rho_i * (g_i + (lambda_i / rho_i)).powi(2);
+        let p_i = constaint_data.penalties[i];
+        let theta_i = constaint_data.shifts[i];
+        let h_i = constaint_data.constraint_values[i];
+        constraint_value += p_i * (h_i + theta_i).powi(2);
     }
     constraint_value
 }
 
-fn evaluate_eq_constraint_gradient<F: RealVectorFn>(constaint_data: &ConstraintData<F>) -> Vector
+fn eq_penalty_gradient<F: RealVectorFn>(constaint_data: &ConstraintData<F>) -> Vector
 {
     let dim = constaint_data.function.dimension_domain();
     let n = constaint_data.function.dimension_range();
@@ -101,30 +85,30 @@ fn evaluate_eq_constraint_gradient<F: RealVectorFn>(constaint_data: &ConstraintD
 
     for i in 0..n
     {
-        let rho_i = constaint_data.penalties[i];
-        let lambda_i = constaint_data.multipliers[i];
+        let p_i = constaint_data.penalties[i];
+        let theta_i = constaint_data.shifts[i];
         let g_i = constaint_data.constraint_values[i];
         let grad_g_i = constaint_data.constraint_gradients.col(i).to_dmatrix();
-        constraint_gradient += (rho_i * (g_i + (lambda_i / rho_i))) * grad_g_i;
+        constraint_gradient += (p_i * (g_i + theta_i)) * grad_g_i;
     }
     constraint_gradient
 }
 
-fn evaluate_ieq_constraint<F: RealVectorFn>(constaint_data: &ConstraintData<F>) -> f64
+fn ieq_penalty_value<F: RealVectorFn>(constaint_data: &ConstraintData<F>) -> f64
 {
     let n = constaint_data.function.dimension_domain();
     let mut constraint_value = 0.0;
     for i in 0..n
     {
-        let rho_i = constaint_data.penalties[i];
-        let lambda_i = constaint_data.multipliers[i];
+        let q_i = constaint_data.penalties[i];
+        let phi_i = constaint_data.shifts[i];
         let g_i = constaint_data.constraint_values[i];
-        constraint_value += rho_i * (g_i + (lambda_i / rho_i).max(0.0)).powi(2);
+        constraint_value += q_i * ((g_i + phi_i).max(0.0)).powi(2);
     }
     constraint_value
 }
 
-fn evaluate_ieq_constraint_gradient<F: RealVectorFn>(constaint_data: &ConstraintData<F>) -> Vector
+fn ieq_penalty_gradient<F: RealVectorFn>(constaint_data: &ConstraintData<F>) -> Vector
 {
     let dim = constaint_data.function.dimension_domain();
     let n = constaint_data.function.dimension_range();
@@ -132,11 +116,11 @@ fn evaluate_ieq_constraint_gradient<F: RealVectorFn>(constaint_data: &Constraint
 
     for i in 0..n
     {
-        let rho_i = constaint_data.penalties[i];
-        let lambda_i = constaint_data.multipliers[i];
+        let q_i = constaint_data.penalties[i];
+        let phi_i = constaint_data.shifts[i];
         let g_i = constaint_data.constraint_values[i];
         let grad_g_i = constaint_data.constraint_gradients.col(i).to_dmatrix();
-        constraint_gradient += (rho_i * (g_i + (lambda_i / rho_i)).max(0.0)) * grad_g_i;
+        constraint_gradient += (q_i * (g_i + phi_i).max(0.0)) * grad_g_i;
     }
     constraint_gradient
 }
@@ -175,38 +159,6 @@ impl<F1: RealFn, F2: RealVectorFn> AugmentedLagrangianFcn<F1, F2>
             ieq_constraint_data: ieq_constraint_data,
         }
     }
-
-    pub fn evaluate_constraint_values(
-        &mut self,
-        x: &Vector,
-    )
-    {
-        if let Some(eq_constraints) = &mut self.eq_constraint_data
-        {
-            eq_constraints.evaluate_values(x);
-        }
-
-        if let Some(ieq_constraints) = &mut self.ieq_constraint_data
-        {
-            ieq_constraints.evaluate_values(x);
-        }
-    }
-
-    pub fn evaluate_constraint_gradients(
-        &mut self,
-        x: &Vector,
-    )
-    {
-        if let Some(eq_constraints) = &mut self.eq_constraint_data
-        {
-            eq_constraints.evaluate_gradients(x);
-        }
-
-        if let Some(ieq_constraints) = &mut self.ieq_constraint_data
-        {
-            ieq_constraints.evaluate_gradients(x);
-        }
-    }
 }
 
 impl<F1: RealFn, F2: RealVectorFn> RealFn for AugmentedLagrangianFcn<F1, F2>
@@ -223,14 +175,16 @@ impl<F1: RealFn, F2: RealVectorFn> RealFn for AugmentedLagrangianFcn<F1, F2>
     {
         let mut aug_lag = self.fcn.eval(x);
 
-        if let Some(eq_constraint_data) = &self.eq_constraint_data
+        if let Some(eq_constraint_data) = &mut self.eq_constraint_data
         {
-            aug_lag += evaluate_eq_constraint(eq_constraint_data);
+            eq_constraint_data.evaluate_values(x);
+            aug_lag += eq_penalty_value(eq_constraint_data);
         }
 
-        if let Some(ieq_constraint_data) = &self.ieq_constraint_data
+        if let Some(ieq_constraint_data) = &mut self.ieq_constraint_data
         {
-            aug_lag += evaluate_ieq_constraint(ieq_constraint_data);
+            ieq_constraint_data.evaluate_values(x);
+            aug_lag += ieq_penalty_value(ieq_constraint_data);
         }
 
         aug_lag
@@ -245,16 +199,21 @@ impl<F1: RealFn, F2: RealVectorFn> RealFn for AugmentedLagrangianFcn<F1, F2>
 
         if let Some(eq_constraint_data) = &self.eq_constraint_data
         {
-            grad_aug_lag += evaluate_eq_constraint_gradient(eq_constraint_data);
+            grad_aug_lag += eq_penalty_gradient(eq_constraint_data);
         }
 
         if let Some(ieq_constraint_data) = &self.ieq_constraint_data
         {
-            grad_aug_lag += evaluate_ieq_constraint_gradient(ieq_constraint_data);
+            grad_aug_lag += ieq_penalty_gradient(ieq_constraint_data);
         }
 
         grad_aug_lag
     }
+}
+
+struct AugmentedLagrangianData
+{
+    max_constraint_violation: f64,
 }
 
 pub struct AugmentedLagrangian<F1: RealFn, F2: RealVectorFn>
@@ -263,4 +222,12 @@ pub struct AugmentedLagrangian<F1: RealFn, F2: RealVectorFn>
     x_init: Vector,
     fcn_grad_init: Vector,
     opts: Options,
+}
+
+impl<F1: RealFn, F2: RealVectorFn> ConstrainedMinimizer for AugmentedLagrangian<F1, F2>
+{
+    fn minimize(&mut self) -> Result<super::common::Returns, super::common::Error>
+    {
+        todo!()
+    }
 }

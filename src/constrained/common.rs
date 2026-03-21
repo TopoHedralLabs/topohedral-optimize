@@ -42,8 +42,6 @@ pub struct Returns
     pub num_iterations: usize,
     pub num_fun_evals: usize,
     pub num_grad_evals: usize,
-    pub num_constraint_evals: usize,
-    pub num_constraint_grad_evals: usize,
 }
 
 #[derive(Error, Debug)]
