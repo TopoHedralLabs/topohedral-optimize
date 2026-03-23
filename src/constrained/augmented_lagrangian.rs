@@ -39,8 +39,8 @@ struct ConstraintData<F: RealVectorFn>
     pub function: F,
     pub penalties: Vector,
     pub shifts: Vector,
-    pub constraint_values: Vector,
-    pub constraint_gradients: Matrix,
+    pub values: Vector,
+    pub gradients: Matrix,
 }
 //}}}
 //{{{ impl: ConstraintData
@@ -62,8 +62,8 @@ impl<F: RealVectorFn> ConstraintData<F>
             function: fcn,
             penalties: initial_penalties,
             shifts: zero_vector.clone(),
-            constraint_values: zero_vector,
-            constraint_gradients: zero_matrix,
+            values: zero_vector,
+            gradients: zero_matrix,
         }
     }
 
@@ -72,7 +72,7 @@ impl<F: RealVectorFn> ConstraintData<F>
         x: &Vector,
     )
     {
-        self.function.eval(x, &mut self.constraint_values);
+        self.function.eval(x, &mut self.values);
     }
 
     fn evaluate_gradients(
@@ -80,7 +80,7 @@ impl<F: RealVectorFn> ConstraintData<F>
         x: &Vector,
     )
     {
-        self.function.grad(x, &mut self.constraint_gradients);
+        self.function.grad(x, &mut self.gradients);
     }
 }
 //}}}
@@ -93,7 +93,7 @@ fn eq_penalty_value<F: RealVectorFn>(constaint_data: &ConstraintData<F>) -> f64
     {
         let p_i = constaint_data.penalties[i];
         let theta_i = constaint_data.shifts[i];
-        let h_i = constaint_data.constraint_values[i];
+        let h_i = constaint_data.values[i];
         constraint_value += p_i * (h_i + theta_i).powi(2);
     }
     constraint_value
@@ -110,8 +110,8 @@ fn eq_penalty_gradient<F: RealVectorFn>(constaint_data: &ConstraintData<F>) -> V
     {
         let p_i = constaint_data.penalties[i];
         let theta_i = constaint_data.shifts[i];
-        let g_i = constaint_data.constraint_values[i];
-        let grad_g_i = constaint_data.constraint_gradients.col(i).to_dmatrix();
+        let g_i = constaint_data.values[i];
+        let grad_g_i = constaint_data.gradients.col(i).to_dmatrix();
         constraint_gradient += (p_i * (g_i + theta_i)) * grad_g_i;
     }
     constraint_gradient
@@ -126,7 +126,7 @@ fn ieq_penalty_value<F: RealVectorFn>(constaint_data: &ConstraintData<F>) -> f64
     {
         let q_i = constaint_data.penalties[i];
         let phi_i = constaint_data.shifts[i];
-        let g_i = constaint_data.constraint_values[i];
+        let g_i = constaint_data.values[i];
         constraint_value += q_i * ((g_i + phi_i).max(0.0)).powi(2);
     }
     constraint_value
@@ -143,8 +143,8 @@ fn ieq_penalty_gradient<F: RealVectorFn>(constaint_data: &ConstraintData<F>) -> 
     {
         let q_i = constaint_data.penalties[i];
         let phi_i = constaint_data.shifts[i];
-        let g_i = constaint_data.constraint_values[i];
-        let grad_g_i = constaint_data.constraint_gradients.col(i).to_dmatrix();
+        let g_i = constaint_data.values[i];
+        let grad_g_i = constaint_data.gradients.col(i).to_dmatrix();
         constraint_gradient += (q_i * (g_i + phi_i).max(0.0)) * grad_g_i;
     }
     constraint_gradient
@@ -157,11 +157,14 @@ pub struct AugmentedLagrangianFcn<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn
     fcn: F1,
     eq_constraint_data: Option<ConstraintData<F2>>,
     ieq_constraint_data: Option<ConstraintData<F3>>,
+    unimproved_eq_constraints: Vec<usize>,
+    unimproved_ieq_constraints: Vec<usize>,
 }
 //}}}
 //{{{ impl: AugmentedLagrangianFcn
 impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangianFcn<F1, F2, F3>
 {
+    //{{{ fn: new
     pub fn new(
         fcn: F1,
         eq_constraints: Option<F2>,
@@ -169,15 +172,25 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangianFcn<F1, 
         initial_penalty: f64,
     ) -> Self
     {
+        let mut num_eq_constraints = 0;
         let eq_constraint_data = match eq_constraints
         {
-            Some(eq_con) => Some(ConstraintData::new(eq_con, initial_penalty)),
+            Some(eq_con) =>
+            {
+                num_eq_constraints = eq_con.dimension_range();
+                Some(ConstraintData::new(eq_con, initial_penalty))
+            }
             None => None,
         };
 
+        let mut num_ieq_constriants = 0;
         let ieq_constraint_data = match ieq_constraints
         {
-            Some(ieq_con) => Some(ConstraintData::new(ieq_con, initial_penalty)),
+            Some(ieq_con) =>
+            {
+                num_ieq_constriants = ieq_con.dimension_range();
+                Some(ConstraintData::new(ieq_con, initial_penalty))
+            }
             None => None,
         };
 
@@ -185,22 +198,25 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangianFcn<F1, 
             fcn: fcn,
             eq_constraint_data: eq_constraint_data,
             ieq_constraint_data: ieq_constraint_data,
+            unimproved_eq_constraints: Vec::with_capacity(num_eq_constraints),
+            unimproved_ieq_constraints: Vec::with_capacity(num_ieq_constriants),
         }
     }
-
-    fn max_constraint_violation(&self) -> f64
+    //}}}
+    //{{{ fn: max_constraint_violation
+    fn compute_max_constraint_violation(&self) -> f64
     {
         let mut max_violation = 0.0;
 
         if let Some(eq_constraint_data) = &self.eq_constraint_data
         {
-            let max_eq_violation = eq_constraint_data.constraint_values.abs_max().unwrap();
+            let max_eq_violation = eq_constraint_data.values.abs_max().unwrap();
             max_violation = f64::max(max_violation, max_eq_violation);
         }
 
         if let Some(ieq_constraint_data) = &self.ieq_constraint_data
         {
-            let values = &ieq_constraint_data.constraint_values;
+            let values = &ieq_constraint_data.values;
             let shifts = &ieq_constraint_data.shifts;
             let max_ieq_violation = values
                 .iter()
@@ -213,22 +229,20 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangianFcn<F1, 
         }
         max_violation
     }
-
-    fn unimproved_constraint_violations(
-        &self,
+    //}}}
+    //{{{ fn: unimproved_constraint_violations
+    fn update_unimproved_constraint_violations(
+        &mut self,
         new_kmax: f64,
-    ) -> (Vec<usize>, Vec<usize>)
+    )
     {
-        let mut improved_eq_constraints = Vec::<usize>::new();
-        let mut improved_ieq_constraints = Vec::<usize>::new();
-
         if let Some(eq_constraint_data) = &self.eq_constraint_data
         {
-            let neq = eq_constraint_data.constraint_values.len();
-            improved_eq_constraints.reserve(neq);
-            improved_eq_constraints.extend(
+            let neq = eq_constraint_data.values.len();
+            self.unimproved_eq_constraints.clear();
+            self.unimproved_eq_constraints.extend(
                 eq_constraint_data
-                    .constraint_values
+                    .values
                     .iter()
                     .enumerate()
                     .filter_map(|(i, h_i)| (h_i.abs() > new_kmax).then_some(i)),
@@ -237,11 +251,11 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangianFcn<F1, 
 
         if let Some(ieq_constraint_data) = &self.ieq_constraint_data
         {
-            let nieq = ieq_constraint_data.constraint_values.len();
-            let values = &ieq_constraint_data.constraint_values;
+            let nieq = ieq_constraint_data.values.len();
+            self.unimproved_ieq_constraints.clear();
+            let values = &ieq_constraint_data.values;
             let shifts = &ieq_constraint_data.shifts;
-            improved_ieq_constraints.reserve(nieq);
-            improved_ieq_constraints.extend(
+            self.unimproved_ieq_constraints.extend(
                 values
                     .iter()
                     .zip(shifts)
@@ -249,18 +263,71 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangianFcn<F1, 
                     .filter_map(|(i, (g_i, phi_i))| ((-g_i).min(*phi_i) > new_kmax).then_some(i)),
             )
         }
-        (improved_eq_constraints, improved_ieq_constraints)
     }
+    //}}}
+    //{{{ fn: increase_penalties
+    fn increase_penalties(
+        &mut self,
+        penalty_increase_factor: f64,
+    )
+    {
+        if let Some(eq_constraint_data) = &mut self.eq_constraint_data
+        {
+            for constraint_index in &self.unimproved_eq_constraints
+            {
+                eq_constraint_data.penalties[*constraint_index] *= penalty_increase_factor;
+                eq_constraint_data.shifts[*constraint_index] /= penalty_increase_factor;
+            }
+        }
+        if let Some(ieq_constriant_data) = &mut self.ieq_constraint_data
+        {
+            for constraint_index in &self.unimproved_ieq_constraints
+            {
+                ieq_constriant_data.penalties[*constraint_index] *= penalty_increase_factor;
+                ieq_constriant_data.shifts[*constraint_index] /= penalty_increase_factor;
+            }
+        }
+    }
+    //}}}
+    //{{{ fn: increase_shifts
+    fn increase_shifts(&mut self)
+    {
+        if let Some(eq_constraint_data) = &mut self.eq_constraint_data
+        {
+            eq_constraint_data
+                .shifts
+                .iter_mut()
+                .zip(eq_constraint_data.values.iter())
+                .for_each(|(shift_i, hi)| {
+                    *shift_i += hi;
+                });
+        }
+        if let Some(ieq_constriant_data) = &mut self.ieq_constraint_data
+        {
+            ieq_constriant_data
+                .shifts
+                .iter_mut()
+                .zip(ieq_constriant_data.values.iter())
+                .for_each(|(shift_i, gi)| {
+                    let old_phi_i = *shift_i;
+                    *shift_i = f64::max(0.0, old_phi_i + gi);
+                });
+        }
+    }
+    //}}}
 }
+
 //}}}
 //{{{ impl: RealFn for AugmentedLagrangianFcn
 impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> RealFn for AugmentedLagrangianFcn<F1, F2, F3>
 {
+    //{{{ fn: dimension
     fn dimension(&self) -> usize
     {
         self.fcn.dimension()
     }
-
+    //}}}
+    //{{{ fn: eval
     fn eval(
         &mut self,
         x: &Vector,
@@ -282,7 +349,8 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> RealFn for AugmentedLagrang
 
         aug_lag
     }
-
+    //}}}
+    //{{{ fn: grad
     fn grad(
         &mut self,
         x: &Vector,
@@ -302,6 +370,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> RealFn for AugmentedLagrang
 
         grad_aug_lag
     }
+    //}}}
 }
 //}}}
 //{{{ struct: AugmentedLagrangian
@@ -316,6 +385,7 @@ pub struct AugmentedLagrangian<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn>
 //{{{ impl: AugmentedLagrangian
 impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2, F3>
 {
+    //{{{ fn: new
     #[trace_fn]
     pub fn new(
         fcn: F1,
@@ -340,6 +410,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
             opts: opts,
         }
     }
+    //}}}
 }
 //}}}
 //{{{ impl: ConstrainedMinimizer for AugmentedLagrangian
@@ -348,7 +419,10 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> ConstrainedMinimizer
 {
     fn minimize(&mut self) -> Result<super::common::Returns, super::common::Error>
     {
-        let mut Kmax = f64::INFINITY;
+        let mut constraint_violation_max = f64::INFINITY;
+        let n_iter = self.opts.constrained_opts.max_iter;
+        for k in 1..n_iter
+        {}
 
         todo!()
     }
