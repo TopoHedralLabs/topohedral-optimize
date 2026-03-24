@@ -4,6 +4,7 @@
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
+use crate::common::{RealFn, Vector};
 //}}}
 //{{{ std imports
 //}}}
@@ -31,4 +32,16 @@ pub use quasi_newton::{Options as QuasiNewtonOptions, QuasiNewton, UpdateMethod}
 //}}}
 //{{{ pub use: factory exports
 pub use factory::{create, Method as UnconstrainedMethod};
+//}}}
+
+//{{{ fn: minimize
+pub fn minimize<F: RealFn>(
+    fcn: F,
+    x0: Vector,
+    method: UnconstrainedMethod,
+) -> Result<UnconstrainedReturns, UnconstrainedError>
+{
+    let mut minimizer = create(fcn, x0, method);
+    return minimizer.minimize();
+}
 //}}}
