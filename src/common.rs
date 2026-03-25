@@ -50,9 +50,9 @@ pub trait RealFn: Clone + Debug
 }
 //}}}
 //{{{ impl: RealFn for Rc<RefCell<T>>
-impl<T> RealFn for Rc<RefCell<T>>
+impl<F> RealFn for Rc<RefCell<F>>
 where
-    T: RealFn,
+    F: RealFn,
 {
     fn dimension(&self) -> usize
     {
@@ -77,9 +77,9 @@ where
 }
 //}}}
 //{{{ impl: RealFn for Arc<Mutex<T>>
-impl<T> RealFn for Arc<Mutex<T>>
+impl<F> RealFn for Arc<Mutex<F>>
 where
-    T: RealFn,
+    F: RealFn,
 {
     fn dimension(&self) -> usize
     {
