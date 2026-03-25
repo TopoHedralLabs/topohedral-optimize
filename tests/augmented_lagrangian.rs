@@ -6,8 +6,8 @@ use topohedral_optimize::line_search::{
     InterpOptions, LineSearchMethod, LineSearchOptions, NocedalOptions, ThuenteOptions,
 };
 use topohedral_optimize::unconstrained::{
-    create, QuasiNewton, QuasiNewtonOptions, UnconstrainedConvergedReason, UnconstrainedMethod,
-    UnconstrainedMinimizer, UnconstrainedReturns, UnonstrainedOptions, UpdateMethod,
+    QuasiNewtonOptions, UnconstrainedConvergedReason, UnconstrainedMethod, UnconstrainedReturns,
+    UnonstrainedOptions, UpdateMethod,
 };
 use topohedral_optimize::{RealFn, Vector};
 //}}}

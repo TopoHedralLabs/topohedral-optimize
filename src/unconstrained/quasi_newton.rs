@@ -5,15 +5,13 @@
 
 //{{{ crate imports
 use super::common::Options as UnonstrainedOptions;
-use super::common::{ConvergedReason, Error, Returns};
+use super::common::{ConvergedReason, Error, Returns, UnconstrainedMinimizer};
 use crate::line_search as ls;
 use crate::line_search::initial_step;
 use crate::line_search::LineSearchFcn;
-use crate::unconstrained::UnconstrainedMinimizer;
-use crate::{common::arc_real_fn, common::CountingRealFn, RealFn, Vector};
+use crate::{RealFn, Vector};
 //}}}
 //{{{ std imports
-use std::sync::{Arc, Mutex};
 use topohedral_linalg::MatrixOps;
 //}}}
 //{{{ dep imports
@@ -53,7 +51,7 @@ struct Data
 //{{{ struct: QuasiNewton
 pub struct QuasiNewton<F: RealFn>
 {
-    fcn: Arc<Mutex<CountingRealFn<F>>>,
+    fcn: F,
     x_init: Vector,
     grad_fx_init: Vector,
     opts: Options,
@@ -71,9 +69,8 @@ impl<F: RealFn> QuasiNewton<F>
     ) -> Self
     {
         let grad_0 = fcn.grad(&x0);
-        let fcn_shared = arc_real_fn(CountingRealFn::new(fcn));
         Self {
-            fcn: fcn_shared.clone(),
+            fcn: fcn,
             x_init: x0.clone(),
             grad_fx_init: grad_0,
             opts,
@@ -235,15 +232,13 @@ impl<F: RealFn> UnconstrainedMinimizer for QuasiNewton<F>
                 //{{{ trace
                 info!(target: "qn", "Converging with reason {reason:?}");
                 //}}}
-
-                let fcn_lock = self.fcn.lock().unwrap();
                 return Ok(Returns {
                     fmin: fk,
                     xmin: xk,
                     reason,
                     num_iterations: i as usize,
-                    num_fun_evals: fcn_lock.num_func_evals,
-                    num_grad_evals: fcn_lock.num_grad_evals,
+                    num_fun_evals: 0,
+                    num_grad_evals: 0,
                 });
             }
 

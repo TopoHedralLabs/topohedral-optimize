@@ -7,7 +7,7 @@
 use crate::{
     common::{arc_real_fn, CountingRealFn},
     constrained::{ConstrainedMinimizer, ConstriainedOptions},
-    unconstrained::UnconstrainedMethod,
+    unconstrained::{minimize, UnconstrainedMethod, UnconstrainedReturns},
     Matrix, RealFn, RealVectorFn, Vector,
 };
 //}}}
@@ -26,7 +26,8 @@ use topohedral_tracing::{init, trace_fn};
 #[derive(Copy, Clone)]
 pub struct Options
 {
-    constrained_opts: ConstriainedOptions,
+    pub constrained_opts: ConstriainedOptions,
+    uncon_method: UnconstrainedMethod,
     initial_penalty: f64,
     constraint_improvement_factor: f64,
     penalty_growth_factor: f64,
@@ -421,8 +422,15 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> ConstrainedMinimizer
     {
         let mut constraint_violation_max = f64::INFINITY;
         let n_iter = self.opts.constrained_opts.max_iter;
+
+        let mut xk = self.x_init.clone();
+        let mut inner_rtol = 1e-4;
         for k in 1..n_iter
-        {}
+        {
+            self.opts.uncon_method.uncon_opts_mut().grad_rtol = inner_rtol;
+            let uncon_ret = minimize(self.fcn.clone(), xk.clone(), self.opts.uncon_method)?;
+            xk = uncon_ret.xmin
+        }
 
         todo!()
     }

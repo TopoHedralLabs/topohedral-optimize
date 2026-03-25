@@ -22,7 +22,6 @@ pub struct Options
     pub grad_atol: f64,
     pub constraint_tol: f64,
     pub max_iter: u64,
-    pub uncon_method: UnconstrainedMethod,
 }
 //}}}
 

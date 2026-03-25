@@ -6,8 +6,8 @@ use topohedral_optimize::line_search::{
     InterpOptions, LineSearchMethod, LineSearchOptions, NocedalOptions, ThuenteOptions,
 };
 use topohedral_optimize::unconstrained::{
-    create, QuasiNewton, QuasiNewtonOptions, UnconstrainedConvergedReason, UnconstrainedMethod,
-    UnconstrainedMinimizer, UnconstrainedReturns, UnonstrainedOptions, UpdateMethod,
+    minimize, QuasiNewtonOptions, UnconstrainedConvergedReason, UnconstrainedMethod,
+    UnconstrainedReturns, UnonstrainedOptions, UpdateMethod,
 };
 use topohedral_optimize::{RealFn, Vector};
 //}}}
@@ -195,6 +195,7 @@ const INTERP_BFGS: QuasiNewtonOptions = QuasiNewtonOptions {
         grad_rtol: 1e-6,
         grad_atol: 1e-8,
         max_iter: 100,
+        make_counting: true,
         ls_method: LineSearchMethod::Interp(InterpOptions {
             ls_opts: LineSearchOptions {
                 c1: 1.0e-4,
@@ -216,6 +217,7 @@ const THUENTE_BFGS: QuasiNewtonOptions = QuasiNewtonOptions {
         grad_rtol: 1e-6,
         grad_atol: 1e-8,
         max_iter: 100,
+        make_counting: true,
         ls_method: LineSearchMethod::Thuente(ThuenteOptions {
             ls_opts: LineSearchOptions {
                 c1: 1.0e-4,
@@ -236,6 +238,7 @@ const NOCEDAL_BFGS: QuasiNewtonOptions = QuasiNewtonOptions {
         grad_rtol: 1e-6,
         grad_atol: 1e-8,
         max_iter: 100,
+        make_counting: true,
         ls_method: LineSearchMethod::Nocedal(NocedalOptions {
             ls_opts: LineSearchOptions {
                 c1: 1.0e-4,
@@ -264,7 +267,7 @@ const NOCEDAL_BFGS: QuasiNewtonOptions = QuasiNewtonOptions {
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 1,
         num_fun_evals: 6,
-        num_grad_evals: 3
+        num_grad_evals: 4
     }
 )]
 //}}}
@@ -278,7 +281,7 @@ const NOCEDAL_BFGS: QuasiNewtonOptions = QuasiNewtonOptions {
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 2,
         num_fun_evals: 7,
-        num_grad_evals: 9
+        num_grad_evals: 10
     }
 )]
 //}}}
@@ -292,7 +295,7 @@ const NOCEDAL_BFGS: QuasiNewtonOptions = QuasiNewtonOptions {
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 3,
         num_fun_evals: 11,
-        num_grad_evals: 14
+        num_grad_evals: 15
     }
 )]
 //}}}
@@ -305,9 +308,7 @@ fn test_qudratic(
     let quad = Quadratic {
         xmin: colvec(&[1000.0, -100.0, 0.0, 567.0, -23.0]),
     };
-    let mut qn = QuasiNewton::new(quad, x0, opts);
-    let ret = qn.minimize().unwrap();
-
+    let ret = minimize(quad, x0, UnconstrainedMethod::QuasiNewton(opts)).unwrap();
     println!("{ret:?}");
     assert_returns(&ret, &exp_ret, 1e-7, 1e-10);
 }
@@ -324,7 +325,7 @@ fn test_qudratic(
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 19,
         num_fun_evals: 77,
-        num_grad_evals: 39
+        num_grad_evals: 40
     }
 )]
 //}}}
@@ -338,7 +339,7 @@ fn test_qudratic(
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 66,
         num_fun_evals: 92,
-        num_grad_evals: 150
+        num_grad_evals: 151
     }
 )]
 //}}}
@@ -352,7 +353,7 @@ fn test_qudratic(
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 57,
         num_fun_evals: 72,
-        num_grad_evals: 129,
+        num_grad_evals: 130,
     }
 )]
 //}}}
@@ -368,9 +369,7 @@ fn test_quartic(
     opts.uncon_opts.grad_rtol = 1e-12;
     opts.uncon_opts.grad_atol = 1e-12;
     opts.uncon_opts.max_iter = 1000;
-    let mut qn = QuasiNewton::new(quart, x0, opts);
-    let ret = qn.minimize().unwrap();
-
+    let ret = minimize(quart, x0, UnconstrainedMethod::QuasiNewton(opts)).unwrap();
     println!("{ret:?}");
     assert_returns(&ret, &exp_ret, 5e-2, 1e-5);
 }
@@ -387,7 +386,7 @@ fn test_quartic(
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 19,
         num_fun_evals: 226,
-        num_grad_evals: 66
+        num_grad_evals: 67
     }
 )]
 //}}}
@@ -401,7 +400,7 @@ fn test_quartic(
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 24,
         num_fun_evals: 36,
-        num_grad_evals: 60
+        num_grad_evals: 61
     }
 )]
 //}}}
@@ -415,7 +414,7 @@ fn test_quartic(
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 25,
         num_fun_evals: 53,
-        num_grad_evals: 60
+        num_grad_evals: 61
     }
 )]
 //}}}
@@ -436,9 +435,7 @@ fn test_rosenbrock(
     }
 
     // let mut qn = QuasiNewton::new(rosenbrock, x0, opts);
-    let mut qn = create(rosenbrock, x0, UnconstrainedMethod::QuasiNewton(opts));
-
-    let ret = qn.minimize().unwrap();
+    let ret = minimize(rosenbrock, x0, UnconstrainedMethod::QuasiNewton(opts)).unwrap();
     println!("{ret:?}");
     assert_returns(&ret, &exp_ret, 1e-2, 1e-6);
 }

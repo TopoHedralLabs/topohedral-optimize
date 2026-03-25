@@ -43,7 +43,7 @@ pub struct Options
 //{{{ struct: ConjugateGradient
 pub struct ConjugateGradient<F: RealFn>
 {
-    fcn: Arc<Mutex<CountingRealFn<F>>>,
+    fcn: F,
     x_init: Vector,
     grad_fx_init: Vector,
     opts: Options,
@@ -60,9 +60,8 @@ impl<F: RealFn> ConjugateGradient<F>
     ) -> Self
     {
         let grad_0 = fcn.grad(&x0);
-        let fcn_shared = arc_real_fn(CountingRealFn::new(fcn));
         Self {
-            fcn: fcn_shared.clone(),
+            fcn: fcn,
             x_init: x0.clone(),
             grad_fx_init: grad_0,
             opts,
@@ -224,15 +223,13 @@ impl<F: RealFn> UnconstrainedMinimizer for ConjugateGradient<F>
                 //{{{ trace
                 info!(target: "cg", "Converging with reason {reason:?}");
                 //}}}
-
-                let fcn_lock = self.fcn.lock().unwrap();
                 return Ok(Returns {
                     fmin: fk,
                     xmin: xk,
                     reason,
                     num_iterations: i as usize,
-                    num_fun_evals: fcn_lock.num_func_evals,
-                    num_grad_evals: fcn_lock.num_grad_evals,
+                    num_fun_evals: 0,
+                    num_grad_evals: 0,
                 });
             }
 

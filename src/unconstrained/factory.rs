@@ -6,7 +6,7 @@
 use topohedral_tracing::trace_fn;
 
 //{{{ crate imports
-use super::common::UnconstrainedMinimizer;
+use super::common::{Options, UnconstrainedMinimizer};
 use super::conjugate_gradient::ConjugateGradient;
 use super::conjugate_gradient::Options as ConjugateGradientOptions;
 use super::quasi_newton::Options as QuasiNewtonOptions;
@@ -25,6 +25,28 @@ pub enum Method
 {
     ConjugateGradient(ConjugateGradientOptions),
     QuasiNewton(QuasiNewtonOptions),
+}
+//}}}
+//{{{ impl: Method
+impl Method
+{
+    pub fn uncon_opts_mut(&mut self) -> &mut Options
+    {
+        match self
+        {
+            Method::ConjugateGradient(cg_opts) => &mut cg_opts.uncon_opts,
+            Method::QuasiNewton(qn_opts) => &mut qn_opts.uncon_opts,
+        }
+    }
+
+    pub fn uncon_opts(&self) -> &Options
+    {
+        match self
+        {
+            Method::ConjugateGradient(cg_opts) => &cg_opts.uncon_opts,
+            Method::QuasiNewton(qn_opts) => &qn_opts.uncon_opts,
+        }
+    }
 }
 //}}}
 //{{{ fun: create
