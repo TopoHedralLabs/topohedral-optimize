@@ -70,6 +70,20 @@ impl<F: RealFn> ConjugateGradient<F>
         }
     }
 
+    fn apply_restart(
+        &self,
+        k: u64,
+        grad_fk: &Vector,
+        dir_k: &mut Vector,
+    )
+    {
+        let is_increasing = grad_fk.dot(dir_k) >= 0.0;
+        if self.needs_restart(k) || is_increasing
+        {
+            *dir_k = -grad_fk.clone();
+        }
+    }
+
     /// Updates the search direction for the conjugate gradient method based on the
     /// current and previous gradients, and the current search direction.
     /// The update formula used depends on the `DirectionMethod` specified in the
@@ -88,11 +102,6 @@ impl<F: RealFn> ConjugateGradient<F>
         //{{{ trace
         trace!(target: "cg", "norm_grad_fk1 = {norm_grad_fk_prev:1.4e} norm_grad_fk = {norm_grad_fk:1.4e}");
         //}}}
-        let is_increasing = grad_fk.dot(dir_k) >= 0.0;
-        if self.needs_restart(k) || is_increasing
-        {
-            return -grad_fk.clone();
-        }
 
         // direction updates
         let beta = match self.opts.direction
@@ -185,7 +194,7 @@ impl<F: RealFn> UnconstrainedMinimizer for ConjugateGradient<F>
     {
         let mut iter_k = IterData::new(self.fcn.clone(), &self.x_init);
         let mut iter_k_prev: IterData;
-        let mut direction = -iter_k.grad_fx.clone();
+        let mut dir_k = -iter_k.grad_fx.clone();
         let mut alpha_init = ls::initial_step(
             iter_k.fx,
             iter_k.fx + 0.5 * iter_k.norm_grad_fx,
@@ -198,24 +207,24 @@ impl<F: RealFn> UnconstrainedMinimizer for ConjugateGradient<F>
         {
             self.print_status(k, &iter_k);
 
+            self.apply_restart(k, &iter_k.grad_fx, &mut dir_k);
             iter_k_prev = iter_k;
             iter_k = ls::search(
                 self.fcn.clone(),
                 &iter_k_prev,
-                &direction,
+                &dir_k,
                 alpha_init,
                 self.opts.uncon_opts.ls_method,
             )?;
-            direction = self.update_direction(
+            dir_k = self.update_direction(
                 k,
                 &iter_k_prev.grad_fx,
                 &iter_k.grad_fx,
                 iter_k_prev.norm_grad_fx,
                 iter_k.norm_grad_fx,
-                &direction,
+                &dir_k,
             );
-            alpha_init =
-                ls::initial_step(iter_k.fx, iter_k_prev.fx, iter_k.grad_fx.dot(&direction));
+            alpha_init = ls::initial_step(iter_k.fx, iter_k_prev.fx, iter_k.grad_fx.dot(&dir_k));
 
             if let Some(reason) = self.is_converged(iter_k.norm_grad_fx, grad_fx_norm_init)
             {
