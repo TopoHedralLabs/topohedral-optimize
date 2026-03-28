@@ -412,6 +412,13 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
         }
     }
     //}}}
+    fn set_inner_tol(
+        &mut self,
+        tol: f64,
+    )
+    {
+        self.opts.uncon_method.uncon_opts_mut().grad_rtol = tol;
+    }
 }
 //}}}
 //{{{ impl: ConstrainedMinimizer for AugmentedLagrangian
@@ -420,16 +427,28 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> ConstrainedMinimizer
 {
     fn minimize(&mut self) -> Result<super::common::Returns, super::common::Error>
     {
-        let mut constraint_violation_max = f64::INFINITY;
+        let n = self.x_init.len();
         let n_iter = self.opts.constrained_opts.max_iter;
 
+        let mut constraint_violation_max = f64::INFINITY;
+
+        let mut fk = 0.0;
+        let mut fk_prev = 0.0;
+
+        let mut grad_auglag_k = Vector::zeros_cvec(n, Col);
+        let mut grad_auglag_k_prev = Vector::zeros_cvec(n, Col);
+
         let mut xk = self.x_init.clone();
+        let mut xk_prev = self.x_init.clone();
+
         let mut inner_rtol = 1e-4;
         for k in 1..n_iter
         {
-            self.opts.uncon_method.uncon_opts_mut().grad_rtol = inner_rtol;
+            self.set_inner_tol(inner_rtol);
             let uncon_ret = minimize(self.fcn.clone(), xk.clone(), self.opts.uncon_method)?;
-            xk = uncon_ret.xmin
+            xk_prev = xk.clone();
+            xk = uncon_ret.xmin;
+            fk = uncon_ret.fmin;
         }
 
         todo!()

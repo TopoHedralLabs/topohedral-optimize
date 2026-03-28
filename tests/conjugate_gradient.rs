@@ -208,7 +208,7 @@ const INTERP_STEEPEST: ConjugateGradientOptions = ConjugateGradientOptions {
         }),
     },
     direction: Direction::Steepest,
-    restart: 10,
+    restart: 100,
 };
 //}}}
 //{{{ const: INTPER_FR

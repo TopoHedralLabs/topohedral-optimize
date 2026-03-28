@@ -4,7 +4,7 @@
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
-use crate::{RealFn, RealFn1, Vector};
+use crate::{common::IterData, RealFn, RealFn1, Vector};
 //}}}
 //{{{ std imports
 //}}}
@@ -35,6 +35,18 @@ impl<F: RealFn> LineSearchFcn<F>
     ) -> Self
     {
         Self { f, x, dir }
+    }
+
+    #[trace_fn]
+    pub fn output_data(
+        &mut self,
+        alpha: f64,
+    ) -> (Vector, f64, Vector)
+    {
+        let new_x: Vector = (&self.x + alpha * &self.dir).into();
+        let new_fx = self.f.eval(&new_x);
+        let new_grad_fx = self.f.grad(&new_x);
+        (new_x, new_fx, new_grad_fx)
     }
 }
 //}}}
@@ -120,15 +132,12 @@ impl Default for Options
 ///
 /// This struct contains the following fields:
 /// - `alpha`: The step size found by the line search.
-/// - `falpha`: The function value at the step size `alpha`.
-/// - `funcalls`: The number of function evaluations performed.
-/// - `gradcalls`: The number of gradient evaluations performed.
-#[derive(Debug, Copy, Clone)]
+/// - `phi_alpha`: The function value at the step size `alpha`.
+#[derive(Debug, Clone)]
 pub struct Returns
 {
     pub alpha: f64,
     pub phi_alpha: f64,
-    pub dphi_alpha: f64,
 }
 //}}}
 //{{{ trait: LineSearch

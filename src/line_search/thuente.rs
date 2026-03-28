@@ -351,7 +351,6 @@ impl<F: RealFn1> LineSearch for Thuente<F>
                 return Ok(Returns {
                     alpha: cur_step.alpha,
                     phi_alpha: cur_step.phi,
-                    dphi_alpha: cur_step.dphi,
                 });
             }
 

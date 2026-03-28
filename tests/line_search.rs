@@ -228,7 +228,6 @@ fn test_thuente_rational()
         let out = interp.search(phi0, dphi0, *alpha).unwrap();
         assert_relative_eq!(out.alpha, exp_vals.0, epsilon = 1e-6);
         assert_relative_eq!(out.phi_alpha, exp_vals.1, epsilon = 1e-6);
-        assert_relative_eq!(out.dphi_alpha, exp_vals.2, epsilon = 1e-6);
     }
 }
 
@@ -263,7 +262,6 @@ fn test_thuente_quadratic()
         let out = interp.search(phi0, dphi0, *alpha).unwrap();
         assert_relative_eq!(out.alpha, exp_vals.0, epsilon = 1e-6);
         assert_relative_eq!(out.phi_alpha, exp_vals.1, epsilon = 1e-6);
-        assert_relative_eq!(out.dphi_alpha, exp_vals.2, epsilon = 1e-6);
     }
 }
 //}}}
@@ -297,7 +295,6 @@ fn test_nocedal_rational()
         let out = nocedal.search(phi0, dphi0, *alpha).unwrap();
         assert_relative_eq!(out.alpha, exp_vals.0, epsilon = 1e-3);
         assert_relative_eq!(out.phi_alpha, exp_vals.1, epsilon = 1e-3);
-        assert_relative_eq!(out.dphi_alpha, exp_vals.2, epsilon = 1e-3);
     }
 }
 
@@ -333,7 +330,6 @@ fn test_nocedal_quadratic()
         let out = nocedal.search(phi0, dphi0, *alpha).unwrap();
         assert_relative_eq!(out.alpha, exp_vals.0, epsilon = 1e-5);
         assert_relative_eq!(out.phi_alpha, exp_vals.1, epsilon = 1e-3);
-        assert_relative_eq!(out.dphi_alpha, exp_vals.2, epsilon = 1e-5);
     }
 }
 
@@ -363,6 +359,5 @@ fn test_nocedal_cubic()
     let out = nocedal.search(phi0, dphi0, 1.0).unwrap();
     assert_relative_eq!(out.alpha, 5.0e-1, epsilon = 1e-6);
     assert_relative_eq!(out.phi_alpha, -3.75e-1, epsilon = 1e-6);
-    assert_relative_eq!(out.dphi_alpha, -2.5e-1, epsilon = 1e-6);
 }
 //}}}

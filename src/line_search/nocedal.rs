@@ -133,7 +133,6 @@ impl<F: RealFn1> LineSearch for Nocedal<F>
                 return Ok(Returns {
                     alpha: alpha_tmp,
                     phi_alpha: phi_tmp,
-                    dphi_alpha: dphi_tmp,
                 });
             }
 
@@ -148,7 +147,6 @@ impl<F: RealFn1> LineSearch for Nocedal<F>
                 return Ok(Returns {
                     alpha: alpha1,
                     phi_alpha: phi_a1,
-                    dphi_alpha: dphi_a1,
                 });
             }
 
@@ -194,7 +192,6 @@ impl<F: RealFn1> LineSearch for Nocedal<F>
                 return Ok(Returns {
                     alpha: alpha_tmp,
                     phi_alpha: phi_tmp,
-                    dphi_alpha: dphi_tmp,
                 });
             }
 
@@ -215,7 +212,6 @@ impl<F: RealFn1> LineSearch for Nocedal<F>
         Ok(Returns {
             alpha: alpha1,
             phi_alpha: phi_a1,
-            dphi_alpha: dphi_a1,
         })
     }
 

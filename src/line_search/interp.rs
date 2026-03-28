@@ -152,11 +152,7 @@ impl<F: RealFn1> LineSearch for Interp<F>
             phi_c: phi_c_low,
         })
         {
-            return Ok(Returns {
-                alpha,
-                phi_alpha,
-                dphi_alpha,
-            });
+            return Ok(Returns { alpha, phi_alpha });
         }
 
         for i in 0..maxiter
@@ -185,11 +181,7 @@ impl<F: RealFn1> LineSearch for Interp<F>
                 //{{{ trace
                 info!(target: "ls", "Low guess found acceptable step: alpha = {alpha}, phi_alpha = {phi_alpha}, dphi_alpha = {dphi_alpha}");
                 //}}}
-                return Ok(Returns {
-                    alpha,
-                    phi_alpha,
-                    dphi_alpha,
-                });
+                return Ok(Returns { alpha, phi_alpha });
             }
 
             b_high *= scale_factor;
@@ -213,11 +205,7 @@ impl<F: RealFn1> LineSearch for Interp<F>
                 //{{{ trace
                 info!(target: "ls", "High guess found acceptable step: alpha = {alpha}, phi_alpha = {phi_alpha}, dphi_alpha = {dphi_alpha}");
                 //}}}
-                return Ok(Returns {
-                    alpha,
-                    phi_alpha,
-                    dphi_alpha,
-                });
+                return Ok(Returns { alpha, phi_alpha });
             }
         }
         Err(LineSearchError::MaxIterations)

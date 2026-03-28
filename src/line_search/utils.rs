@@ -331,7 +331,8 @@ pub fn initial_step(
     let stp1: f64 = 1.0;
     let stp2: f64 = 2.02 * (phi1 - phi0) / dphi1;
     //{{{ trace
-    trace!(target: "ls", "stp1 = {stp1} stp2 = {stp2}");
+    trace!(target: "ls", "stp1 = {stp1:1.4e} stp2 = {stp2:1.4e}");
+    trace!(target: "ls", "returning {:1.4e}", stp1.min(stp2));
     //}}}
     stp1.min(stp2)
 }
