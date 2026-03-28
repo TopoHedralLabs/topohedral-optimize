@@ -186,8 +186,11 @@ impl<F: RealFn> UnconstrainedMinimizer for ConjugateGradient<F>
         let mut iter_k = IterData::new(self.fcn.clone(), &self.x_init);
         let mut iter_k_prev: IterData;
         let mut direction = -iter_k.grad_fx.clone();
-        let mut alpha_init =
-            ls::initial_step(iter_k.fx, iter_k.fx + 0.5 * iter_k.norm_grad_fx, -1.0);
+        let mut alpha_init = ls::initial_step(
+            iter_k.fx,
+            iter_k.fx + 0.5 * iter_k.norm_grad_fx,
+            -iter_k.norm_grad_fx.powi(2),
+        );
         let max_iter = self.opts.uncon_opts.max_iter;
         let grad_fx_norm_init = self.grad_fx_init.norm();
 
