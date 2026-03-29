@@ -181,7 +181,7 @@ impl<F: RealFn> ConjugateGradient<F>
         info!(target: "cg", "Current values: {current_iter}");
         info!(target: "cg","Convergence measures:");
         let grad_ratio = current_iter.norm_grad_fx / self.norm_grad_fx_init;
-        info!(target: "cg", "\t||∇f(k)|| / ||∇f(0)|| = {grad_ratio:1.4e}");
+        info!(target: "cg", "||∇f(k)|| / ||∇f(0)|| = {grad_ratio:1.4e}");
         //}}}
     }
 }
@@ -193,22 +193,24 @@ impl<F: RealFn> UnconstrainedMinimizer for ConjugateGradient<F>
     fn minimize(&mut self) -> Result<Returns, Error>
     {
         let mut iter_k = IterData::new(self.fcn.clone(), &self.x_init);
-        let mut iter_k_prev: IterData;
+
+        let mut iter_k_prev = iter_k.clone();
+        iter_k_prev.fx = iter_k.fx + 0.5 * iter_k.norm_grad_fx;
+
         let mut dir_k = -iter_k.grad_fx.clone();
-        let mut alpha_init = ls::initial_step(
-            iter_k.fx,
-            iter_k.fx + 0.5 * iter_k.norm_grad_fx,
-            -iter_k.norm_grad_fx.powi(2),
-        );
         let max_iter = self.opts.uncon_opts.max_iter;
         let grad_fx_norm_init = self.grad_fx_init.norm();
 
         for k in 1..max_iter
         {
             self.print_status(k, &iter_k);
-
             self.apply_restart(k, &iter_k.grad_fx, &mut dir_k);
+
+            let alpha_init =
+                ls::initial_step(iter_k.fx, iter_k_prev.fx, iter_k.grad_fx.dot(&dir_k));
+
             iter_k_prev = iter_k;
+
             iter_k = ls::search(
                 self.fcn.clone(),
                 &iter_k_prev,
@@ -216,6 +218,7 @@ impl<F: RealFn> UnconstrainedMinimizer for ConjugateGradient<F>
                 alpha_init,
                 self.opts.uncon_opts.ls_method,
             )?;
+
             dir_k = self.update_direction(
                 k,
                 &iter_k_prev.grad_fx,
@@ -224,7 +227,6 @@ impl<F: RealFn> UnconstrainedMinimizer for ConjugateGradient<F>
                 iter_k.norm_grad_fx,
                 &dir_k,
             );
-            alpha_init = ls::initial_step(iter_k.fx, iter_k_prev.fx, iter_k.grad_fx.dot(&dir_k));
 
             if let Some(reason) = self.is_converged(iter_k.norm_grad_fx, grad_fx_norm_init)
             {
