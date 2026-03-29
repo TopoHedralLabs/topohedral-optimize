@@ -4,7 +4,7 @@
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
-use crate::{common::IterData, RealFn, RealFn1, Vector};
+use crate::{RealFn, RealFn1, Vector};
 //}}}
 //{{{ std imports
 //}}}

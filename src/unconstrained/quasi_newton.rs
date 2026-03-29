@@ -5,8 +5,7 @@
 
 //{{{ crate imports
 use super::common::Options as UnonstrainedOptions;
-use super::common::{ConvergedReason, Error, Returns, UnconstrainedMinimizer};
-use crate::common::IterData;
+use super::common::{ConvergedReason, Error, IterData, Returns, UnconstrainedMinimizer};
 use crate::line_search as ls;
 use crate::{RealFn, Vector};
 //}}}

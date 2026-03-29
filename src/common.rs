@@ -7,14 +7,13 @@
 //}}}
 //{{{ std imports
 use std::cell::RefCell;
-use std::fmt::{self, Debug, Display, Formatter};
+use std::fmt::Debug;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 //}}}
 //{{{ dep imports
 use topohedral_linalg::dmatrix::DMatrix;
 use topohedral_linalg::dvector::DVector;
-use topohedral_linalg::VectorOps;
 //}}}
 //--------------------------------------------------------------------------------------------------
 
@@ -277,50 +276,5 @@ pub fn rc_real_vector_fn<F: RealVectorFn>(fcn: F) -> RcRealVectorFn<F>
 pub fn arc_real_vector_fn<F: RealVectorFn>(fcn: F) -> ArcRealVectorFn<F>
 {
     Arc::new(Mutex::new(fcn))
-}
-//}}}
-//{{{ struct: IterData
-#[derive(Debug, Clone)]
-pub struct IterData
-{
-    pub x: Vector,
-    pub fx: f64,
-    pub grad_fx: Vector,
-    pub norm_grad_fx: f64,
-}
-//}}}
-//{{{ impl: IterData
-impl IterData
-{
-    pub fn new<F: RealFn>(
-        mut fcn: F,
-        x: &Vector,
-    ) -> Self
-    {
-        let fx = fcn.eval(x);
-        let grad_fx = fcn.grad(x);
-        let norm_grad_fx = grad_fx.norm();
-        IterData {
-            x: x.clone(),
-            fx,
-            grad_fx,
-            norm_grad_fx,
-        }
-    }
-}
-//}}}
-//{{{ impl: Display for IterData
-impl Display for IterData
-{
-    fn fmt(
-        &self,
-        f: &mut Formatter<'_>,
-    ) -> fmt::Result
-    {
-        let fx = self.fx;
-        let norm_grad_fx = self.norm_grad_fx;
-        let out = format!("fx={fx:1.4e}, norm_grad_fx={norm_grad_fx:1.4e}");
-        f.pad(&out)
-    }
 }
 //}}}

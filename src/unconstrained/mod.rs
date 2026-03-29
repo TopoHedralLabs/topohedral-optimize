@@ -23,7 +23,7 @@ mod quasi_newton;
 //{{{ pub use: common exports
 pub use common::{
     ConvergedReason as UnconstrainedConvergedReason, Error as UnconstrainedError,
-    Options as UnonstrainedOptions, Returns as UnconstrainedReturns,
+    IterData, Options as UnonstrainedOptions, Returns as UnconstrainedReturns,
 };
 //}}}
 //{{{ pub use: conjugate_gradient exports
