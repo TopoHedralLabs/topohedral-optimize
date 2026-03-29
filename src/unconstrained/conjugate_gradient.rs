@@ -6,14 +6,12 @@
 //{{{ crate imports
 use super::common::Options as UnonstrainedOptions;
 use super::common::{Error, Returns, UnconstrainedMinimizer};
-use crate::common::{arc_real_fn, CountingRealFn, IterData};
+use crate::common::IterData;
 use crate::line_search as ls;
 use crate::unconstrained::common::ConvergedReason;
 use crate::{RealFn, Vector};
 //}}}
 //{{{ std imports
-use serde_json::map::Iter;
-use std::sync::{Arc, Mutex};
 //}}}
 //{{{ dep imports
 use topohedral_linalg::VectorOps;
@@ -44,7 +42,6 @@ pub struct ConjugateGradient<F: RealFn>
 {
     fcn: F,
     x_init: Vector,
-    grad_fx_init: Vector,
     norm_grad_fx_init: f64,
     opts: Options,
 }
@@ -64,12 +61,12 @@ impl<F: RealFn> ConjugateGradient<F>
         Self {
             fcn: fcn,
             x_init: x0.clone(),
-            grad_fx_init: grad_0,
             norm_grad_fx_init: norm_grad_0,
             opts,
         }
     }
 
+    #[trace_fn]
     fn apply_restart(
         &self,
         k: u64,
@@ -77,8 +74,9 @@ impl<F: RealFn> ConjugateGradient<F>
         dir_k: &mut Vector,
     )
     {
+        let needs_restart = k % self.opts.restart == 0;
         let is_increasing = grad_fk.dot(dir_k) >= 0.0;
-        if self.needs_restart(k) || is_increasing
+        if needs_restart || is_increasing
         {
             *dir_k = -grad_fk.clone();
         }
@@ -144,11 +142,10 @@ impl<F: RealFn> ConjugateGradient<F>
     fn is_converged(
         &self,
         grad_norm: f64,
-        grad_norm_init: f64,
     ) -> Option<ConvergedReason>
     {
         let rtol = self.opts.uncon_opts.grad_rtol;
-        let rtol_converged = (grad_norm / grad_norm_init) < rtol;
+        let rtol_converged = (grad_norm / self.norm_grad_fx_init) < rtol;
         if rtol_converged
         {
             return Some(ConvergedReason::Rtol);
@@ -159,15 +156,6 @@ impl<F: RealFn> ConjugateGradient<F>
             return Some(ConvergedReason::Atol);
         }
         None
-    }
-
-    #[trace_fn]
-    fn needs_restart(
-        &self,
-        iter: u64,
-    ) -> bool
-    {
-        iter % self.opts.restart == 0
     }
 
     fn print_status(
@@ -199,7 +187,6 @@ impl<F: RealFn> UnconstrainedMinimizer for ConjugateGradient<F>
 
         let mut dir_k = -iter_k.grad_fx.clone();
         let max_iter = self.opts.uncon_opts.max_iter;
-        let grad_fx_norm_init = self.grad_fx_init.norm();
 
         for k in 1..max_iter
         {
@@ -228,7 +215,7 @@ impl<F: RealFn> UnconstrainedMinimizer for ConjugateGradient<F>
                 &dir_k,
             );
 
-            if let Some(reason) = self.is_converged(iter_k.norm_grad_fx, grad_fx_norm_init)
+            if let Some(reason) = self.is_converged(iter_k.norm_grad_fx)
             {
                 //{{{ trace
                 info!(target: "cg", "Converging with reason {reason:?}");
