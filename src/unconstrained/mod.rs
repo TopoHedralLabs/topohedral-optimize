@@ -35,7 +35,6 @@ pub use quasi_newton::{Options as QuasiNewtonOptions, UpdateMethod};
 //{{{ pub use: factory exports
 pub use factory::Method as UnconstrainedMethod;
 //}}}
-
 //{{{ fn: minimize
 pub fn minimize<F: RealFn>(
     fcn: F,

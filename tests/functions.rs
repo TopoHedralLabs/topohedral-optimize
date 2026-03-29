@@ -4,15 +4,12 @@
 
 //{{{ crate imports
 use topohedral_optimize::{
-    arc_real_vector_fn, line_search::LineSearchFcn, rc_real_vector_fn, ArcRealVectorFn,
-    RcRealVectorFn, RealFn, RealFn1, RealVectorFn, Vector,
+    arc_real_vector_fn, rc_real_vector_fn, ArcRealVectorFn, RcRealVectorFn, RealFn, RealFn1,
+    RealVectorFn, Vector,
 };
 
 //}}}
 //{{{ std imports
-use std::cell::RefCell;
-use std::sync::Arc;
-use std::{rc::Rc, sync::Mutex};
 //}}}
 //{{{ dep imports
 use approx::assert_relative_eq;
@@ -151,79 +148,6 @@ fn test_quadratic_dynamic_3d()
     {
         assert_relative_eq!(*actual, *expected, epsilon = 1e-10);
     }
-}
-//}}}
-//{{{ test: test_quadratic_dynamic_3d_line_search
-#[test]
-fn test_quadratic_dynamic_3d_line_search()
-{
-    let mut line_fcn1 = LineSearchFcn {
-        f: QuadraticDynamic::new1(),
-        x: DVector::<f64>::zeros_cvec(3, VecType::Col),
-        dir: colvec(&[1.0, -2.0, 1.0]),
-    };
-
-    let phi1 = line_fcn1.eval(0.0);
-    let dphi1 = line_fcn1.diff(0.0);
-    assert_relative_eq!(phi1, 0.0, epsilon = 1e-10);
-    assert_relative_eq!(dphi1, 0.0, epsilon = 1e-10);
-
-    line_fcn1.x = DVector::<f64>::ones_cvec(3, VecType::Col);
-    let phi2 = line_fcn1.eval(0.0);
-    let dphi2 = line_fcn1.diff(0.0);
-    assert_relative_eq!(phi2, 27.0, epsilon = 1e-10);
-    assert_relative_eq!(dphi2, 16.0 - 2.0 * 18.0 + 20.0, epsilon = 1e-10);
-}
-//}}}
-//{{{ test: test_quadratic_dynamic_rc_line_search
-#[test]
-fn test_quadratic_dynamic_rc_line_search()
-{
-    let fcn1 = Rc::new(RefCell::new(QuadraticDynamic::new1()));
-    let x = DVector::<f64>::zeros_cvec(3, VecType::Col);
-    let dir = colvec(&[1.0, -2.0, 1.0]);
-    let mut line_fcn1 = LineSearchFcn {
-        f: fcn1.clone(),
-        x,
-        dir,
-    };
-
-    let phi1 = line_fcn1.eval(0.0);
-    let dphi1 = line_fcn1.diff(0.0);
-    assert_relative_eq!(phi1, 0.0, epsilon = 1e-10);
-    assert_relative_eq!(dphi1, 0.0, epsilon = 1e-10);
-
-    line_fcn1.x = DVector::<f64>::ones_cvec(3, VecType::Col);
-    let phi2 = line_fcn1.eval(0.0);
-    let dphi2 = line_fcn1.diff(0.0);
-    assert_relative_eq!(phi2, 27.0, epsilon = 1e-10);
-    assert_relative_eq!(dphi2, 16.0 - 2.0 * 18.0 + 20.0, epsilon = 1e-10);
-}
-//}}}
-//{{{ test: test_quadratic_dynamic_arc_line_search
-#[test]
-fn test_quadratic_dynamic_arc_line_search()
-{
-    let fcn1 = Arc::new(Mutex::new(QuadraticDynamic::new1()));
-
-    let x = DVector::<f64>::zeros_cvec(3, VecType::Col);
-    let dir = colvec(&[1.0, -2.0, 1.0]);
-    let mut line_fcn1 = LineSearchFcn {
-        f: fcn1.clone(),
-        x,
-        dir,
-    };
-
-    let phi1 = line_fcn1.eval(0.0);
-    let dphi1 = line_fcn1.diff(0.0);
-    assert_relative_eq!(phi1, 0.0, epsilon = 1e-10);
-    assert_relative_eq!(dphi1, 0.0, epsilon = 1e-10);
-
-    line_fcn1.x = DVector::<f64>::ones_cvec(3, VecType::Col);
-    let phi2 = line_fcn1.eval(0.0);
-    let dphi2 = line_fcn1.diff(0.0);
-    assert_relative_eq!(phi2, 27.0, epsilon = 1e-10);
-    assert_relative_eq!(dphi2, 16.0 - 2.0 * 18.0 + 20.0, epsilon = 1e-10);
 }
 //}}}
 

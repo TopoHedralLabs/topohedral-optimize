@@ -8,8 +8,6 @@ use super::common::Options as UnonstrainedOptions;
 use super::common::{ConvergedReason, Error, Returns, UnconstrainedMinimizer};
 use crate::common::IterData;
 use crate::line_search as ls;
-use crate::line_search::initial_step;
-use crate::line_search::LineSearchFcn;
 use crate::{RealFn, Vector};
 //}}}
 //{{{ std imports
