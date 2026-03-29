@@ -150,6 +150,11 @@ impl<F: RealFn> CountingRealFn<F>
             num_grad_evals: 0,
         }
     }
+
+    pub(crate) fn inner_mut(&mut self) -> &mut F
+    {
+        &mut self.fcn
+    }
 }
 //}}}
 //{{{ type: aliases for Rc<RefCell<F>> and Arc<Mutex<F>>

@@ -6,8 +6,8 @@
 //{{{ crate imports
 use crate::{
     common::{arc_real_fn, CountingRealFn},
-    constrained::{ConstrainedMinimizer, ConstriainedOptions},
-    unconstrained::{minimize, UnconstrainedMethod, UnconstrainedReturns},
+    constrained::{common::IterData, ConstrainedMinimizer, ConstriainedOptions},
+    unconstrained::{minimize, UnconstrainedMethod},
     Matrix, RealFn, RealVectorFn, Vector,
 };
 //}}}
@@ -68,7 +68,7 @@ impl<F: RealVectorFn> ConstraintData<F>
         }
     }
 
-    fn evaluate_values(
+    fn update_values(
         &mut self,
         x: &Vector,
     )
@@ -76,7 +76,7 @@ impl<F: RealVectorFn> ConstraintData<F>
         self.function.eval(x, &mut self.values);
     }
 
-    fn evaluate_gradients(
+    fn update_gradients(
         &mut self,
         x: &Vector,
     )
@@ -338,13 +338,13 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> RealFn for AugmentedLagrang
 
         if let Some(eq_constraint_data) = &mut self.eq_constraint_data
         {
-            eq_constraint_data.evaluate_values(x);
+            eq_constraint_data.update_values(x);
             aug_lag += eq_penalty_value(eq_constraint_data);
         }
 
         if let Some(ieq_constraint_data) = &mut self.ieq_constraint_data
         {
-            ieq_constraint_data.evaluate_values(x);
+            ieq_constraint_data.update_values(x);
             aug_lag += ieq_penalty_value(ieq_constraint_data);
         }
 
@@ -359,13 +359,15 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> RealFn for AugmentedLagrang
     {
         let mut grad_aug_lag = self.fcn.grad(x);
 
-        if let Some(eq_constraint_data) = &self.eq_constraint_data
+        if let Some(eq_constraint_data) = &mut self.eq_constraint_data
         {
+            eq_constraint_data.update_gradients(x);
             grad_aug_lag += eq_penalty_gradient(eq_constraint_data);
         }
 
-        if let Some(ieq_constraint_data) = &self.ieq_constraint_data
+        if let Some(ieq_constraint_data) = &mut self.ieq_constraint_data
         {
+            ieq_constraint_data.update_gradients(x);
             grad_aug_lag += ieq_penalty_gradient(ieq_constraint_data);
         }
 
@@ -396,6 +398,8 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
         opts: Options,
     ) -> Self
     {
+        assert!(!opts.uncon_method.uncon_opts().make_counting);
+
         let fcn_shared = arc_real_fn(CountingRealFn::new(AugmentedLagrangianFcn::new(
             fcn,
             eq_constraints,
@@ -412,6 +416,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
         }
     }
     //}}}
+    //{{{ fn: set_innter_rtol
     fn set_inner_tol(
         &mut self,
         tol: f64,
@@ -419,7 +424,10 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
     {
         self.opts.uncon_method.uncon_opts_mut().grad_rtol = tol;
     }
+    //}}}
 }
+//}}}
+//{{{
 //}}}
 //{{{ impl: ConstrainedMinimizer for AugmentedLagrangian
 impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> ConstrainedMinimizer
@@ -429,26 +437,32 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> ConstrainedMinimizer
     {
         let n = self.x_init.len();
         let n_iter = self.opts.constrained_opts.max_iter;
-
+        let mut inner_rtol = 1e-4;
         let mut constraint_violation_max = f64::INFINITY;
 
-        let mut fk = 0.0;
-        let mut fk_prev = 0.0;
+        let mut iter_k = IterData {
+            fx: self.fcn.eval(&self.x_init),
+            x: self.x_init.clone(),
+        };
+        let mut iter_prev_k: IterData;
 
-        let mut grad_auglag_k = Vector::zeros_cvec(n, Col);
-        let mut grad_auglag_k_prev = Vector::zeros_cvec(n, Col);
-
-        let mut xk = self.x_init.clone();
-        let mut xk_prev = self.x_init.clone();
-
-        let mut inner_rtol = 1e-4;
         for k in 1..n_iter
         {
             self.set_inner_tol(inner_rtol);
-            let uncon_ret = minimize(self.fcn.clone(), xk.clone(), self.opts.uncon_method)?;
-            xk_prev = xk.clone();
-            xk = uncon_ret.xmin;
-            fk = uncon_ret.fmin;
+
+            iter_prev_k = iter_k;
+            iter_k = minimize(
+                self.fcn.clone(),
+                iter_prev_k.x.clone(),
+                self.opts.uncon_method,
+            )?
+            .into();
+
+            {
+                let mut counting_fcn = self.fcn.lock().unwrap();
+                let mut auglag_fcn = counting_fcn.inner_mut();
+                let max_violation = auglag_fcn.compute_max_constraint_violation();
+            }
         }
 
         todo!()

@@ -5,7 +5,7 @@
 
 //{{{ crate imports
 use crate::common::Vector;
-use crate::unconstrained::{UnconstrainedError, UnconstrainedMethod};
+use crate::unconstrained::{UnconstrainedError, UnconstrainedMethod, UnconstrainedReturns};
 //}}}
 //{{{ std imports
 //}}}
@@ -57,6 +57,24 @@ pub enum Error
     UnconstrainedError(#[from] UnconstrainedError),
 }
 //}}}
+
+#[derive(Clone, Debug)]
+pub struct IterData
+{
+    pub fx: f64,
+    pub x: Vector,
+}
+
+impl From<UnconstrainedReturns> for IterData
+{
+    fn from(ret: UnconstrainedReturns) -> Self
+    {
+        Self {
+            fx: ret.fmin,
+            x: ret.xmin,
+        }
+    }
+}
 
 //{{{ trait: ConstrainedMinimizer
 pub trait ConstrainedMinimizer
