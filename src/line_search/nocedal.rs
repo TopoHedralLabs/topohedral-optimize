@@ -138,10 +138,13 @@ impl<F: RealFn1> LineSearch for Nocedal<F>
 
             // current step is armijo-acceptable, so check if curvature-accepttable
             dphi_a1 = self.f.diff(alpha1);
+            //{{{ trace
+            trace!(target: "ls", "dphi_a1 = {dphi_a1:1.4e}");
+            //}}}
             if dphi_a1.abs() <= -c2 * dphi0
             {
                 //{{{ trace
-                trace!(target: "ls", "Does not satisfy curvature");
+                trace!(target: "ls", "Satisfies curvature");
                 trace!(target: "ls","Returning alpha = {:1.4e} falpha = {:1.4e}", alpha1, phi_a1);
                 //}}}
                 return Ok(Returns {
