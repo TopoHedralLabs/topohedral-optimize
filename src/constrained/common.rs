@@ -40,8 +40,6 @@ pub struct Returns
 {
     pub xmin: Vector,
     pub fmin: f64,
-    pub eq_values_min: Option<Vector>,
-    pub ieq_values_min: Option<Vector>,
     pub reason: ConvergedReason,
     pub num_iterations: usize,
     pub num_fun_evals: usize,
