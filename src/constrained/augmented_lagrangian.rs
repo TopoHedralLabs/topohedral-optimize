@@ -23,7 +23,10 @@ use std::{
 };
 //}}}
 //{{{ dep imports
-use topohedral_linalg::{dvector::VecType::Col, ReduceOps, VectorOps};
+use topohedral_linalg::{
+    dvector::VecType::{self, Col},
+    ReduceOps, VectorOps,
+};
 use topohedral_tracing::*;
 //}}}
 //--------------------------------------------------------------------------------------------------
@@ -483,6 +486,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> ConstrainedMinimizer
         let mut iter_k = IterData {
             fx: self.fcn.eval(&self.x_init),
             x: self.x_init.clone(),
+            grad_x: Vector::zeros_cvec(n, VecType::Col),
         };
         let mut iter_prev_k: IterData;
 
@@ -497,6 +501,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> ConstrainedMinimizer
                 self.opts.uncon_method,
             )?
             .into();
+            iter_k.grad_x = self.fcn.grad(&iter_k.x);
 
             let mut counting_fcn = self.fcn.lock().unwrap();
             let auglag_fcn = counting_fcn.inner_mut();
@@ -521,7 +526,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> ConstrainedMinimizer
                 constraint_violation_max = max_violation_k;
             }
 
-            if let Some(reason) = self.is_converged(0.0, max_violation_k)
+            if let Some(reason) = self.is_converged(iter_k.grad_x.norm(), max_violation_k)
             {
                 //{{{ trace
                 info!(target: "qn", "Converging with reason {reason:?}");

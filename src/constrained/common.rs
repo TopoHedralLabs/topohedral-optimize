@@ -11,6 +11,8 @@ use crate::unconstrained::{UnconstrainedError, UnconstrainedMethod, Unconstraine
 //}}}
 //{{{ dep imports
 use thiserror::Error;
+use topohedral_linalg::dvector::VecType;
+use topohedral_linalg::VectorOps;
 //}}}
 //--------------------------------------------------------------------------------------------------
 
@@ -61,15 +63,18 @@ pub struct IterData
 {
     pub fx: f64,
     pub x: Vector,
+    pub grad_x: Vector,
 }
 
 impl From<UnconstrainedReturns> for IterData
 {
     fn from(ret: UnconstrainedReturns) -> Self
     {
+        let n = ret.xmin.len();
         Self {
             fx: ret.fmin,
             x: ret.xmin,
+            grad_x: Vector::zeros_cvec(n, VecType::Col),
         }
     }
 }
