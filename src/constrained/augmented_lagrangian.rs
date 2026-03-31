@@ -4,9 +4,13 @@
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
+use super::common::Returns;
 use crate::{
     common::{arc_real_fn, CountingRealFn},
-    constrained::{common::IterData, ConstrainedMinimizer, ConstriainedOptions},
+    constrained::{
+        common::{ConvergedReason, IterData},
+        ConstrainedMinimizer, ConstriainedOptions,
+    },
     unconstrained::{minimize, UnconstrainedMethod},
     Matrix, RealFn, RealVectorFn, Vector,
 };
@@ -406,21 +410,17 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
     {
         assert!(!opts.uncon_method.uncon_opts().make_counting);
 
-        let fcn_shared = arc_real_fn(CountingRealFn::new(AugmentedLagrangianFcn::new(
+        let mut fcn_shared = arc_real_fn(CountingRealFn::new(AugmentedLagrangianFcn::new(
             fcn,
             eq_constraints,
             ieq_constraints,
             opts.initial_penalty,
         )));
-        let n = fcn_shared.dimension();
-
-        fcn_shared
-        let norm_grad_f0 = fcn_shared.lock().unwrap().inner_mut().grad(&x0).norm();
-
+        let norm_grad_f0 = fcn_shared.grad(&x0).norm();
         Self {
             fcn: fcn_shared,
             x_init: x0,
-            norm_grad_fx_init: 0.0,
+            norm_grad_fx_init: norm_grad_f0,
             opts: opts,
         }
     }
@@ -437,13 +437,31 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
     //}}}
     //{{{ fn: is_converged
     #[trace_fn]
-    fn is_converged(&self, grad_norm: f64, max_constraint_violation: f64)
+    fn is_converged(
+        &self,
+        grad_norm: f64,
+        max_constraint_violation: f64,
+    ) -> Option<ConvergedReason>
     {
         let rtol = self.opts.constrained_opts.grad_rtol;
         let atol = self.opts.constrained_opts.grad_atol;
         let ctol = self.opts.constrained_opts.constraint_tol;
 
-        let rtol_converged = (grad_norm / self.fcn_grad_init)
+        let rtol_converged = grad_norm / self.norm_grad_fx_init < rtol;
+        let atol_converged = grad_norm < atol;
+        let ctol_converged = max_constraint_violation < ctol;
+
+        if rtol_converged && ctol_converged
+        {
+            return Some(ConvergedReason::Rtol);
+        }
+
+        if atol_converged && ctol_converged
+        {
+            return Some(ConvergedReason::Atol);
+        }
+
+        None
     }
     //}}}
 }
@@ -480,32 +498,30 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> ConstrainedMinimizer
             )?
             .into();
 
-            {
-                let mut counting_fcn = self.fcn.lock().unwrap();
-                let auglag_fcn = counting_fcn.inner_mut();
-                let max_violation_k = auglag_fcn.compute_max_constraint_violation();
-                let improved_max_violation_k = max_violation_k / alpha;
-                auglag_fcn.update_unimproved_constraint_violations(improved_max_violation_k);
+            let mut counting_fcn = self.fcn.lock().unwrap();
+            let auglag_fcn = counting_fcn.inner_mut();
+            let max_violation_k = auglag_fcn.compute_max_constraint_violation();
+            let improved_max_violation_k = max_violation_k / alpha;
+            auglag_fcn.update_unimproved_constraint_violations(improved_max_violation_k);
 
-                if max_violation_k >= constraint_violation_max / alpha
-                {
-                    //{{{ trace
-                    trace!(target: "aug", "Constraint did not improve");
-                    //}}}
-                    auglag_fcn.increase_penalties(beta);
-                    constraint_violation_max = constraint_violation_max.min(max_violation_k);
-                }
-                else
-                {
-                    //{{{ trace
-                    trace!(target: "aug", "Constraint improved");
-                    //}}}
-                    auglag_fcn.increase_shifts();
-                    constraint_violation_max = max_violation_k;
-                }
+            if max_violation_k >= constraint_violation_max / alpha
+            {
+                //{{{ trace
+                trace!(target: "aug", "Constraint did not improve");
+                //}}}
+                auglag_fcn.increase_penalties(beta);
+                constraint_violation_max = constraint_violation_max.min(max_violation_k);
+            }
+            else
+            {
+                //{{{ trace
+                trace!(target: "aug", "Constraint improved");
+                //}}}
+                auglag_fcn.increase_shifts();
+                constraint_violation_max = max_violation_k;
             }
 
-            if let Some(reason) = self.is_converged(iter_k.norm_grad_fx)
+            if let Some(reason) = self.is_converged(0.0, max_violation_k)
             {
                 //{{{ trace
                 info!(target: "qn", "Converging with reason {reason:?}");
