@@ -8,6 +8,7 @@ use crate::common::Vector;
 use crate::unconstrained::{UnconstrainedError, UnconstrainedMethod, UnconstrainedReturns};
 //}}}
 //{{{ std imports
+use std::fmt::{self, Display, Formatter};
 //}}}
 //{{{ dep imports
 use thiserror::Error;
@@ -24,6 +25,7 @@ pub struct Options
     pub grad_atol: f64,
     pub constraint_tol: f64,
     pub max_iter: u64,
+    pub make_counting: bool,
 }
 //}}}
 
@@ -65,6 +67,22 @@ pub struct IterData
     pub x: Vector,
     pub grad_x: Vector,
 }
+
+//{{{ impl: Display for IterData
+impl Display for IterData
+{
+    fn fmt(
+        &self,
+        f: &mut Formatter<'_>,
+    ) -> fmt::Result
+    {
+        let fx = self.fx;
+        let norm_grad_fx = self.grad_x.norm();
+        let out = format!("fx={fx:1.4e}, norm_grad_fx={norm_grad_fx:1.4e}");
+        f.pad(&out)
+    }
+}
+//}}}
 
 impl From<UnconstrainedReturns> for IterData
 {

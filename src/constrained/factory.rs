@@ -3,13 +3,11 @@
 //! Longer description of module
 //--------------------------------------------------------------------------------------------------
 
-use topohedral_tracing::trace_fn;
-
 //{{{ crate imports
 use crate::{
     constrained::{
         augmented_lagrangian::AugmentedLagrangian, common::ConstrainedMinimizer,
-        AugmentedLagrangianOptions,
+        AugmentedLagrangianOptions, ConstriainedOptions,
     },
     RealFn, RealVectorFn, Vector,
 };
@@ -17,6 +15,7 @@ use crate::{
 //{{{ std imports
 //}}}
 //{{{ dep imports
+use topohedral_tracing::trace_fn;
 //}}}
 //--------------------------------------------------------------------------------------------------
 
@@ -25,6 +24,26 @@ use crate::{
 pub enum Method
 {
     AugmentedLagrangian(AugmentedLagrangianOptions),
+}
+//}}}
+//{{{ impl: Method
+impl Method
+{
+    pub fn con_opts_mut(&mut self) -> &mut ConstriainedOptions
+    {
+        match self
+        {
+            Method::AugmentedLagrangian(aut_opts) => &mut aut_opts.constrained_opts,
+        }
+    }
+
+    pub fn con_opts(&self) -> &ConstriainedOptions
+    {
+        match self
+        {
+            Method::AugmentedLagrangian(aut_opts) => &aut_opts.constrained_opts,
+        }
+    }
 }
 //}}}
 //{{{ fun: create

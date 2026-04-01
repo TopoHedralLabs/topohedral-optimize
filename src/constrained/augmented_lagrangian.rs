@@ -41,6 +41,27 @@ pub struct Options
     penalty_growth_factor: f64,
 }
 //}}}
+//{{{ impl: Options
+impl Options
+{
+    pub fn new(
+        constrained_opts: ConstriainedOptions,
+        uncon_method: UnconstrainedMethod,
+        initial_penalty: f64,
+        constraint_improvement_factor: f64,
+        penalty_growth_factor: f64,
+    ) -> Self
+    {
+        Self {
+            constrained_opts,
+            uncon_method,
+            initial_penalty,
+            constraint_improvement_factor,
+            penalty_growth_factor,
+        }
+    }
+}
+//}}}
 //{{{ struct: ConstraintData
 #[derive(Debug, Clone)]
 struct ConstraintData<F: RealVectorFn>
@@ -465,6 +486,22 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
         }
 
         None
+    }
+    //}}}
+    //{{{ fn:print
+    fn print_status(
+        &self,
+        k: u64,
+        current_iter: &IterData,
+    )
+    {
+        //{{{ trace
+        info!(target: "aug", "======================================================================== i = {k}");
+        info!(target: "aug", "Current values: {current_iter}");
+        info!(target: "aug","Convergence measures:");
+        let grad_ratio = current_iter.grad_x.norm() / self.norm_grad_fx_init;
+        info!(target: "aug", "||∇f(k)|| / ||∇f(0)|| = {grad_ratio:1.4e}");
+        //}}}
     }
     //}}}
 }
