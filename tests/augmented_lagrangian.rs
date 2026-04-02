@@ -10,7 +10,8 @@ use topohedral_optimize::line_search::{
     InterpOptions, LineSearchMethod, LineSearchOptions, NocedalOptions, ThuenteOptions,
 };
 use topohedral_optimize::unconstrained::{
-    QuasiNewtonOptions, UnconstrainedMethod, UnonstrainedOptions, UpdateMethod,
+    ConjugateGradientOptions, Direction, QuasiNewtonOptions, UnconstrainedMethod,
+    UnonstrainedOptions, UpdateMethod,
 };
 use topohedral_optimize::{Matrix, RealFn, RealVectorFn, Vector};
 //}}}
@@ -224,19 +225,21 @@ fn assert_answer(
 }
 //}}}
 //{{{ fun: auglag_method
-fn auglag_method(mut qn_opts: QuasiNewtonOptions) -> ConstrainedMethod
+fn auglag_method(mut unconstrained_method: UnconstrainedMethod) -> ConstrainedMethod
 {
-    qn_opts.uncon_opts.make_counting = false;
+    let grad_rtol = unconstrained_method.uncon_opts().grad_rtol;
+    let grad_atol = unconstrained_method.uncon_opts().grad_atol;
+    unconstrained_method.uncon_opts_mut().make_counting = false;
 
     ConstrainedMethod::AugmentedLagrangian(AugmentedLagrangianOptions::new(
         ConstriainedOptions {
-            grad_rtol: qn_opts.uncon_opts.grad_rtol,
-            grad_atol: qn_opts.uncon_opts.grad_atol,
+            grad_rtol,
+            grad_atol,
             constraint_tol: 1e-10,
             max_iter: 100,
             make_counting: false,
         },
-        UnconstrainedMethod::QuasiNewton(qn_opts),
+        unconstrained_method,
         1.0,
         4.0,
         10.0,
@@ -247,7 +250,7 @@ fn auglag_method(mut qn_opts: QuasiNewtonOptions) -> ConstrainedMethod
 fn minimize_without_constraints<F: RealFn>(
     fcn: F,
     x0: Vector,
-    qn_opts: QuasiNewtonOptions,
+    unconstrained_method: UnconstrainedMethod,
 ) -> ConstrainedReturns
 {
     constrained_minimize(
@@ -255,7 +258,7 @@ fn minimize_without_constraints<F: RealFn>(
         None::<NoConstraints>,
         None::<NoConstraints>,
         x0,
-        auglag_method(qn_opts),
+        auglag_method(unconstrained_method),
     )
     .unwrap()
 }
@@ -325,22 +328,226 @@ const NOCEDAL_BFGS: QuasiNewtonOptions = QuasiNewtonOptions {
     restart: 10,
 };
 //}}}
+//{{{ const: INTERP_STEEPEST
+const INTERP_STEEPEST: ConjugateGradientOptions = ConjugateGradientOptions {
+    uncon_opts: UnonstrainedOptions {
+        grad_rtol: 1e-6,
+        grad_atol: 1e-8,
+        max_iter: 100,
+        make_counting: true,
+        ls_method: LineSearchMethod::Interp(InterpOptions {
+            ls_opts: LineSearchOptions {
+                c1: 1.0e-4,
+                c2: 0.4,
+                step_min: 1e-8,
+                step_max: 1e5,
+            },
+            scale_factor: 1.5,
+            maxiter: 10,
+        }),
+    },
+    direction: Direction::Steepest,
+    restart: 100,
+};
+//}}}
+//{{{ const: INTERP_FR
+const INTERP_FR: ConjugateGradientOptions = ConjugateGradientOptions {
+    uncon_opts: UnonstrainedOptions {
+        grad_rtol: 1e-6,
+        grad_atol: 1e-8,
+        max_iter: 100,
+        make_counting: true,
+        ls_method: LineSearchMethod::Interp(InterpOptions {
+            ls_opts: LineSearchOptions {
+                c1: 1.0e-4,
+                c2: 0.4,
+                step_min: 1e-8,
+                step_max: 1e5,
+            },
+            scale_factor: 1.5,
+            maxiter: 10,
+        }),
+    },
+    direction: Direction::FletcherReeves,
+    restart: 10,
+};
+//}}}
+//{{{ const: INTERP_PR
+const INTERP_PR: ConjugateGradientOptions = ConjugateGradientOptions {
+    uncon_opts: UnonstrainedOptions {
+        grad_rtol: 1e-6,
+        grad_atol: 1e-8,
+        max_iter: 100,
+        make_counting: true,
+        ls_method: LineSearchMethod::Interp(InterpOptions {
+            ls_opts: LineSearchOptions {
+                c1: 1.0e-4,
+                c2: 0.4,
+                step_min: 1e-8,
+                step_max: 1e5,
+            },
+            scale_factor: 1.5,
+            maxiter: 10,
+        }),
+    },
+    direction: Direction::PolakRibiere,
+    restart: 10,
+};
+//}}}
+//{{{ const: THUENTE_STEEPEST
+const THUENTE_STEEPEST: ConjugateGradientOptions = ConjugateGradientOptions {
+    uncon_opts: UnonstrainedOptions {
+        grad_rtol: 1e-6,
+        grad_atol: 1e-8,
+        max_iter: 100,
+        make_counting: true,
+        ls_method: LineSearchMethod::Thuente(ThuenteOptions {
+            ls_opts: LineSearchOptions {
+                c1: 1.0e-4,
+                c2: 0.4,
+                step_min: 1e-8,
+                step_max: 1e5,
+            },
+            maxiter: 10,
+        }),
+    },
+    direction: Direction::Steepest,
+    restart: 10,
+};
+//}}}
+//{{{ const: THUENTE_FR
+const THUENTE_FR: ConjugateGradientOptions = ConjugateGradientOptions {
+    uncon_opts: UnonstrainedOptions {
+        grad_rtol: 1e-6,
+        grad_atol: 1e-8,
+        max_iter: 100,
+        make_counting: true,
+        ls_method: LineSearchMethod::Thuente(ThuenteOptions {
+            ls_opts: LineSearchOptions {
+                c1: 1.0e-4,
+                c2: 0.4,
+                step_min: 1e-8,
+                step_max: 1e5,
+            },
+            maxiter: 10,
+        }),
+    },
+    direction: Direction::FletcherReeves,
+    restart: 10,
+};
+//}}}
+//{{{ const: THUENTE_PR
+const THUENTE_PR: ConjugateGradientOptions = ConjugateGradientOptions {
+    uncon_opts: UnonstrainedOptions {
+        grad_rtol: 1e-6,
+        grad_atol: 1e-8,
+        max_iter: 100,
+        make_counting: true,
+        ls_method: LineSearchMethod::Thuente(ThuenteOptions {
+            ls_opts: LineSearchOptions {
+                c1: 1.0e-4,
+                c2: 0.4,
+                step_min: 1e-8,
+                step_max: 1e5,
+            },
+            maxiter: 10,
+        }),
+    },
+    direction: Direction::PolakRibiere,
+    restart: 10,
+};
+//}}}
+//{{{ const: NOCEDAL_STEEPEST
+const NOCEDAL_STEEPEST: ConjugateGradientOptions = ConjugateGradientOptions {
+    uncon_opts: UnonstrainedOptions {
+        grad_rtol: 1e-6,
+        grad_atol: 1e-8,
+        max_iter: 100,
+        make_counting: true,
+        ls_method: LineSearchMethod::Nocedal(NocedalOptions {
+            ls_opts: LineSearchOptions {
+                c1: 1.0e-4,
+                c2: 0.4,
+                step_min: 1e-8,
+                step_max: 1e5,
+            },
+            maxiter: 10,
+            zoom_maxiter: 10,
+        }),
+    },
+    direction: Direction::Steepest,
+    restart: 10,
+};
+//}}}
+//{{{ const: NOCEDAL_FR
+const NOCEDAL_FR: ConjugateGradientOptions = ConjugateGradientOptions {
+    uncon_opts: UnonstrainedOptions {
+        grad_rtol: 1e-6,
+        grad_atol: 1e-8,
+        max_iter: 100,
+        make_counting: true,
+        ls_method: LineSearchMethod::Nocedal(NocedalOptions {
+            ls_opts: LineSearchOptions {
+                c1: 1.0e-4,
+                c2: 0.4,
+                step_min: 1e-8,
+                step_max: 1e5,
+            },
+            maxiter: 10,
+            zoom_maxiter: 10,
+        }),
+    },
+    direction: Direction::FletcherReeves,
+    restart: 10,
+};
+//}}}
+//{{{ const: NOCEDAL_PR
+const NOCEDAL_PR: ConjugateGradientOptions = ConjugateGradientOptions {
+    uncon_opts: UnonstrainedOptions {
+        grad_rtol: 1e-6,
+        grad_atol: 1e-8,
+        max_iter: 100,
+        make_counting: true,
+        ls_method: LineSearchMethod::Nocedal(NocedalOptions {
+            ls_opts: LineSearchOptions {
+                c1: 1.0e-4,
+                c2: 0.4,
+                step_min: 1e-8,
+                step_max: 1e5,
+            },
+            maxiter: 10,
+            zoom_maxiter: 10,
+        }),
+    },
+    direction: Direction::PolakRibiere,
+    restart: 10,
+};
+//}}}
 
 //{{{ test: quadratic
 #[rstest]
-#[case::quadratic_interp_bfgs(colvec(&[0.0, 0.0, 0.0, 0.0, 0.0]), INTERP_BFGS)]
-#[case::quadratic_thuente_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), THUENTE_BFGS)]
-#[case::quadratic_nocedal_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), NOCEDAL_BFGS)]
+#[case::quadratic_interp_bfgs(colvec(&[0.0, 0.0, 0.0, 0.0, 0.0]), UnconstrainedMethod::QuasiNewton(INTERP_BFGS))]
+#[case::quadratic_thuente_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(THUENTE_BFGS))]
+#[case::quadratic_nocedal_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(NOCEDAL_BFGS))]
+#[case::quadratic_interp_steepest(colvec(&[0.0, 0.0, 0.0, 0.0, 0.0]), UnconstrainedMethod::ConjugateGradient(INTERP_STEEPEST))]
+#[case::quadratic_thuente_steepest(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_STEEPEST))]
+#[case::quadratic_nocedal_steepest(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_STEEPEST))]
+#[case::quadratic_interp_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(INTERP_FR))]
+#[case::quadratic_thuente_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_FR))]
+#[case::quadratic_nocedal_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_FR))]
+#[case::quadratic_interp_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(INTERP_PR))]
+#[case::quadratic_thuente_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_PR))]
+#[case::quadratic_nocedal_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_PR))]
 fn test_quadratic_without_constraints_matches_unconstrained_reference(
     #[case] x0: Vector,
-    #[case] qn_opts: QuasiNewtonOptions,
+    #[case] unconstrained_method: UnconstrainedMethod,
 )
 {
     let quad = Quadratic {
         xmin: colvec(&[1000.0, -100.0, 0.0, 567.0, -23.0]),
     };
 
-    let ret = minimize_without_constraints(quad, x0, qn_opts);
+    let ret = minimize_without_constraints(quad, x0, unconstrained_method);
 
     assert_answer(
         &ret,
@@ -353,23 +560,32 @@ fn test_quadratic_without_constraints_matches_unconstrained_reference(
 //}}}
 //{{{ test: quartic
 #[rstest]
-#[case::quartic_interp_bfgs(colvec(&[0.0, 0.0, 0.0, 0.0, 0.0]), INTERP_BFGS)]
-#[case::quartic_thuente_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), THUENTE_BFGS)]
-#[case::quartic_nocedal_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), NOCEDAL_BFGS)]
+#[case::quartic_interp_bfgs(colvec(&[0.0, 0.0, 0.0, 0.0, 0.0]), UnconstrainedMethod::QuasiNewton(INTERP_BFGS))]
+#[case::quartic_thuente_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(THUENTE_BFGS))]
+#[case::quartic_nocedal_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(NOCEDAL_BFGS))]
+#[case::quartic_interp_steepest(colvec(&[0.0, 0.0, 0.0, 0.0, 0.0]), UnconstrainedMethod::ConjugateGradient(INTERP_STEEPEST))]
+#[case::quartic_thuente_steepest(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_STEEPEST))]
+#[case::quartic_nocedal_steepest(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_STEEPEST))]
+#[case::quartic_interp_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(INTERP_FR))]
+#[case::quartic_thuente_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_FR))]
+#[case::quartic_nocedal_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_FR))]
+#[case::quartic_interp_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(INTERP_PR))]
+#[case::quartic_thuente_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_PR))]
+#[case::quartic_nocedal_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_PR))]
 fn test_quartic_without_constraints_matches_unconstrained_reference(
     #[case] x0: Vector,
-    #[case] mut qn_opts: QuasiNewtonOptions,
+    #[case] mut unconstrained_method: UnconstrainedMethod,
 )
 {
     let quart = Quartic {
         xmin: colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
     };
 
-    qn_opts.uncon_opts.grad_rtol = 1e-12;
-    qn_opts.uncon_opts.grad_atol = 1e-12;
-    qn_opts.uncon_opts.max_iter = 1000;
+    unconstrained_method.uncon_opts_mut().grad_rtol = 1e-12;
+    unconstrained_method.uncon_opts_mut().grad_atol = 1e-12;
+    unconstrained_method.uncon_opts_mut().max_iter = 1000;
 
-    let ret = minimize_without_constraints(quart, x0, qn_opts);
+    let ret = minimize_without_constraints(quart, x0, unconstrained_method);
 
     assert_answer(
         &ret,
@@ -382,25 +598,31 @@ fn test_quartic_without_constraints_matches_unconstrained_reference(
 //}}}
 //{{{ test: rosenbrock
 #[rstest]
-#[case::rosenbrock_interp_bfgs(colvec(&[0.0, 3.0]), INTERP_BFGS)]
-#[case::rosenbrock_thuente_bfgs(colvec(&[0.0, 3.0]), THUENTE_BFGS)]
-#[case::rosenbrock_nocedal_bfgs(colvec(&[0.0, 3.0]), NOCEDAL_BFGS)]
+#[case::rosenbrock_interp_bfgs(colvec(&[0.0, 3.0]), UnconstrainedMethod::QuasiNewton(INTERP_BFGS))]
+#[case::rosenbrock_thuente_bfgs(colvec(&[0.0, 3.0]), UnconstrainedMethod::QuasiNewton(THUENTE_BFGS))]
+#[case::rosenbrock_nocedal_bfgs(colvec(&[0.0, 3.0]), UnconstrainedMethod::QuasiNewton(NOCEDAL_BFGS))]
+#[case::rosenbrock_interp_fr(colvec(&[0.0, 3.0]), UnconstrainedMethod::ConjugateGradient(INTERP_FR))]
+#[case::rosenbrock_thuente_fr(colvec(&[0.0, 3.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_FR))]
+#[case::rosenbrock_nocedal_fr(colvec(&[0.0, 3.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_FR))]
+#[case::rosenbrock_interp_pr(colvec(&[0.0, 3.0]), UnconstrainedMethod::ConjugateGradient(INTERP_PR))]
+#[case::rosenbrock_thuente_pr(colvec(&[0.0, 3.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_PR))]
+#[case::rosenbrock_nocedal_pr(colvec(&[0.0, 3.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_PR))]
 fn test_rosenbrock_without_constraints_matches_unconstrained_reference(
     #[case] x0: Vector,
-    #[case] mut qn_opts: QuasiNewtonOptions,
+    #[case] mut unconstrained_method: UnconstrainedMethod,
 )
 {
     let rosenbrock = Rosenbrock::new();
 
-    qn_opts.uncon_opts.grad_rtol = 1e-6;
-    qn_opts.uncon_opts.grad_atol = 1e-10;
-    qn_opts.uncon_opts.max_iter = 10000;
-    if let LineSearchMethod::Interp(interp_opts) = &mut qn_opts.uncon_opts.ls_method
+    unconstrained_method.uncon_opts_mut().grad_rtol = 1e-6;
+    unconstrained_method.uncon_opts_mut().grad_atol = 1e-10;
+    unconstrained_method.uncon_opts_mut().max_iter = 10000;
+    if let LineSearchMethod::Interp(interp_opts) = &mut unconstrained_method.uncon_opts_mut().ls_method
     {
         interp_opts.scale_factor = 1.2;
     }
 
-    let ret = minimize_without_constraints(rosenbrock, x0, qn_opts);
+    let ret = minimize_without_constraints(rosenbrock, x0, unconstrained_method);
 
     assert_answer(&ret, &colvec(&[1.0, 1.0]), 0.0, 1e-2, 1e-6);
 }
