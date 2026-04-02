@@ -4,7 +4,7 @@
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
-use crate::{RealVectorFn, Vector};
+use crate::{Matrix, RealVectorFn, Vector};
 //}}}
 //{{{ std imports
 use std::collections::HashMap;
@@ -12,6 +12,41 @@ use std::collections::HashMap;
 //{{{ dep imports
 //}}}
 //--------------------------------------------------------------------------------------------------
+
+//{{{ struct: NoConstraints
+#[derive(Debug, Clone, Copy)]
+pub struct NoConstraints;
+//}}}
+//{{{ impl: RealVectorFn for NoConstraints
+impl RealVectorFn for NoConstraints
+{
+    fn dimension_domain(&self) -> usize
+    {
+        0
+    }
+
+    fn dimension_range(&self) -> usize
+    {
+        0
+    }
+
+    fn eval(
+        &mut self,
+        _x: &Vector,
+        _val: &mut Vector,
+    )
+    {
+    }
+
+    fn grad(
+        &mut self,
+        _x: &Vector,
+        _val: &mut Matrix,
+    )
+    {
+    }
+}
+//}}}
 
 //{{{ struct: BoundsConstraints
 #[derive(Debug, Clone)]

@@ -4,7 +4,7 @@
 //{{{ crate imports
 use topohedral_optimize::constrained::{
     minimize as constrained_minimize, AugmentedLagrangianOptions, ConstrainedMethod,
-    ConstrainedReturns, ConstriainedOptions,
+    ConstrainedReturns, ConstriainedOptions, NoConstraints,
 };
 use topohedral_optimize::line_search::{
     InterpOptions, LineSearchMethod, LineSearchOptions, NocedalOptions, ThuenteOptions,
@@ -174,40 +174,6 @@ impl RealFn for Rosenbrock
         out[0] = -2.0 * (a - x) - 4.0 * b * x * (y - x.powi(2));
         out[1] = 2.0 * b * (y - x.powi(2));
         out
-    }
-}
-//}}}
-//{{{ struct: NoConstraints
-#[derive(Debug, Clone, Copy)]
-struct NoConstraints;
-//}}}
-//{{{ impl: RealVectorFn for NoConstraints
-impl RealVectorFn for NoConstraints
-{
-    fn dimension_domain(&self) -> usize
-    {
-        0
-    }
-
-    fn dimension_range(&self) -> usize
-    {
-        0
-    }
-
-    fn eval(
-        &mut self,
-        _x: &Vector,
-        _val: &mut Vector,
-    )
-    {
-    }
-
-    fn grad(
-        &mut self,
-        _x: &Vector,
-        _val: &mut Matrix,
-    )
-    {
     }
 }
 //}}}

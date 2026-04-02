@@ -29,9 +29,11 @@ pub use augmented_lagrangian::{
     AugmentedLagrangian, AugmentedLagrangianFcn, Options as AugmentedLagrangianOptions,
 };
 //}}}
+//{{{ pub use: constraints
+pub use constraints::NoConstraints;
+//}}}
 //{{{ pub use: factory export
 pub use factory::Method as ConstrainedMethod;
-
 //}}}
 
 //{{{ fn: minimize
