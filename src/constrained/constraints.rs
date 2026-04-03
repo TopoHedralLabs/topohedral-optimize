@@ -47,7 +47,6 @@ impl RealVectorFn for NoConstraints
     }
 }
 //}}}
-
 //{{{ struct: BoundsConstraints
 #[derive(Debug, Clone)]
 pub struct BoundsConstraints
@@ -55,7 +54,6 @@ pub struct BoundsConstraints
     bounds: HashMap<usize, (Option<f64>, Option<f64>)>,
 }
 //}}}
-
 //{{{ impl: BoundsConstraints
 impl BoundsConstraints
 {
@@ -113,7 +111,6 @@ impl RealVectorFn for BoundsConstraints
         val: &mut Vector,
     )
     {
-        todo!()
     }
 
     fn grad(
@@ -159,12 +156,5 @@ impl LinearConstraints
         }
         num_constraints
     }
-}
-//}}}
-
-//{{{ struct: Constraints
-pub struct Constraints
-{
-    bound_constraints: Option<BoundsConstraints>,
 }
 //}}}
