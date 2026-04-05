@@ -664,7 +664,11 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> ConstrainedMinimizer
             self.set_inner_tol(inner_rtol);
 
             iter_prev_k = iter_k;
-            let ret = minimize(self.fcn.clone(), iter_prev_k.x.clone(), self.opts.uncon_method)?;
+            let ret = minimize(
+                self.fcn.clone(),
+                iter_prev_k.x.clone(),
+                self.opts.uncon_method,
+            )?;
             iter_k = IterData {
                 fx: ret.fmin,
                 x: ret.xmin,

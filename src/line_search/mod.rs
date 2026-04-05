@@ -6,8 +6,8 @@
 use crate::RealFn1;
 
 //{{{ crate imports
-use crate::unconstrained::IterData;
 use super::common::{RealFn, Vector};
+use crate::unconstrained::IterData;
 //}}}
 //{{{ std imports
 //}}}

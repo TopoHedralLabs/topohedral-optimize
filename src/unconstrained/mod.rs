@@ -21,13 +21,10 @@ mod factory;
 mod quasi_newton;
 //}}}
 //{{{ pub use: common exports
-pub use common::{
-    Error as UnconstrainedError, Options as UnonstrainedOptions,
-};
 pub use crate::common::{
-    ConvergedReason as UnconstrainedConvergedReason, IterData,
-    Returns as UnconstrainedReturns,
+    ConvergedReason as UnconstrainedConvergedReason, IterData, Returns as UnconstrainedReturns,
 };
+pub use common::{Error as UnconstrainedError, Options as UnonstrainedOptions};
 //}}}
 //{{{ pub use: conjugate_gradient exports
 pub use conjugate_gradient::{Direction, Options as ConjugateGradientOptions};
