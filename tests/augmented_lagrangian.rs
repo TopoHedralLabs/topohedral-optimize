@@ -1,5 +1,6 @@
 #![feature(generic_const_exprs)]
 #![allow(incomplete_features)]
+#![allow(clippy::excessive_precision)]
 
 //{{{ crate imports
 use topohedral_optimize::constrained::{
@@ -13,7 +14,7 @@ use topohedral_optimize::unconstrained::{
     ConjugateGradientOptions, Direction, QuasiNewtonOptions, UnconstrainedMethod,
     UnonstrainedOptions, UpdateMethod,
 };
-use topohedral_optimize::{Matrix, RealFn, RealVectorFn, Vector};
+use topohedral_optimize::{RealFn, Vector};
 //}}}
 //{{{ std imports
 //}}}
@@ -539,10 +540,10 @@ fn test_quadratic_without_constraints_matches_unconstrained_reference(
 fn test_quadratic_with_bound_constraints(
     #[case] x0: Vector,
     #[case] unconstrained_method: UnconstrainedMethod,
-    #[case] xmin_tol: f64,
-    #[case] fmin_tol: f64,
-    #[case] exp_num_fun_evals: usize,
-    #[case] exp_num_grad_evals: usize,
+    #[case] _xmin_tol: f64,
+    #[case] _fmin_tol: f64,
+    #[case] _exp_num_fun_evals: usize,
+    #[case] _exp_num_grad_evals: usize,
 )
 {
     let quad = Quadratic {

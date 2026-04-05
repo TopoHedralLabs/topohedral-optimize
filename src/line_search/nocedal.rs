@@ -70,6 +70,7 @@ impl<F: RealFn1> LineSearch for Nocedal<F>
         let mut phi_a0 = phi0;
         let mut dphi_a0 = dphi0;
         let mut dphi_a1 = 0.0;
+        let _ = dphi_a1;
         let mut phi_a1 = self.f.eval(alpha1);
         let max_iter = self.opts.maxiter;
 
@@ -115,7 +116,7 @@ impl<F: RealFn1> LineSearch for Nocedal<F>
                     self.opts.zoom_maxiter,
                 );
 
-                let (alpha_tmp, phi_tmp, dphi_tmp) = match zoom_result
+                let (alpha_tmp, phi_tmp, _dphi_tmp) = match zoom_result
                 {
                     None =>
                     {
@@ -128,7 +129,7 @@ impl<F: RealFn1> LineSearch for Nocedal<F>
                 };
 
                 //{{{ trace
-                error!(target: "ls", "Leaving with {:1.4e} {:1.4e} {:1.4e}", alpha_tmp, phi_tmp, dphi_tmp);
+                error!(target: "ls", "Leaving with {:1.4e} {:1.4e} {:1.4e}", alpha_tmp, phi_tmp, _dphi_tmp);
                 //}}}
                 return Ok(Returns {
                     alpha: alpha_tmp,
@@ -171,7 +172,7 @@ impl<F: RealFn1> LineSearch for Nocedal<F>
                     c2,
                     self.opts.zoom_maxiter,
                 );
-                let (alpha_tmp, phi_tmp, dphi_tmp) = match zoom_result
+                let (alpha_tmp, phi_tmp, _dphi_tmp) = match zoom_result
                 {
                     None =>
                     {
@@ -217,15 +218,6 @@ impl<F: RealFn1> LineSearch for Nocedal<F>
             phi_alpha: phi_a1,
         })
     }
-
-    #[trace_fn]
-    fn update_fcn(
-        &mut self,
-        fcn: Self::Function,
-    )
-    {
-        self.f = fcn;
-    }
 }
 //}}}
 //{{{ fun: zoom
@@ -257,7 +249,7 @@ where
     let mut a_rec = 0.0;
     let mut cchk = 0.0;
     let mut qchk = 0.0;
-
+    let _ = qchk;
     loop
     {
         //{{{ trace
@@ -288,8 +280,8 @@ where
             //{{{ trace
             trace!(target: "ls", "trying cubic interpolation");
             //}}}
-            cchk = delta1 * dalpha;
             opt_a_j = cubicmin3(a_lo, phi_lo, dphi_lo, a_hi, phi_hi, a_rec, phi_rec);
+            cchk = delta1 * dalpha;
         }
 
         // if not good enough first try quadratic interpolation

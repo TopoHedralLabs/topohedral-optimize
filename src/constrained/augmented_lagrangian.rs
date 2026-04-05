@@ -16,10 +16,7 @@ use core::f64;
 use std::sync::{Arc, Mutex};
 //}}}
 //{{{ dep imports
-use topohedral_linalg::{
-    dvector::VecType::{self, Col},
-    MatrixOps, ReduceOps, VectorOps,
-};
+use topohedral_linalg::{dvector::VecType::Col, ReduceOps, VectorOps};
 use topohedral_tracing::*;
 //}}}
 //--------------------------------------------------------------------------------------------------
@@ -245,9 +242,9 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangianFcn<F1, 
         };
 
         Self {
-            fcn: fcn,
-            eq_constraint_data: eq_constraint_data,
-            ieq_constraint_data: ieq_constraint_data,
+            fcn,
+            eq_constraint_data,
+            ieq_constraint_data,
             unimproved_eq_constraints: Vec::with_capacity(num_eq_constraints),
             unimproved_ieq_constraints: Vec::with_capacity(num_ieq_constriants),
         }
@@ -399,7 +396,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangianFcn<F1, 
                 });
 
             //{{{ trace
-            trace!(target: "aug", "New shifts {}", eq_constraint_data.shifts.transpose());
+            trace!(target: "aug", "New shifts {}", topohedral_linalg::MatrixOps::transpose(&eq_constraint_data.shifts));
             //}}}
         }
         if let Some(ieq_constriant_data) = &mut self.ieq_constraint_data
@@ -417,7 +414,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangianFcn<F1, 
                 });
 
             //{{{ trace
-            trace!(target: "aug", "New shifts {}", ieq_constriant_data.shifts.transpose());
+            trace!(target: "aug", "New shifts {}", topohedral_linalg::MatrixOps::transpose(&ieq_constriant_data.shifts));
             //}}}
         }
     }
@@ -524,7 +521,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
             fcn: fcn_shared,
             x_init: x0,
             norm_grad_fx_init: norm_grad_f0,
-            opts: opts,
+            opts,
         }
     }
     //}}}
@@ -580,18 +577,18 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
     //{{{ fn:print
     fn print_status(
         &self,
-        k: u64,
+        _k: u64,
         current_iter: &IterData,
-        current_max_violation: f64,
+        _current_max_violation: f64,
     )
     {
         //{{{ trace
-        info!(target: "aug", "******************************************************************************************** i = {k}");
+        info!(target: "aug", "******************************************************************************************** i = {_k}");
         info!(target: "aug", "Current values: {current_iter}");
         info!(target: "aug","Convergence measures:");
-        let grad_ratio = current_iter.norm_grad_fx / self.norm_grad_fx_init;
-        info!(target: "aug", "||∇f(k)|| / ||∇f(0)|| = {grad_ratio:1.4e}");
-        info!(target: "aug", "Kmax = {current_max_violation:1.4e}");
+        let _grad_ratio = current_iter.norm_grad_fx / self.norm_grad_fx_init;
+        info!(target: "aug", "||∇f(k)|| / ||∇f(0)|| = {_grad_ratio:1.4e}");
+        info!(target: "aug", "Kmax = {_current_max_violation:1.4e}");
         //}}}
     }
     //}}}
@@ -645,7 +642,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> ConstrainedMinimizer
     {
         let n = self.x_init.len();
         let n_iter = self.opts.constrained_opts.max_iter;
-        let mut inner_rtol = 1e-2;
+        let inner_rtol = 1e-2;
         let mut constraint_violation_max = f64::INFINITY;
 
         let mut iter_k = IterData::new(self.fcn.clone(), &self.x_init);

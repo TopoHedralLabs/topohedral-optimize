@@ -142,7 +142,7 @@ impl<F: RealFn1> LineSearch for Interp<F>
         let mut phi_b_high;
         let mut phi_c_high;
 
-        if let Some((alpha, phi_alpha, dphi_alpha)) = self.guess_is_ok(GuessData {
+        if let Some((alpha, phi_alpha, _dphi_alpha)) = self.guess_is_ok(GuessData {
             a,
             phi_a,
             dphi_a,
@@ -155,10 +155,10 @@ impl<F: RealFn1> LineSearch for Interp<F>
             return Ok(Returns { alpha, phi_alpha });
         }
 
-        for i in 0..maxiter
+        for _i in 0..maxiter
         {
             //{{{ trace
-            info!(target: "ls", "---------------------------------- i = {i}");
+            info!(target: "ls", "---------------------------------- i = {_i}");
             //}}}
             b_low *= inv_scale_factor;
             phi_b_low = self.f.eval(b_low);
@@ -176,10 +176,10 @@ impl<F: RealFn1> LineSearch for Interp<F>
             //{{{ trace
             debug!(target: "ls", "Looking low:\n{guess_data_low:?}");
             //}}}
-            if let Some((alpha, phi_alpha, dphi_alpha)) = self.guess_is_ok(guess_data_low)
+            if let Some((alpha, phi_alpha, _dphi_alpha)) = self.guess_is_ok(guess_data_low)
             {
                 //{{{ trace
-                info!(target: "ls", "Low guess found acceptable step: alpha = {alpha}, phi_alpha = {phi_alpha}, dphi_alpha = {dphi_alpha}");
+                info!(target: "ls", "Low guess found acceptable step: alpha = {alpha}, phi_alpha = {phi_alpha}, dphi_alpha = {_dphi_alpha}");
                 //}}}
                 return Ok(Returns { alpha, phi_alpha });
             }
@@ -200,24 +200,15 @@ impl<F: RealFn1> LineSearch for Interp<F>
             //{{{ trace
             debug!(target: "ls", "Looking high:\n{guess_data_high:?}");
             //}}}
-            if let Some((alpha, phi_alpha, dphi_alpha)) = self.guess_is_ok(guess_data_high)
+            if let Some((alpha, phi_alpha, _dphi_alpha)) = self.guess_is_ok(guess_data_high)
             {
                 //{{{ trace
-                info!(target: "ls", "High guess found acceptable step: alpha = {alpha}, phi_alpha = {phi_alpha}, dphi_alpha = {dphi_alpha}");
+                info!(target: "ls", "High guess found acceptable step: alpha = {alpha}, phi_alpha = {phi_alpha}, dphi_alpha = {_dphi_alpha}");
                 //}}}
                 return Ok(Returns { alpha, phi_alpha });
             }
         }
         Err(LineSearchError::MaxIterations)
-    }
-
-    #[trace_fn]
-    fn update_fcn(
-        &mut self,
-        fcn: Self::Function,
-    )
-    {
-        self.f = fcn;
     }
 }
 //}}}

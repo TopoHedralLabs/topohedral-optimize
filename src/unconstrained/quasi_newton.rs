@@ -69,7 +69,7 @@ impl<F: RealFn> QuasiNewton<F>
         let grad_0 = fcn.grad(&x0);
         let norm_grad_0 = grad_0.norm();
         Self {
-            fcn: fcn,
+            fcn,
             x_init: x0.clone(),
             norm_grad_fx_init: norm_grad_0,
             opts,
@@ -91,7 +91,7 @@ impl<F: RealFn> QuasiNewton<F>
         dir_k: &mut Vector,
     )
     {
-        let needs_restart = k % self.opts.restart == 0;
+        let needs_restart = k.is_multiple_of(self.opts.restart);
         let is_increasing = grad_fk.dot(dir_k) >= 0.0;
         if needs_restart || is_increasing
         {
@@ -174,22 +174,21 @@ impl<F: RealFn> QuasiNewton<F>
     ) -> Vector
     {
         self.update_hessian(xk_prev, xk, grad_fk_prev, grad_fk, hess_k);
-        let dir_k = -hess_k.matmul(grad_fk);
-        dir_k
+        -hess_k.matmul(grad_fk)
     }
 
     fn print_status(
         &self,
-        k: u64,
+        _k: u64,
         current_iter: &IterData,
     )
     {
         //{{{ trace
-        info!(target: "qn", "======================================================================== i = {k}");
+        info!(target: "qn", "======================================================================== i = {_k}");
         info!(target: "qn", "Current values: {current_iter}");
         info!(target: "qn","Convergence measures:");
-        let grad_ratio = current_iter.norm_grad_fx / self.norm_grad_fx_init;
-        info!(target: "qn", "||∇f(k)|| / ||∇f(0)|| = {grad_ratio:1.4e}");
+        let _grad_ratio = current_iter.norm_grad_fx / self.norm_grad_fx_init;
+        info!(target: "qn", "||∇f(k)|| / ||∇f(0)|| = {_grad_ratio:1.4e}");
         //}}}
     }
 }
@@ -252,8 +251,8 @@ impl<F: RealFn> UnconstrainedMinimizer for QuasiNewton<F>
             }
         }
         //{{{ trace
-        let maxiter = self.opts.uncon_opts.max_iter;
-        info!(target: "qn", "Did not converge within {maxiter} iterations");
+        let _maxiter = self.opts.uncon_opts.max_iter;
+        info!(target: "qn", "Did not converge within {_maxiter} iterations");
         //}}}
         Err(Error::MaxIterations(self.opts.uncon_opts.max_iter as usize))
     }

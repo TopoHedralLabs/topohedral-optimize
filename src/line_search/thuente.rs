@@ -337,10 +337,10 @@ impl<F: RealFn1> LineSearch for Thuente<F>
             dphi: self.f.diff(alpha1),
         };
 
-        for iter in 0..self.opts.maxiter
+        for _iter in 0..self.opts.maxiter
         {
             //{{{ trace
-            trace!(target: "ls", ".................................... iter = {iter}");
+            trace!(target: "ls", ".................................... iter = {_iter}");
             trace!(target: "ls", "{cur_step:?}");
             //}}}
             if self.convergence_reached(&cur_step)
@@ -359,15 +359,6 @@ impl<F: RealFn1> LineSearch for Thuente<F>
 
         trace!(target: "ls", "Max iterations reached, min not found");
         Err(Error::NoStepFound)
-    }
-
-    #[trace_fn]
-    fn update_fcn(
-        &mut self,
-        fcn: Self::Function,
-    )
-    {
-        self.f = fcn;
     }
 }
 //}}}

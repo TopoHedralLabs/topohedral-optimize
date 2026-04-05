@@ -80,15 +80,10 @@ impl BoundsConstraints
             .insert(variable_index, (lower_bound, upper_bound));
     }
 
-    fn num_eq_constraints(&self) -> usize
-    {
-        0
-    }
-
     fn num_ieq_constraints(&self) -> usize
     {
         let mut num_constraints = 0;
-        for (_, (lower_bound, upper_bound)) in &self.bounds
+        for (lower_bound, upper_bound) in self.bounds.values()
         {
             if lower_bound.is_some()
             {
@@ -157,13 +152,13 @@ impl RealVectorFn for BoundsConstraints
         let mut constraint_index = 0;
         for (variable_index, (opt_lower, opt_upper)) in self.bounds.iter()
         {
-            if let Some(_) = opt_lower
+            if opt_lower.is_some()
             {
                 (*val)[(*variable_index, constraint_index)] = -1.0;
                 constraint_index += 1;
             }
 
-            if let Some(_) = opt_upper
+            if opt_upper.is_some()
             {
                 (*val)[(*variable_index, constraint_index)] = 1.0;
                 constraint_index += 1;

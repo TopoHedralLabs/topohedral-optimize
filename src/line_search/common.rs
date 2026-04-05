@@ -150,10 +150,6 @@ pub trait LineSearch
         dphi0: f64,
         alpha1: f64,
     ) -> Result<Returns, Error>;
-    fn update_fcn(
-        &mut self,
-        fcn: Self::Function,
-    );
 }
 //}}}
 

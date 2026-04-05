@@ -4,8 +4,8 @@
 
 //{{{ crate imports
 use topohedral_optimize::{
-    arc_real_vector_fn, rc_real_vector_fn, ArcRealVectorFn, RcRealVectorFn, RealFn, RealFn1,
-    RealVectorFn, Vector,
+    arc_real_vector_fn, rc_real_vector_fn, ArcRealVectorFn, RcRealVectorFn, RealFn, RealVectorFn,
+    Vector,
 };
 
 //}}}

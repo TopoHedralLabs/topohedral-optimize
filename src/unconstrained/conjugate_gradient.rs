@@ -57,7 +57,7 @@ impl<F: RealFn> ConjugateGradient<F>
         let grad_0 = fcn.grad(&x0);
         let norm_grad_0 = grad_0.norm();
         Self {
-            fcn: fcn,
+            fcn,
             x_init: x0.clone(),
             norm_grad_fx_init: norm_grad_0,
             opts,
@@ -72,7 +72,7 @@ impl<F: RealFn> ConjugateGradient<F>
         dir_k: &mut Vector,
     )
     {
-        let needs_restart = k % self.opts.restart == 0;
+        let needs_restart = k.is_multiple_of(self.opts.restart);
         let is_increasing = grad_fk.dot(dir_k) >= 0.0;
         if needs_restart || is_increasing
         {
@@ -87,16 +87,16 @@ impl<F: RealFn> ConjugateGradient<F>
     #[trace_fn]
     fn update_direction(
         &self,
-        k: u64,
+        _k: u64,
         grad_fk_prev: &Vector,
         grad_fk: &Vector,
         norm_grad_fk_prev: f64,
-        norm_grad_fk: f64,
+        _norm_grad_fk: f64,
         dir_k: &Vector,
     ) -> Vector
     {
         //{{{ trace
-        trace!(target: "cg", "norm_grad_fk1 = {norm_grad_fk_prev:1.4e} norm_grad_fk = {norm_grad_fk:1.4e}");
+        trace!(target: "cg", "norm_grad_fk1 = {norm_grad_fk_prev:1.4e} norm_grad_fk = {_norm_grad_fk:1.4e}");
         //}}}
 
         // direction updates
@@ -158,16 +158,16 @@ impl<F: RealFn> ConjugateGradient<F>
 
     fn print_status(
         &self,
-        k: u64,
+        _k: u64,
         current_iter: &IterData,
     )
     {
         //{{{ trace
-        info!(target: "cg", "======================================================================== i = {k}");
+        info!(target: "cg", "======================================================================== i = {_k}");
         info!(target: "cg", "Current values: {current_iter}");
         info!(target: "cg","Convergence measures:");
-        let grad_ratio = current_iter.norm_grad_fx / self.norm_grad_fx_init;
-        info!(target: "cg", "||∇f(k)|| / ||∇f(0)|| = {grad_ratio:1.4e}");
+        let _grad_ratio = current_iter.norm_grad_fx / self.norm_grad_fx_init;
+        info!(target: "cg", "||∇f(k)|| / ||∇f(0)|| = {_grad_ratio:1.4e}");
         //}}}
     }
 }
