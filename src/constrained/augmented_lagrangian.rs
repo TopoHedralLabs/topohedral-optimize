@@ -50,6 +50,16 @@ impl Options
             penalty_growth_factor,
         }
     }
+
+    pub(crate) fn uncon_method_mut(&mut self) -> &mut UnconstrainedMethod
+    {
+        &mut self.uncon_method
+    }
+
+    pub(crate) fn uncon_method(&self) -> &UnconstrainedMethod
+    {
+        &self.uncon_method
+    }
 }
 //}}}
 //{{{ struct: ConstraintData
