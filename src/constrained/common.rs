@@ -29,6 +29,8 @@ pub enum Error
 {
     #[error("Unconstrianed minimization failed with error {0}")]
     UnconstrainedError(#[from] UnconstrainedError),
+    #[error("Maximum iterations of {0} reached")]
+    MaxIterations(usize),
 }
 //}}}
 

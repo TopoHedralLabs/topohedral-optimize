@@ -6,7 +6,7 @@
 //{{{ crate imports
 use crate::{
     common::{arc_real_fn, ConvergedReason, CountingRealFn, IterData, Returns},
-    constrained::{ConstrainedMinimizer, ConstriainedOptions},
+    constrained::{ConstrainedError, ConstrainedMinimizer, ConstriainedOptions},
     unconstrained::{minimize, UnconstrainedMethod},
     Matrix, RealFn, RealVectorFn, Vector,
 };
@@ -648,7 +648,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> ConstrainedMinimizer
     for AugmentedLagrangian<F1, F2, F3>
 {
     #[trace_fn]
-    fn minimize(&mut self) -> Result<crate::Returns, super::common::Error>
+    fn minimize(&mut self) -> Result<Returns, ConstrainedError>
     {
         let n = self.x_init.len();
         let n_iter = self.opts.constrained_opts.max_iter;
@@ -694,9 +694,11 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> ConstrainedMinimizer
                 //{{{ trace
                 info!(target: "qn", "Converging with reason {reason:?}");
                 //}}}
+                let fmin = self.fcn.lock().unwrap().inner_mut().fcn.eval(&iter_k.x);
+                let xmin = iter_k.x;
                 return Ok(Returns {
-                    fmin: iter_k.fx,
-                    xmin: iter_k.x,
+                    fmin,
+                    xmin,
                     reason,
                     num_iterations: k as usize,
                     num_fun_evals: 0,
@@ -704,8 +706,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> ConstrainedMinimizer
                 });
             }
         }
-
-        todo!()
+        Err(ConstrainedError::MaxIterations(n_iter as usize))
     }
 }
 //}}}

@@ -488,18 +488,18 @@ const NOCEDAL_PR: ConjugateGradientOptions = ConjugateGradientOptions {
 //{{{ collection: quadratic
 //{{{ test: unconstrained
 #[rstest]
-#[case::quadratic_interp_bfgs(colvec(&[0.0, 0.0, 0.0, 0.0, 0.0]), UnconstrainedMethod::QuasiNewton(INTERP_BFGS), 2.0183860421701553e-9, 4.0738822152273034e-18, 8, 7)]
-#[case::quadratic_thuente_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(THUENTE_BFGS), 1.0e-12, 1.0e-24, 9, 13)]
-#[case::quadratic_nocedal_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(NOCEDAL_BFGS), 1.0e-12, 1.0e-24, 13, 18)]
-#[case::quadratic_interp_steepest(colvec(&[0.0, 0.0, 0.0, 0.0, 0.0]), UnconstrainedMethod::ConjugateGradient(INTERP_STEEPEST), 2.0183860421701553e-9, 4.0738822152273034e-18, 8, 7)]
-#[case::quadratic_thuente_steepest(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_STEEPEST), 2.5423787284960917e-13, 6.4636895991094044e-26, 9, 12)]
-#[case::quadratic_nocedal_steepest(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_STEEPEST), 0.0, 0.0, 16, 18)]
-#[case::quadratic_interp_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(INTERP_FR), 1.9739743194793782e-8, 3.8965746139640743e-16, 8, 7)]
-#[case::quadratic_thuente_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_FR), 2.5423787284960917e-13, 6.4636895991094044e-26, 9, 12)]
-#[case::quadratic_nocedal_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_FR), 1.9428902930940239e-16, 3.7748226909989823e-32, 16, 18)]
-#[case::quadratic_interp_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(INTERP_PR), 1.9739743194793782e-8, 3.8965746139640743e-16, 8, 7)]
-#[case::quadratic_thuente_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_PR), 2.5423787284960917e-13, 6.4636895991094044e-26, 9, 12)]
-#[case::quadratic_nocedal_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_PR), 0.0, 0.0, 16, 18)]
+#[case::quadratic_interp_bfgs(colvec(&[0.0, 0.0, 0.0, 0.0, 0.0]), UnconstrainedMethod::QuasiNewton(INTERP_BFGS), 2.0183860421701553e-9, 4.0738822152273034e-18, 9, 7)]
+#[case::quadratic_thuente_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(THUENTE_BFGS), 1.0e-12, 1.0e-24, 10, 13)]
+#[case::quadratic_nocedal_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(NOCEDAL_BFGS), 1.0e-12, 1.0e-24, 14, 18)]
+#[case::quadratic_interp_steepest(colvec(&[0.0, 0.0, 0.0, 0.0, 0.0]), UnconstrainedMethod::ConjugateGradient(INTERP_STEEPEST), 2.0183860421701553e-9, 4.0738822152273034e-18, 9, 7)]
+#[case::quadratic_thuente_steepest(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_STEEPEST), 2.5423787284960917e-13, 6.4636895991094044e-26, 10, 12)]
+#[case::quadratic_nocedal_steepest(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_STEEPEST), 0.0, 0.0, 17, 18)]
+#[case::quadratic_interp_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(INTERP_FR), 1.9739743194793782e-8, 3.8965746139640743e-16, 9, 7)]
+#[case::quadratic_thuente_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_FR), 2.5423787284960917e-13, 6.4636895991094044e-26, 10, 12)]
+#[case::quadratic_nocedal_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_FR), 1.9428902930940239e-16, 3.7748226909989823e-32, 17, 18)]
+#[case::quadratic_interp_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(INTERP_PR), 1.9739743194793782e-8, 3.8965746139640743e-16, 9, 7)]
+#[case::quadratic_thuente_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_PR), 2.5423787284960917e-13, 6.4636895991094044e-26, 10, 12)]
+#[case::quadratic_nocedal_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_PR), 0.0, 0.0, 17, 18)]
 fn test_quadratic_without_constraints_matches_unconstrained_reference(
     #[case] x0: Vector,
     #[case] unconstrained_method: UnconstrainedMethod,
@@ -536,18 +536,18 @@ fn test_quadratic_without_constraints_matches_unconstrained_reference(
 //}}}
 //{{{ test: bound constrained
 #[rstest]
-#[case::quadratic_thuente_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(THUENTE_BFGS), false, 1e-6, 1e-6, 101.99999670717264, 40, 77)]
-#[case::quadratic_nocedal_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(NOCEDAL_BFGS), false, 1e-6, 1e-6, 101.99998074505208, 45, 64)]
-#[case::quadratic_interp_bfgs(colvec(&[0.0, 0.0, 0.0, 0.0, 0.0]), UnconstrainedMethod::QuasiNewton(INTERP_BFGS), true, 1e-6, 1e-6, 119.99998412335145, 73, 59)]
-#[case::quadratic_interp_steepest(colvec(&[0.0, 0.0, 0.0, 0.0, 0.0]), UnconstrainedMethod::ConjugateGradient(INTERP_STEEPEST), false, 1e-6, 1e-6, 119.99998572370659, 88, 65)]
-#[case::quadratic_thuente_steepest(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_STEEPEST), false, 1e-6, 1e-6, 119.99998391621313, 50, 90)]
-#[case::quadratic_nocedal_steepest(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_STEEPEST), false, 1e-6, 1e-6, 119.99998531000307, 63, 81)]
-#[case::quadratic_interp_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(INTERP_FR), true, 2e-6, 1e-6, 101.99999101682535, 585, 244)]
-#[case::quadratic_thuente_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_FR), false, 1e-6, 1e-6, 119.99998534803942, 48, 87)]
-#[case::quadratic_nocedal_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_FR), false, 2e-6, 1e-6, 101.9999923583359, 129, 150)]
-#[case::quadratic_interp_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(INTERP_PR), true, 1e-6, 1e-6, 119.9999838101496, 83, 63)]
-#[case::quadratic_thuente_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_PR), false, 1e-6, 1e-6, 101.9999990975068, 37, 66)]
-#[case::quadratic_nocedal_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_PR), false, 1e-6, 1e-6, 101.99997989712453, 59, 61)]
+#[case::quadratic_thuente_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(THUENTE_BFGS), false, 1e-6, 1e-6, 99.99999677173764, 41, 77)]
+#[case::quadratic_nocedal_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(NOCEDAL_BFGS), false, 1e-6, 1e-6, 99.99998112260113, 46, 64)]
+#[case::quadratic_interp_bfgs(colvec(&[0.0, 0.0, 0.0, 0.0, 0.0]), UnconstrainedMethod::QuasiNewton(INTERP_BFGS), true, 1e-6, 1e-6, 99.99998676966777, 74, 59)]
+#[case::quadratic_interp_steepest(colvec(&[0.0, 0.0, 0.0, 0.0, 0.0]), UnconstrainedMethod::ConjugateGradient(INTERP_STEEPEST), false, 1e-6, 1e-6, 99.99998810458727, 89, 65)]
+#[case::quadratic_thuente_steepest(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_STEEPEST), false, 1e-6, 1e-6, 99.99998659682088, 51, 90)]
+#[case::quadratic_nocedal_steepest(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_STEEPEST), false, 1e-6, 1e-6, 99.9999877581177, 64, 81)]
+#[case::quadratic_interp_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(INTERP_FR), true, 2e-6, 1e-6, 99.99999122245521, 586, 244)]
+#[case::quadratic_thuente_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_FR), false, 1e-6, 1e-6, 99.99998779195894, 49, 87)]
+#[case::quadratic_nocedal_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_FR), false, 2e-6, 1e-6, 99.99999260760694, 130, 150)]
+#[case::quadratic_interp_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(INTERP_PR), true, 1e-6, 1e-6, 99.99998650828768, 84, 63)]
+#[case::quadratic_thuente_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_PR), false, 1e-6, 1e-6, 99.99999911520234, 38, 66)]
+#[case::quadratic_nocedal_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_PR), false, 1e-6, 1e-6, 99.99998029129704, 60, 61)]
 fn test_quadratic_with_bound_constraints_matches_reference(
     #[case] x0: Vector,
     #[case] mut unconstrained_method: UnconstrainedMethod,
@@ -599,18 +599,18 @@ fn test_quadratic_with_bound_constraints_matches_reference(
 //{{{ collection: quartic
 //{{{ test: unconstrained
 #[rstest]
-#[case::quartic_interp_bfgs(colvec(&[0.0, 0.0, 0.0, 0.0, 0.0]), UnconstrainedMethod::QuasiNewton(INTERP_BFGS), 1.1906159454267216e-1, 4.0189885991360184e-5, 45, 31)]
-#[case::quartic_thuente_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(THUENTE_BFGS), 6.8e-1, 1.217166e-1, 49, 87)]
-#[case::quartic_nocedal_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(NOCEDAL_BFGS), 7.3232511374922560e-1, 6.9775029981934830e-2, 74, 103)]
-#[case::quartic_interp_steepest(colvec(&[0.0, 0.0, 0.0, 0.0, 0.0]), UnconstrainedMethod::ConjugateGradient(INTERP_STEEPEST), 1.4479820748386635e-1, 8.7918999650696810e-5, 25, 18)]
-#[case::quartic_thuente_steepest(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_STEEPEST), 2.6054392428170864e-1, 2.2916123661796467e-3, 21, 34)]
-#[case::quartic_nocedal_steepest(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_STEEPEST), 6.3973449456097953e-1, 4.5171976960111730e-2, 28, 34)]
-#[case::quartic_interp_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(INTERP_FR), 1.2070577926956085e0, 5.4374493955913960e-1, 47, 29)]
-#[case::quartic_thuente_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_FR), 4.3181595955113955e-1, 8.7598881523012430e-3, 23, 37)]
-#[case::quartic_nocedal_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_FR), 4.1150527192591912e-1, 1.0639361825963145e-2, 33, 40)]
-#[case::quartic_interp_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(INTERP_PR), 8.2596675128718233e-1, 2.2340415680397563e-1, 72, 32)]
-#[case::quartic_thuente_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_PR), 4.4101768233767547e-1, 1.3287153804932000e-2, 21, 34)]
-#[case::quartic_nocedal_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_PR), 6.5889078801448453e-1, 7.9115661470400640e-2, 41, 48)]
+#[case::quartic_interp_bfgs(colvec(&[0.0, 0.0, 0.0, 0.0, 0.0]), UnconstrainedMethod::QuasiNewton(INTERP_BFGS), 1.1906159454267216e-1, 4.0189885991360184e-5, 46, 31)]
+#[case::quartic_thuente_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(THUENTE_BFGS), 6.8e-1, 1.217166e-1, 50, 87)]
+#[case::quartic_nocedal_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(NOCEDAL_BFGS), 7.3232511374922560e-1, 6.9775029981934830e-2, 75, 103)]
+#[case::quartic_interp_steepest(colvec(&[0.0, 0.0, 0.0, 0.0, 0.0]), UnconstrainedMethod::ConjugateGradient(INTERP_STEEPEST), 1.4479820748386635e-1, 8.7918999650696810e-5, 26, 18)]
+#[case::quartic_thuente_steepest(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_STEEPEST), 2.6054392428170864e-1, 2.2916123661796467e-3, 22, 34)]
+#[case::quartic_nocedal_steepest(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_STEEPEST), 6.3973449456097953e-1, 4.5171976960111730e-2, 29, 34)]
+#[case::quartic_interp_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(INTERP_FR), 1.2070577926956085e0, 5.4374493955913960e-1, 48, 29)]
+#[case::quartic_thuente_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_FR), 4.3181595955113955e-1, 8.7598881523012430e-3, 24, 37)]
+#[case::quartic_nocedal_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_FR), 4.1150527192591912e-1, 1.0639361825963145e-2, 34, 40)]
+#[case::quartic_interp_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(INTERP_PR), 8.2596675128718233e-1, 2.2340415680397563e-1, 73, 32)]
+#[case::quartic_thuente_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_PR), 4.4101768233767547e-1, 1.3287153804932000e-2, 22, 34)]
+#[case::quartic_nocedal_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_PR), 6.5889078801448453e-1, 7.9115661470400640e-2, 42, 48)]
 fn test_quartic_without_constraints_matches_unconstrained_reference(
     #[case] x0: Vector,
     #[case] mut unconstrained_method: UnconstrainedMethod,
@@ -646,19 +646,80 @@ fn test_quartic_without_constraints_matches_unconstrained_reference(
     assert_counts(&ret, exp_num_fun_evals, exp_num_grad_evals);
 }
 //}}}
+//{{{ test: bound constrained
+// #[rstest]
+// #[case::quadratic_thuente_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(THUENTE_BFGS), false, 1e-6, 1e-6, 101.99999670717264, 40, 77)]
+// #[case::quadratic_nocedal_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(NOCEDAL_BFGS), false, 1e-6, 1e-6, 101.99998074505208, 45, 64)]
+// #[case::quadratic_interp_bfgs(colvec(&[0.0, 0.0, 0.0, 0.0, 0.0]), UnconstrainedMethod::QuasiNewton(INTERP_BFGS), true, 1e-6, 1e-6, 119.99998412335145, 73, 59)]
+// #[case::quadratic_interp_steepest(colvec(&[0.0, 0.0, 0.0, 0.0, 0.0]), UnconstrainedMethod::ConjugateGradient(INTERP_STEEPEST), false, 1e-6, 1e-6, 119.99998572370659, 88, 65)]
+// #[case::quadratic_thuente_steepest(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_STEEPEST), false, 1e-6, 1e-6, 119.99998391621313, 50, 90)]
+// #[case::quadratic_nocedal_steepest(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_STEEPEST), false, 1e-6, 1e-6, 119.99998531000307, 63, 81)]
+// #[case::quadratic_interp_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(INTERP_FR), true, 2e-6, 1e-6, 101.99999101682535, 585, 244)]
+// #[case::quadratic_thuente_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_FR), false, 1e-6, 1e-6, 119.99998534803942, 48, 87)]
+// #[case::quadratic_nocedal_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_FR), false, 2e-6, 1e-6, 101.9999923583359, 129, 150)]
+// #[case::quadratic_interp_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(INTERP_PR), true, 1e-6, 1e-6, 119.9999838101496, 83, 63)]
+// #[case::quadratic_thuente_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_PR), false, 1e-6, 1e-6, 101.9999990975068, 37, 66)]
+// #[case::quadratic_nocedal_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_PR), false, 1e-6, 1e-6, 101.99997989712453, 59, 61)]
+// fn test_quartic_with_bound_constraints_matches_reference(
+//     #[case] x0: Vector,
+//     #[case] mut unconstrained_method: UnconstrainedMethod,
+//     #[case] use_interp_scale_factor_1_2: bool,
+//     #[case] xmin_tol: f64,
+//     #[case] fmin_tol: f64,
+//     #[case] exp_fmin: f64,
+//     #[case] exp_num_fun_evals: usize,
+//     #[case] exp_num_grad_evals: usize,
+// )
+// {
+//     let quad = Quadratic {
+//         xmin: colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
+//     };
+
+//     let mut ieq_constraints = BoundsConstraints::new(5);
+//     ieq_constraints.add_bounds(0, Some(20.0), None);
+
+//     if use_interp_scale_factor_1_2
+//     {
+//         if let LineSearchMethod::Interp(interp_opts) =
+//             &mut unconstrained_method.uncon_opts_mut().ls_method
+//         {
+//             interp_opts.scale_factor = 1.2;
+//         }
+//     }
+
+//     let ret = constrained_minimize(
+//         quad,
+//         None::<NoConstraints>,
+//         Some(ieq_constraints),
+//         x0,
+//         auglag_method(unconstrained_method),
+//     )
+//     .unwrap();
+
+//     println!("ret = {ret:?}");
+//     assert_answer(
+//         &ret,
+//         &colvec(&[20.0, 10.0, 10.0, 10.0, 10.0]),
+//         exp_fmin,
+//         xmin_tol,
+//         fmin_tol,
+//     );
+//     assert_counts(&ret, exp_num_fun_evals, exp_num_grad_evals);
+// }
+//}}}
 //}}}
 //{{{ collection: rosenbrock
 //{{{ test: unconstrained
 #[rstest]
-#[case::rosenbrock_interp_bfgs(colvec(&[0.0, 3.0]), UnconstrainedMethod::QuasiNewton(INTERP_BFGS), 5.5239410319076359e-8, 4.2600533772335230e-14, 124, 54)]
-#[case::rosenbrock_thuente_bfgs(colvec(&[0.0, 3.0]), UnconstrainedMethod::QuasiNewton(THUENTE_BFGS), 9.0284228790531235e-7, 3.3156139251068023e-13, 34, 59)]
-#[case::rosenbrock_nocedal_bfgs(colvec(&[0.0, 3.0]), UnconstrainedMethod::QuasiNewton(NOCEDAL_BFGS), 1.2741169516945091e-7, 8.0476763718045500e-15, 73, 68)]
-#[case::rosenbrock_interp_fr(colvec(&[0.0, 3.0]), UnconstrainedMethod::ConjugateGradient(INTERP_FR), 4.7020691820927910e-4, 4.4157413399944545e-8, 13020, 5212)]
-#[case::rosenbrock_thuente_fr(colvec(&[0.0, 3.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_FR), 2.3939387271972799e-4, 1.1444703681763757e-8, 404, 641)]
-#[case::rosenbrock_nocedal_fr(colvec(&[0.0, 3.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_FR), 4.1115183059162496e-5, 3.3755631595392825e-10, 497, 614)]
-#[case::rosenbrock_interp_pr(colvec(&[0.0, 3.0]), UnconstrainedMethod::ConjugateGradient(INTERP_PR), 1.3997451454280088e-3, 3.9103581632830066e-7, 125, 54)]
-#[case::rosenbrock_thuente_pr(colvec(&[0.0, 3.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_PR), 5.4859043189398348e-6, 6.5279974297398110e-12, 61, 91)]
-#[case::rosenbrock_nocedal_pr(colvec(&[0.0, 3.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_PR), 2.8080039179491367e-4, 1.5745787517370056e-8, 67, 75)]
+#[case::rosenbrock_interp_bfgs(colvec(&[0.0, 3.0]), UnconstrainedMethod::QuasiNewton(INTERP_BFGS), 5.5239410319076359e-8, 4.2600533772335230e-14, 125, 54)]
+#[case::rosenbrock_thuente_bfgs(colvec(&[0.0, 3.0]), UnconstrainedMethod::QuasiNewton(THUENTE_BFGS), 9.0284228790531235e-7, 3.3156139251068023e-13, 35, 59)]
+#[case::rosenbrock_nocedal_bfgs(colvec(&[0.0, 3.0]), UnconstrainedMethod::QuasiNewton(NOCEDAL_BFGS), 1.2741169516945091e-7, 8.0476763718045500e-15, 74, 68)]
+#[case::rosenbrock_interp_fr(colvec(&[0.0, 3.0]), UnconstrainedMethod::ConjugateGradient(INTERP_FR), 4.7020691820927910e-4, 4.4157413399944545e-8, 13021, 5212)]
+#[case::rosenbrock_thuente_fr(colvec(&[0.0, 3.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_FR), 2.3939387271972799e-4, 1.1444703681763757e-8, 405, 641)]
+#[case::rosenbrock_nocedal_fr(colvec(&[0.0, 3.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_FR), 4.1115183059162496e-5, 3.3755631595392825e-10, 498, 614)]
+#[case::rosenbrock_interp_pr(colvec(&[0.0, 3.0]), UnconstrainedMethod::ConjugateGradient(INTERP_PR), 1.3997451454280088e-3, 3.9103581632830066e-7, 126, 54)]
+#[case::rosenbrock_thuente_pr(colvec(&[0.0, 3.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_PR), 5.4859043189398348e-6, 6.5279974297398110e-12, 62, 91)]
+#[case::rosenbrock_nocedal_pr(colvec(&[0.0, 3.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_PR), 2.8080039179491367e-4, 1.5745787517370056e-8, 68, 75)]
 fn test_rosenbrock_without_constraints_matches_unconstrained_reference(
     #[case] x0: Vector,
     #[case] mut unconstrained_method: UnconstrainedMethod,
