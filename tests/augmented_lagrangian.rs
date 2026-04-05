@@ -588,7 +588,7 @@ fn test_quadratic_with_bound_constraints_matches_reference(
 #[case::quadratic_interp_bfgs(colvec(&[0.0, 0.0, 0.0, 0.0, 0.0]), UnconstrainedMethod::QuasiNewton(INTERP_BFGS), LineSearchError::MaxIterations)]
 #[case::quadratic_interp_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(INTERP_FR), LineSearchError::MaxIterations)]
 #[case::quadratic_interp_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(INTERP_PR), LineSearchError::MaxIterations)]
-fn test_quadratic_with_bound_constraints_propagates_expected_line_search_failures(
+fn test_quadratic_with_bound_constraints_failures(
     #[case] x0: Vector,
     #[case] unconstrained_method: UnconstrainedMethod,
     #[case] exp_line_search_err: LineSearchError,
@@ -601,12 +601,20 @@ fn test_quadratic_with_bound_constraints_propagates_expected_line_search_failure
     let mut ieq_constraints = BoundsConstraints::new(5);
     ieq_constraints.add_bounds(0, Some(20.0), None);
 
+    let mut method = auglag_method(unconstrained_method);
+
+    if let LineSearchMethod::Interp(interp_opts) =
+        &mut method.uncon_method_mut().uncon_opts_mut().ls_method
+    {
+        interp_opts.scale_factor = 1.2;
+    }
+
     let err = constrained_minimize(
         quad,
         None::<NoConstraints>,
         Some(ieq_constraints),
         x0,
-        auglag_method(unconstrained_method),
+        method,
     )
     .unwrap_err();
 
