@@ -6,10 +6,10 @@ use topohedral_optimize::line_search::{
     InterpOptions, LineSearchMethod, LineSearchOptions, NocedalOptions, ThuenteOptions,
 };
 use topohedral_optimize::unconstrained::{
-    ConjugateGradient, ConjugateGradientOptions, Direction, UnconstrainedConvergedReason,
-    UnconstrainedMinimizer, UnconstrainedReturns, UnonstrainedOptions,
+    minimize, ConjugateGradientOptions, Direction, UnconstrainedConvergedReason,
+    UnconstrainedMethod, UnconstrainedReturns, UnonstrainedOptions,
 };
-use topohedral_optimize::RealFn;
+use topohedral_optimize::{RealFn, Vector};
 //}}}
 //{{{ std imports
 //}}}
@@ -29,7 +29,7 @@ fn init_logger()
 }
 //}}}
 //{{{ fun: colvec
-fn colvec(values: &[f64]) -> DVector<f64>
+fn colvec(values: &[f64]) -> Vector
 {
     DVector::<f64>::from_slice_vec(values, values.len(), VecType::Col)
 }
@@ -38,15 +38,20 @@ fn colvec(values: &[f64]) -> DVector<f64>
 #[derive(Debug, Clone)]
 struct Quadratic
 {
-    xmin: DVector<f64>,
+    xmin: Vector,
 }
 //}}}
 //{{{ impl: RealFn for Quadratic
 impl RealFn for Quadratic
 {
+    fn dimension(&self) -> usize
+    {
+        self.xmin.len()
+    }
+
     fn eval(
         &mut self,
-        x: &DVector<f64>,
+        x: &Vector,
     ) -> f64
     {
         let tmp = x.clone() - self.xmin.clone();
@@ -60,8 +65,8 @@ impl RealFn for Quadratic
 
     fn grad(
         &mut self,
-        x_in: &DVector<f64>,
-    ) -> DVector<f64>
+        x_in: &Vector,
+    ) -> Vector
     {
         let tmp = x_in.clone() - self.xmin.clone();
         let mut out = DVector::<f64>::zeros_cvec(5, VecType::Col);
@@ -77,15 +82,20 @@ impl RealFn for Quadratic
 #[derive(Debug, Clone)]
 struct Quartic
 {
-    xmin: DVector<f64>,
+    xmin: Vector,
 }
 //}}}
 //{{{ impl: RealFn for Quartic
 impl RealFn for Quartic
 {
+    fn dimension(&self) -> usize
+    {
+        self.xmin.len()
+    }
+
     fn eval(
         &mut self,
-        x: &DVector<f64>,
+        x: &Vector,
     ) -> f64
     {
         let tmp = x.clone() - self.xmin.clone();
@@ -99,8 +109,8 @@ impl RealFn for Quartic
 
     fn grad(
         &mut self,
-        x_in: &DVector<f64>,
-    ) -> DVector<f64>
+        x_in: &Vector,
+    ) -> Vector
     {
         let tmp = x_in.clone() - self.xmin.clone();
         let mut out = DVector::<f64>::zeros_cvec(5, VecType::Col);
@@ -132,9 +142,14 @@ impl Rosenbrock
 //{{{ impl: RealFn for Rosenbrock
 impl RealFn for Rosenbrock
 {
+    fn dimension(&self) -> usize
+    {
+        2
+    }
+
     fn eval(
         &mut self,
-        xvec: &DVector<f64>,
+        xvec: &Vector,
     ) -> f64
     {
         let x = xvec[0];
@@ -144,8 +159,8 @@ impl RealFn for Rosenbrock
 
     fn grad(
         &mut self,
-        xvec: &DVector<f64>,
-    ) -> DVector<f64>
+        xvec: &Vector,
+    ) -> Vector
     {
         let a = self.a;
         let b = self.b;
@@ -180,6 +195,7 @@ const INTERP_STEEPEST: ConjugateGradientOptions = ConjugateGradientOptions {
         grad_rtol: 1e-6,
         grad_atol: 1e-8,
         max_iter: 100,
+        make_counting: true,
         ls_method: LineSearchMethod::Interp(InterpOptions {
             ls_opts: LineSearchOptions {
                 c1: 1.0e-4,
@@ -192,7 +208,7 @@ const INTERP_STEEPEST: ConjugateGradientOptions = ConjugateGradientOptions {
         }),
     },
     direction: Direction::Steepest,
-    restart: 10,
+    restart: 100,
 };
 //}}}
 //{{{ const: INTPER_FR
@@ -201,6 +217,7 @@ const INTERP_FR: ConjugateGradientOptions = ConjugateGradientOptions {
         grad_rtol: 1e-6,
         grad_atol: 1e-8,
         max_iter: 100,
+        make_counting: true,
         ls_method: LineSearchMethod::Interp(InterpOptions {
             ls_opts: LineSearchOptions {
                 c1: 1.0e-4,
@@ -222,6 +239,7 @@ const INTERP_PR: ConjugateGradientOptions = ConjugateGradientOptions {
         grad_rtol: 1e-6,
         grad_atol: 1e-8,
         max_iter: 100,
+        make_counting: true,
         ls_method: LineSearchMethod::Interp(InterpOptions {
             ls_opts: LineSearchOptions {
                 c1: 1.0e-4,
@@ -243,6 +261,7 @@ const THUENTE_STEEPEST: ConjugateGradientOptions = ConjugateGradientOptions {
         grad_rtol: 1e-6,
         grad_atol: 1e-8,
         max_iter: 100,
+        make_counting: true,
         ls_method: LineSearchMethod::Thuente(ThuenteOptions {
             ls_opts: LineSearchOptions {
                 c1: 1.0e-4,
@@ -263,6 +282,7 @@ const THUENTE_FR: ConjugateGradientOptions = ConjugateGradientOptions {
         grad_rtol: 1e-6,
         grad_atol: 1e-8,
         max_iter: 100,
+        make_counting: true,
         ls_method: LineSearchMethod::Thuente(ThuenteOptions {
             ls_opts: LineSearchOptions {
                 c1: 1.0e-4,
@@ -283,6 +303,7 @@ const THUENTE_PR: ConjugateGradientOptions = ConjugateGradientOptions {
         grad_rtol: 1e-6,
         grad_atol: 1e-8,
         max_iter: 100,
+        make_counting: true,
         ls_method: LineSearchMethod::Thuente(ThuenteOptions {
             ls_opts: LineSearchOptions {
                 c1: 1.0e-4,
@@ -303,6 +324,7 @@ const NOCEDAL_STEEPEST: ConjugateGradientOptions = ConjugateGradientOptions {
         grad_rtol: 1e-6,
         grad_atol: 1e-8,
         max_iter: 100,
+        make_counting: true,
         ls_method: LineSearchMethod::Nocedal(NocedalOptions {
             ls_opts: LineSearchOptions {
                 c1: 1.0e-4,
@@ -324,6 +346,7 @@ const NOCEDAL_FR: ConjugateGradientOptions = ConjugateGradientOptions {
         grad_rtol: 1e-6,
         grad_atol: 1e-8,
         max_iter: 100,
+        make_counting: true,
         ls_method: LineSearchMethod::Nocedal(NocedalOptions {
             ls_opts: LineSearchOptions {
                 c1: 1.0e-4,
@@ -345,6 +368,7 @@ const NOCEDAL_PR: ConjugateGradientOptions = ConjugateGradientOptions {
         grad_rtol: 1e-6,
         grad_atol: 1e-8,
         max_iter: 100,
+        make_counting: true,
         ls_method: LineSearchMethod::Nocedal(NocedalOptions {
             ls_opts: LineSearchOptions {
                 c1: 1.0e-4,
@@ -372,7 +396,7 @@ const NOCEDAL_PR: ConjugateGradientOptions = ConjugateGradientOptions {
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 1,
         num_fun_evals: 6,
-        num_grad_evals: 3
+        num_grad_evals: 4
     }
 )]
 //}}}
@@ -386,7 +410,7 @@ const NOCEDAL_PR: ConjugateGradientOptions = ConjugateGradientOptions {
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 1,
         num_fun_evals: 7,
-        num_grad_evals: 8
+        num_grad_evals: 9
     }
 )]
 //}}}
@@ -400,7 +424,7 @@ const NOCEDAL_PR: ConjugateGradientOptions = ConjugateGradientOptions {
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 1,
         num_fun_evals: 6,
-        num_grad_evals: 3,
+        num_grad_evals: 4,
     }
 )]
 //}}}
@@ -414,7 +438,7 @@ const NOCEDAL_PR: ConjugateGradientOptions = ConjugateGradientOptions {
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 1,
         num_fun_evals: 7,
-        num_grad_evals: 8,
+        num_grad_evals: 9,
     }
 )]
 //}}}
@@ -428,7 +452,7 @@ const NOCEDAL_PR: ConjugateGradientOptions = ConjugateGradientOptions {
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 1,
         num_fun_evals: 6,
-        num_grad_evals: 3,
+        num_grad_evals: 4,
     }
 )]
 //}}}
@@ -442,7 +466,7 @@ const NOCEDAL_PR: ConjugateGradientOptions = ConjugateGradientOptions {
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 1,
         num_fun_evals: 7,
-        num_grad_evals: 8,
+        num_grad_evals: 9,
     }
 )]
 //}}}
@@ -456,7 +480,7 @@ const NOCEDAL_PR: ConjugateGradientOptions = ConjugateGradientOptions {
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 2,
         num_fun_evals: 14,
-        num_grad_evals: 14
+        num_grad_evals: 15
     }
 )]
 //}}}
@@ -470,7 +494,7 @@ const NOCEDAL_PR: ConjugateGradientOptions = ConjugateGradientOptions {
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 2,
         num_fun_evals: 14,
-        num_grad_evals: 14,
+        num_grad_evals: 15,
     }
 )]
 //}}}
@@ -484,12 +508,12 @@ const NOCEDAL_PR: ConjugateGradientOptions = ConjugateGradientOptions {
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 2,
         num_fun_evals: 14,
-        num_grad_evals: 14,
+        num_grad_evals: 15,
     }
 )]
 //}}}
 fn test_qudratic(
-    #[case] x0: DVector<f64>,
+    #[case] x0: Vector,
     #[case] opts: ConjugateGradientOptions,
     #[case] exp_ret: UnconstrainedReturns,
 )
@@ -497,9 +521,8 @@ fn test_qudratic(
     let quad = Quadratic {
         xmin: colvec(&[1000.0, -100.0, 0.0, 567.0, -23.0]),
     };
-    let mut cg = ConjugateGradient::new(quad, x0, opts);
-    let ret = cg.minimize().unwrap();
 
+    let ret = minimize(quad, x0, UnconstrainedMethod::ConjugateGradient(opts)).unwrap();
     println!("{ret:?}");
     assert_returns(&ret, &exp_ret, 1e-7, 1e-10);
 }
@@ -516,7 +539,7 @@ fn test_qudratic(
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 14,
         num_fun_evals: 59,
-        num_grad_evals: 29
+        num_grad_evals: 30
     }
 )]
 //}}}
@@ -530,7 +553,7 @@ fn test_qudratic(
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 12,
         num_fun_evals: 40,
-        num_grad_evals: 52
+        num_grad_evals: 53
     }
 )]
 //}}}
@@ -544,7 +567,7 @@ fn test_qudratic(
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 16,
         num_fun_evals: 152,
-        num_grad_evals: 49,
+        num_grad_evals: 50,
     }
 )]
 //}}}
@@ -558,7 +581,7 @@ fn test_qudratic(
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 13,
         num_fun_evals: 35,
-        num_grad_evals: 48,
+        num_grad_evals: 49,
     }
 )]
 //}}}
@@ -572,7 +595,7 @@ fn test_qudratic(
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 14,
         num_fun_evals: 177,
-        num_grad_evals: 52,
+        num_grad_evals: 53,
     }
 )]
 //}}}
@@ -586,7 +609,7 @@ fn test_qudratic(
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 12,
         num_fun_evals: 40,
-        num_grad_evals: 52,
+        num_grad_evals: 53,
     }
 )]
 //}}}
@@ -600,7 +623,7 @@ fn test_qudratic(
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 19,
         num_fun_evals: 88,
-        num_grad_evals: 92
+        num_grad_evals: 93
     }
 )]
 //}}}
@@ -614,7 +637,7 @@ fn test_qudratic(
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 16,
         num_fun_evals: 69,
-        num_grad_evals: 67,
+        num_grad_evals: 68,
     }
 )]
 //}}}
@@ -628,12 +651,12 @@ fn test_qudratic(
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 20,
         num_fun_evals: 96,
-        num_grad_evals: 99,
+        num_grad_evals: 100,
     }
 )]
 //}}}
 fn test_quartic(
-    #[case] x0: DVector<f64>,
+    #[case] x0: Vector,
     #[case] mut opts: ConjugateGradientOptions,
     #[case] exp_ret: UnconstrainedReturns,
 )
@@ -643,9 +666,8 @@ fn test_quartic(
     };
     opts.uncon_opts.grad_rtol = 1e-12;
     opts.uncon_opts.grad_atol = 1e-12;
-    let mut cg = ConjugateGradient::new(quart, x0, opts);
-    let ret = cg.minimize().unwrap();
 
+    let ret = minimize(quart, x0, UnconstrainedMethod::ConjugateGradient(opts)).unwrap();
     println!("{ret:?}");
     assert_returns(&ret, &exp_ret, 5e-2, 1e-5);
 }
@@ -662,7 +684,7 @@ fn test_quartic(
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 2538,
         num_fun_evals: 12745,
-        num_grad_evals: 5088,
+        num_grad_evals: 5089,
     }
 )]
 //}}}
@@ -676,7 +698,7 @@ fn test_quartic(
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 119,
         num_fun_evals: 235,
-        num_grad_evals: 354,
+        num_grad_evals: 355,
     }
 )]
 //}}}
@@ -690,7 +712,7 @@ fn test_quartic(
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 16,
         num_fun_evals: 161,
-        num_grad_evals: 49,
+        num_grad_evals: 50,
     }
 )]
 //}}}
@@ -704,7 +726,7 @@ fn test_quartic(
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 19,
         num_fun_evals: 40,
-        num_grad_evals: 59,
+        num_grad_evals: 60,
     }
 )]
 //}}}
@@ -718,7 +740,7 @@ fn test_quartic(
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 245,
         num_fun_evals: 586,
-        num_grad_evals: 704,
+        num_grad_evals: 705,
     }
 )]
 //}}}
@@ -732,12 +754,12 @@ fn test_quartic(
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 24,
         num_fun_evals: 92,
-        num_grad_evals: 83,
+        num_grad_evals: 84,
     }
 )]
 //}}}
 fn test_rosenbrock(
-    #[case] x0: DVector<f64>,
+    #[case] x0: Vector,
     #[case] mut opts: ConjugateGradientOptions,
     #[case] exp_ret: UnconstrainedReturns,
 )
@@ -751,10 +773,7 @@ fn test_rosenbrock(
     {
         interp_opts.scale_factor = 1.2;
     }
-
-    let mut cg = ConjugateGradient::new(rosenbrock, x0, opts);
-
-    let ret = cg.minimize().unwrap();
+    let ret = minimize(rosenbrock, x0, UnconstrainedMethod::ConjugateGradient(opts)).unwrap();
     println!("{ret:?}");
     assert_returns(&ret, &exp_ret, 1e-2, 1e-6);
 }

@@ -17,6 +17,7 @@ use topohedral_tracing::*;
 //}}}
 //--------------------------------------------------------------------------------------------------
 
+//{{{ enum: Method
 #[derive(Copy, Clone)]
 pub enum Method
 {
@@ -24,7 +25,8 @@ pub enum Method
     Thuente(thuente::Options),
     Nocedal(nocedal::Options),
 }
-
+//}}}
+//{{{ fun: create
 #[trace_fn]
 pub fn create<'a, F: RealFn1 + 'a>(
     fcn: F,
@@ -38,3 +40,4 @@ pub fn create<'a, F: RealFn1 + 'a>(
         Method::Nocedal(opts) => Box::new(nocedal::Nocedal::new(fcn, opts)),
     }
 }
+//}}}

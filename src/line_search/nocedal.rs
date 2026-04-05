@@ -15,6 +15,7 @@ use topohedral_tracing::*;
 //}}}
 //--------------------------------------------------------------------------------------------------
 
+//{{{ struct: Options
 #[derive(Copy, Clone, Default, Debug)]
 pub struct Options
 {
@@ -22,13 +23,15 @@ pub struct Options
     pub maxiter: usize,
     pub zoom_maxiter: usize,
 }
-
+//}}}
+//{{{ struct: Nocedal
 pub struct Nocedal<F: RealFn1>
 {
     pub opts: Options,
     pub(crate) f: F,
 }
-
+//}}}
+//{{{ impl: Nocedal
 impl<F: RealFn1> Nocedal<F>
 {
     #[trace_fn]
@@ -40,7 +43,8 @@ impl<F: RealFn1> Nocedal<F>
         Self { f, opts }
     }
 }
-
+//}}}
+//{{{ impl: LineSearch for Nocedal
 impl<F: RealFn1> LineSearch for Nocedal<F>
 {
     type Function = F;
@@ -66,6 +70,7 @@ impl<F: RealFn1> LineSearch for Nocedal<F>
         let mut phi_a0 = phi0;
         let mut dphi_a0 = dphi0;
         let mut dphi_a1 = 0.0;
+        let _ = dphi_a1;
         let mut phi_a1 = self.f.eval(alpha1);
         let max_iter = self.opts.maxiter;
 
@@ -111,7 +116,7 @@ impl<F: RealFn1> LineSearch for Nocedal<F>
                     self.opts.zoom_maxiter,
                 );
 
-                let (alpha_tmp, phi_tmp, dphi_tmp) = match zoom_result
+                let (alpha_tmp, phi_tmp, _dphi_tmp) = match zoom_result
                 {
                     None =>
                     {
@@ -124,27 +129,28 @@ impl<F: RealFn1> LineSearch for Nocedal<F>
                 };
 
                 //{{{ trace
-                error!(target: "ls", "Leaving with {:1.4e} {:1.4e} {:1.4e}", alpha_tmp, phi_tmp, dphi_tmp);
+                error!(target: "ls", "Leaving with {:1.4e} {:1.4e} {:1.4e}", alpha_tmp, phi_tmp, _dphi_tmp);
                 //}}}
                 return Ok(Returns {
                     alpha: alpha_tmp,
                     phi_alpha: phi_tmp,
-                    dphi_alpha: dphi_tmp,
                 });
             }
 
             // current step is armijo-acceptable, so check if curvature-accepttable
             dphi_a1 = self.f.diff(alpha1);
+            //{{{ trace
+            trace!(target: "ls", "dphi_a1 = {dphi_a1:1.4e}");
+            //}}}
             if dphi_a1.abs() <= -c2 * dphi0
             {
                 //{{{ trace
-                trace!(target: "ls", "Does not satisfy curvature");
+                trace!(target: "ls", "Satisfies curvature");
                 trace!(target: "ls","Returning alpha = {:1.4e} falpha = {:1.4e}", alpha1, phi_a1);
                 //}}}
                 return Ok(Returns {
                     alpha: alpha1,
                     phi_alpha: phi_a1,
-                    dphi_alpha: dphi_a1,
                 });
             }
 
@@ -166,7 +172,7 @@ impl<F: RealFn1> LineSearch for Nocedal<F>
                     c2,
                     self.opts.zoom_maxiter,
                 );
-                let (alpha_tmp, phi_tmp, dphi_tmp) = match zoom_result
+                let (alpha_tmp, phi_tmp, _dphi_tmp) = match zoom_result
                 {
                     None =>
                     {
@@ -190,7 +196,6 @@ impl<F: RealFn1> LineSearch for Nocedal<F>
                 return Ok(Returns {
                     alpha: alpha_tmp,
                     phi_alpha: phi_tmp,
-                    dphi_alpha: dphi_tmp,
                 });
             }
 
@@ -211,20 +216,10 @@ impl<F: RealFn1> LineSearch for Nocedal<F>
         Ok(Returns {
             alpha: alpha1,
             phi_alpha: phi_a1,
-            dphi_alpha: dphi_a1,
         })
     }
-
-    #[trace_fn]
-    fn update_fcn(
-        &mut self,
-        fcn: Self::Function,
-    )
-    {
-        self.f = fcn;
-    }
 }
-
+//}}}
 //{{{ fun: zoom
 #[allow(clippy::too_many_arguments, clippy::identity_op)]
 #[trace_fn]
@@ -254,7 +249,7 @@ where
     let mut a_rec = 0.0;
     let mut cchk = 0.0;
     let mut qchk = 0.0;
-
+    let _ = qchk;
     loop
     {
         //{{{ trace
@@ -285,8 +280,8 @@ where
             //{{{ trace
             trace!(target: "ls", "trying cubic interpolation");
             //}}}
-            cchk = delta1 * dalpha;
             opt_a_j = cubicmin3(a_lo, phi_lo, dphi_lo, a_hi, phi_hi, a_rec, phi_rec);
+            cchk = delta1 * dalpha;
         }
 
         // if not good enough first try quadratic interpolation

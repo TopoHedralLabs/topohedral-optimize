@@ -6,10 +6,10 @@ use topohedral_optimize::line_search::{
     InterpOptions, LineSearchMethod, LineSearchOptions, NocedalOptions, ThuenteOptions,
 };
 use topohedral_optimize::unconstrained::{
-    create, Method, QuasiNewton, QuasiNewtonOptions, UnconstrainedConvergedReason,
-    UnconstrainedMinimizer, UnconstrainedReturns, UnonstrainedOptions, UpdateMethod,
+    minimize, QuasiNewtonOptions, UnconstrainedConvergedReason, UnconstrainedMethod,
+    UnconstrainedReturns, UnonstrainedOptions, UpdateMethod,
 };
-use topohedral_optimize::RealFn;
+use topohedral_optimize::{RealFn, Vector};
 //}}}
 //{{{ std imports
 //}}}
@@ -29,7 +29,7 @@ fn init_logger()
 }
 //}}}
 //{{{ fun: colvec
-fn colvec(values: &[f64]) -> DVector<f64>
+fn colvec(values: &[f64]) -> Vector
 {
     DVector::<f64>::from_slice_vec(values, values.len(), VecType::Col)
 }
@@ -38,15 +38,20 @@ fn colvec(values: &[f64]) -> DVector<f64>
 #[derive(Debug, Clone)]
 struct Quadratic
 {
-    xmin: DVector<f64>,
+    xmin: Vector,
 }
 //}}}
 //{{{ impl: RealFn for Quadratic
 impl RealFn for Quadratic
 {
+    fn dimension(&self) -> usize
+    {
+        self.xmin.len()
+    }
+
     fn eval(
         &mut self,
-        x: &DVector<f64>,
+        x: &Vector,
     ) -> f64
     {
         let tmp = x.clone() - self.xmin.clone();
@@ -60,8 +65,8 @@ impl RealFn for Quadratic
 
     fn grad(
         &mut self,
-        x_in: &DVector<f64>,
-    ) -> DVector<f64>
+        x_in: &Vector,
+    ) -> Vector
     {
         let tmp = x_in.clone() - self.xmin.clone();
         let mut out = DVector::<f64>::zeros_cvec(5, VecType::Col);
@@ -77,15 +82,20 @@ impl RealFn for Quadratic
 #[derive(Debug, Clone)]
 struct Quartic
 {
-    xmin: DVector<f64>,
+    xmin: Vector,
 }
 //}}}
 //{{{ impl: RealFn for Quartic
 impl RealFn for Quartic
 {
+    fn dimension(&self) -> usize
+    {
+        self.xmin.len()
+    }
+
     fn eval(
         &mut self,
-        x: &DVector<f64>,
+        x: &Vector,
     ) -> f64
     {
         let tmp = x.clone() - self.xmin.clone();
@@ -99,8 +109,8 @@ impl RealFn for Quartic
 
     fn grad(
         &mut self,
-        x_in: &DVector<f64>,
-    ) -> DVector<f64>
+        x_in: &Vector,
+    ) -> Vector
     {
         let tmp = x_in.clone() - self.xmin.clone();
         let mut out = DVector::<f64>::zeros_cvec(5, VecType::Col);
@@ -132,9 +142,14 @@ impl Rosenbrock
 //{{{ impl: RealFn for Rosenbrock
 impl RealFn for Rosenbrock
 {
+    fn dimension(&self) -> usize
+    {
+        2
+    }
+
     fn eval(
         &mut self,
-        xvec: &DVector<f64>,
+        xvec: &Vector,
     ) -> f64
     {
         let x = xvec[0];
@@ -144,8 +159,8 @@ impl RealFn for Rosenbrock
 
     fn grad(
         &mut self,
-        xvec: &DVector<f64>,
-    ) -> DVector<f64>
+        xvec: &Vector,
+    ) -> Vector
     {
         let a = self.a;
         let b = self.b;
@@ -180,6 +195,7 @@ const INTERP_BFGS: QuasiNewtonOptions = QuasiNewtonOptions {
         grad_rtol: 1e-6,
         grad_atol: 1e-8,
         max_iter: 100,
+        make_counting: true,
         ls_method: LineSearchMethod::Interp(InterpOptions {
             ls_opts: LineSearchOptions {
                 c1: 1.0e-4,
@@ -201,6 +217,7 @@ const THUENTE_BFGS: QuasiNewtonOptions = QuasiNewtonOptions {
         grad_rtol: 1e-6,
         grad_atol: 1e-8,
         max_iter: 100,
+        make_counting: true,
         ls_method: LineSearchMethod::Thuente(ThuenteOptions {
             ls_opts: LineSearchOptions {
                 c1: 1.0e-4,
@@ -221,6 +238,7 @@ const NOCEDAL_BFGS: QuasiNewtonOptions = QuasiNewtonOptions {
         grad_rtol: 1e-6,
         grad_atol: 1e-8,
         max_iter: 100,
+        make_counting: true,
         ls_method: LineSearchMethod::Nocedal(NocedalOptions {
             ls_opts: LineSearchOptions {
                 c1: 1.0e-4,
@@ -249,7 +267,7 @@ const NOCEDAL_BFGS: QuasiNewtonOptions = QuasiNewtonOptions {
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 1,
         num_fun_evals: 6,
-        num_grad_evals: 3
+        num_grad_evals: 4
     }
 )]
 //}}}
@@ -263,7 +281,7 @@ const NOCEDAL_BFGS: QuasiNewtonOptions = QuasiNewtonOptions {
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 2,
         num_fun_evals: 7,
-        num_grad_evals: 9
+        num_grad_evals: 10
     }
 )]
 //}}}
@@ -277,12 +295,12 @@ const NOCEDAL_BFGS: QuasiNewtonOptions = QuasiNewtonOptions {
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 3,
         num_fun_evals: 11,
-        num_grad_evals: 14
+        num_grad_evals: 15
     }
 )]
 //}}}
 fn test_qudratic(
-    #[case] x0: DVector<f64>,
+    #[case] x0: Vector,
     #[case] opts: QuasiNewtonOptions,
     #[case] exp_ret: UnconstrainedReturns,
 )
@@ -290,9 +308,7 @@ fn test_qudratic(
     let quad = Quadratic {
         xmin: colvec(&[1000.0, -100.0, 0.0, 567.0, -23.0]),
     };
-    let mut qn = QuasiNewton::new(quad, x0, opts);
-    let ret = qn.minimize().unwrap();
-
+    let ret = minimize(quad, x0, UnconstrainedMethod::QuasiNewton(opts)).unwrap();
     println!("{ret:?}");
     assert_returns(&ret, &exp_ret, 1e-7, 1e-10);
 }
@@ -309,7 +325,7 @@ fn test_qudratic(
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 19,
         num_fun_evals: 77,
-        num_grad_evals: 39
+        num_grad_evals: 40
     }
 )]
 //}}}
@@ -323,7 +339,7 @@ fn test_qudratic(
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 66,
         num_fun_evals: 92,
-        num_grad_evals: 150
+        num_grad_evals: 151
     }
 )]
 //}}}
@@ -337,12 +353,12 @@ fn test_qudratic(
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 57,
         num_fun_evals: 72,
-        num_grad_evals: 129,
+        num_grad_evals: 130,
     }
 )]
 //}}}
 fn test_quartic(
-    #[case] x0: DVector<f64>,
+    #[case] x0: Vector,
     #[case] mut opts: QuasiNewtonOptions,
     #[case] exp_ret: UnconstrainedReturns,
 )
@@ -353,9 +369,7 @@ fn test_quartic(
     opts.uncon_opts.grad_rtol = 1e-12;
     opts.uncon_opts.grad_atol = 1e-12;
     opts.uncon_opts.max_iter = 1000;
-    let mut qn = QuasiNewton::new(quart, x0, opts);
-    let ret = qn.minimize().unwrap();
-
+    let ret = minimize(quart, x0, UnconstrainedMethod::QuasiNewton(opts)).unwrap();
     println!("{ret:?}");
     assert_returns(&ret, &exp_ret, 5e-2, 1e-5);
 }
@@ -372,7 +386,7 @@ fn test_quartic(
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 19,
         num_fun_evals: 226,
-        num_grad_evals: 66
+        num_grad_evals: 67
     }
 )]
 //}}}
@@ -386,7 +400,7 @@ fn test_quartic(
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 24,
         num_fun_evals: 36,
-        num_grad_evals: 60
+        num_grad_evals: 61
     }
 )]
 //}}}
@@ -400,12 +414,12 @@ fn test_quartic(
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 25,
         num_fun_evals: 53,
-        num_grad_evals: 60
+        num_grad_evals: 61
     }
 )]
 //}}}
 fn test_rosenbrock(
-    #[case] x0: DVector<f64>,
+    #[case] x0: Vector,
     #[case] mut opts: QuasiNewtonOptions,
     #[case] exp_ret: UnconstrainedReturns,
 )
@@ -421,9 +435,7 @@ fn test_rosenbrock(
     }
 
     // let mut qn = QuasiNewton::new(rosenbrock, x0, opts);
-    let mut qn = create(rosenbrock, x0, Method::QuasiNewton(opts));
-
-    let ret = qn.minimize().unwrap();
+    let ret = minimize(rosenbrock, x0, UnconstrainedMethod::QuasiNewton(opts)).unwrap();
     println!("{ret:?}");
     assert_returns(&ret, &exp_ret, 1e-2, 1e-6);
 }

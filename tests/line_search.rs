@@ -2,16 +2,10 @@
 #![allow(incomplete_features)]
 
 //{{{ crate imports
-use topohedral_optimize::line_search::LineSearch;
-use topohedral_optimize::line_search::LineSearchOptions;
-use topohedral_optimize::line_search::Nocedal;
-use topohedral_optimize::line_search::NocedalOptions;
-use topohedral_optimize::line_search::Thuente;
-use topohedral_optimize::line_search::ThuenteOptions;
-use topohedral_optimize::{
-    line_search::{Interp, InterpOptions},
-    RealFn1,
+use topohedral_optimize::line_search::{
+    search1d, InterpOptions, LineSearchMethod, LineSearchOptions, NocedalOptions, ThuenteOptions,
 };
+use topohedral_optimize::RealFn1;
 //}}}
 //{{{ std imports
 //}}}
@@ -136,22 +130,20 @@ impl RealFn1 for RationalQuad1D
 #[test]
 fn test_interp_quadratic_1d()
 {
-    let mut q1 = Quadratic1D {
+    let q1 = Quadratic1D {
         root1: 1.0,
         root2: 2.0,
     };
-    let mut interp = Interp::new(
+    let out = search1d(
         q1.clone(),
-        InterpOptions {
+        1.0,
+        LineSearchMethod::Interp(InterpOptions {
             ls_opts: LineSearchOptions::default(),
             scale_factor: 1.5,
             maxiter: 10,
-        },
-    );
-    let alpha = 0.0;
-    let phi0 = q1.eval(alpha);
-    let dphi0 = q1.diff(alpha);
-    let out = interp.search(phi0, dphi0, 1.0).unwrap();
+        }),
+    )
+    .unwrap();
     let exp_alpha = q1.extrema();
     assert_relative_eq!(out.alpha, exp_alpha, epsilon = 1e-10);
 }
@@ -159,23 +151,21 @@ fn test_interp_quadratic_1d()
 #[test]
 fn test_interp_cubic_1d()
 {
-    let mut c1 = Cubic1D {
+    let c1 = Cubic1D {
         root1: -1.0,
         root2: 0.0,
         root3: 1.0,
     };
-    let mut interp = Interp::new(
+    let out = search1d(
         c1.clone(),
-        InterpOptions {
+        1.0,
+        LineSearchMethod::Interp(InterpOptions {
             ls_opts: LineSearchOptions::default(),
             scale_factor: 1.5,
             maxiter: 10,
-        },
-    );
-    let alpha = 0.0;
-    let phi0 = c1.eval(alpha);
-    let dphi0 = c1.diff(alpha);
-    let out = interp.search(phi0, dphi0, 1.0).unwrap();
+        }),
+    )
+    .unwrap();
     let exp_alpha = c1.extrema()[1];
     assert_relative_eq!(out.alpha, exp_alpha, epsilon = 1e-10);
 }
@@ -183,19 +173,17 @@ fn test_interp_cubic_1d()
 #[test]
 fn test_interp_fcn1()
 {
-    let mut fcn1 = RationalQuad1D { beta: 2.0 };
-    let mut interp = Interp::new(
+    let fcn1 = RationalQuad1D { beta: 2.0 };
+    let out = search1d(
         fcn1,
-        InterpOptions {
+        1.0,
+        LineSearchMethod::Interp(InterpOptions {
             ls_opts: LineSearchOptions::default(),
             scale_factor: 1.5,
             maxiter: 10,
-        },
-    );
-    let alpha = 0.0;
-    let phi0 = fcn1.eval(alpha);
-    let dphi0 = fcn1.diff(alpha);
-    let out = interp.search(phi0, dphi0, 1.0).unwrap();
+        }),
+    )
+    .unwrap();
     assert_relative_eq!(out.alpha, 1.416666e0, epsilon = 1e-5);
 }
 //}}}
@@ -209,26 +197,24 @@ fn test_thuente_rational()
         (5.55500019e+01, -1.79901396e-02, 3.23435359e-04),
     ];
 
-    let mut fcn1 = RationalQuad1D { beta: 2.0 };
+    let fcn1 = RationalQuad1D { beta: 2.0 };
 
     for (alpha, exp_vals) in alpha_set.iter().zip(expected_vals.iter())
     {
-        let mut interp = Thuente::new(
+        let out = search1d(
             fcn1,
-            ThuenteOptions {
+            *alpha,
+            LineSearchMethod::Thuente(ThuenteOptions {
                 ls_opts: LineSearchOptions {
                     step_max: 500.0,
                     ..Default::default()
                 },
                 maxiter: 100,
-            },
-        );
-        let phi0 = fcn1.eval(0.0);
-        let dphi0 = fcn1.diff(0.0);
-        let out = interp.search(phi0, dphi0, *alpha).unwrap();
+            }),
+        )
+        .unwrap();
         assert_relative_eq!(out.alpha, exp_vals.0, epsilon = 1e-6);
         assert_relative_eq!(out.phi_alpha, exp_vals.1, epsilon = 1e-6);
-        assert_relative_eq!(out.dphi_alpha, exp_vals.2, epsilon = 1e-6);
     }
 }
 
@@ -238,7 +224,7 @@ fn test_thuente_quadratic()
     let root1 = 10.0;
     let root2 = 100.0;
 
-    let mut fcn1 = Quadratic1D { root1, root2 };
+    let fcn1 = Quadratic1D { root1, root2 };
 
     let alpha_set = [1e-4, 10.0];
     let expected_vals = [
@@ -248,22 +234,20 @@ fn test_thuente_quadratic()
 
     for (alpha, exp_vals) in alpha_set.iter().zip(expected_vals.iter())
     {
-        let mut interp = Thuente::new(
+        let out = search1d(
             fcn1.clone(),
-            ThuenteOptions {
+            *alpha,
+            LineSearchMethod::Thuente(ThuenteOptions {
                 ls_opts: LineSearchOptions {
                     step_max: 500.0,
                     ..Default::default()
                 },
                 maxiter: 100,
-            },
-        );
-        let phi0 = fcn1.eval(0.0);
-        let dphi0 = fcn1.diff(0.0);
-        let out = interp.search(phi0, dphi0, *alpha).unwrap();
+            }),
+        )
+        .unwrap();
         assert_relative_eq!(out.alpha, exp_vals.0, epsilon = 1e-6);
         assert_relative_eq!(out.phi_alpha, exp_vals.1, epsilon = 1e-6);
-        assert_relative_eq!(out.dphi_alpha, exp_vals.2, epsilon = 1e-6);
     }
 }
 //}}}
@@ -277,27 +261,25 @@ fn test_nocedal_rational()
         (1.056683e2, -9.461885e-3, 8.9511233e-5),
     ];
 
-    let mut fcn1 = RationalQuad1D { beta: 2.0 };
+    let fcn1 = RationalQuad1D { beta: 2.0 };
 
     for (alpha, exp_vals) in alpha_set.iter().zip(expected_vals.iter())
     {
-        let mut nocedal = Nocedal::new(
+        let out = search1d(
             fcn1,
-            NocedalOptions {
+            *alpha,
+            LineSearchMethod::Nocedal(NocedalOptions {
                 ls_opts: LineSearchOptions {
                     step_max: 500.0,
                     ..Default::default()
                 },
                 maxiter: 100,
                 zoom_maxiter: 100,
-            },
-        );
-        let phi0 = fcn1.eval(0.0);
-        let dphi0 = fcn1.diff(0.0);
-        let out = nocedal.search(phi0, dphi0, *alpha).unwrap();
+            }),
+        )
+        .unwrap();
         assert_relative_eq!(out.alpha, exp_vals.0, epsilon = 1e-3);
         assert_relative_eq!(out.phi_alpha, exp_vals.1, epsilon = 1e-3);
-        assert_relative_eq!(out.dphi_alpha, exp_vals.2, epsilon = 1e-3);
     }
 }
 
@@ -307,7 +289,7 @@ fn test_nocedal_quadratic()
     let root1 = 10.0;
     let root2 = 100.0;
 
-    let mut fcn1 = Quadratic1D { root1, root2 };
+    let fcn1 = Quadratic1D { root1, root2 };
 
     let alpha_set = [1e-4, 10.0];
     let expected_vals = [
@@ -317,52 +299,47 @@ fn test_nocedal_quadratic()
 
     for (alpha, exp_vals) in alpha_set.iter().zip(expected_vals.iter())
     {
-        let mut nocedal = Nocedal::new(
+        let out = search1d(
             fcn1.clone(),
-            NocedalOptions {
+            *alpha,
+            LineSearchMethod::Nocedal(NocedalOptions {
                 ls_opts: LineSearchOptions {
                     step_max: 500.0,
                     ..Default::default()
                 },
                 maxiter: 100,
                 zoom_maxiter: 100,
-            },
-        );
-        let phi0 = fcn1.eval(0.0);
-        let dphi0 = fcn1.diff(0.0);
-        let out = nocedal.search(phi0, dphi0, *alpha).unwrap();
+            }),
+        )
+        .unwrap();
         assert_relative_eq!(out.alpha, exp_vals.0, epsilon = 1e-5);
         assert_relative_eq!(out.phi_alpha, exp_vals.1, epsilon = 1e-3);
-        assert_relative_eq!(out.dphi_alpha, exp_vals.2, epsilon = 1e-5);
     }
 }
 
 #[test]
 fn test_nocedal_cubic()
 {
-    let mut c1 = Cubic1D {
+    let c1 = Cubic1D {
         root1: -1.0,
         root2: 0.0,
         root3: 1.0,
     };
 
-    let mut nocedal = Nocedal::new(
+    let out = search1d(
         c1.clone(),
-        NocedalOptions {
+        1.0,
+        LineSearchMethod::Nocedal(NocedalOptions {
             ls_opts: LineSearchOptions {
                 step_max: 500.0,
                 ..Default::default()
             },
             maxiter: 100,
             zoom_maxiter: 100,
-        },
-    );
-    let alpha = 0.0;
-    let phi0 = c1.eval(alpha);
-    let dphi0 = c1.diff(alpha);
-    let out = nocedal.search(phi0, dphi0, 1.0).unwrap();
+        }),
+    )
+    .unwrap();
     assert_relative_eq!(out.alpha, 5.0e-1, epsilon = 1e-6);
     assert_relative_eq!(out.phi_alpha, -3.75e-1, epsilon = 1e-6);
-    assert_relative_eq!(out.dphi_alpha, -2.5e-1, epsilon = 1e-6);
 }
 //}}}

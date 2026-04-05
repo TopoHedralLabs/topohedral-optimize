@@ -4,9 +4,7 @@
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
-use crate::line_search::LineSearchError;
-use crate::line_search::LineSearchMethod;
-use crate::Returns;
+use crate::unconstrained::UnconstrainedError;
 //}}}
 //{{{ dep imports
 use thiserror::Error;
@@ -19,24 +17,24 @@ pub struct Options
 {
     pub grad_rtol: f64,
     pub grad_atol: f64,
+    pub constraint_tol: f64,
     pub max_iter: u64,
     pub make_counting: bool,
-    pub ls_method: LineSearchMethod,
 }
 //}}}
+
 //{{{ enum: Error
 #[derive(Error, Debug)]
 pub enum Error
 {
-    #[error("Linear search failed with error {0}")]
-    LineSearch(#[from] LineSearchError),
-    #[error("Maximum iterations of {0} reached")]
-    MaxIterations(usize),
+    #[error("Unconstrianed minimization failed with error {0}")]
+    UnconstrainedError(#[from] UnconstrainedError),
 }
 //}}}
-//{{{ trait: UnconstrainedMinimizer
-pub trait UnconstrainedMinimizer
+
+//{{{ trait: ConstrainedMinimizer
+pub trait ConstrainedMinimizer
 {
-    fn minimize(&mut self) -> Result<Returns, Error>;
+    fn minimize(&mut self) -> Result<crate::Returns, Error>;
 }
 //}}}
