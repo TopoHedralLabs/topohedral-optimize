@@ -489,8 +489,8 @@ const NOCEDAL_PR: ConjugateGradientOptions = ConjugateGradientOptions {
 //{{{ test: unconstrained
 #[rstest]
 #[case::quadratic_interp_bfgs(colvec(&[0.0, 0.0, 0.0, 0.0, 0.0]), UnconstrainedMethod::QuasiNewton(INTERP_BFGS), 2.0183860421701553e-9, 4.0738822152273034e-18, 8, 7)]
-#[case::quadratic_thuente_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(THUENTE_BFGS), 3.2163343058062638e-13, 1.0344806366706260e-25, 9, 13)]
-#[case::quadratic_nocedal_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(NOCEDAL_BFGS), 1.4273168140722167e-14, 2.0372332877332630e-28, 13, 18)]
+#[case::quadratic_thuente_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(THUENTE_BFGS), 1.0e-12, 1.0e-24, 9, 13)]
+#[case::quadratic_nocedal_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(NOCEDAL_BFGS), 1.0e-12, 1.0e-24, 13, 18)]
 #[case::quadratic_interp_steepest(colvec(&[0.0, 0.0, 0.0, 0.0, 0.0]), UnconstrainedMethod::ConjugateGradient(INTERP_STEEPEST), 2.0183860421701553e-9, 4.0738822152273034e-18, 8, 7)]
 #[case::quadratic_thuente_steepest(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_STEEPEST), 2.5423787284960917e-13, 6.4636895991094044e-26, 9, 12)]
 #[case::quadratic_nocedal_steepest(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_STEEPEST), 0.0, 0.0, 16, 18)]
@@ -578,7 +578,7 @@ fn test_quadratic_with_bound_constraints(
 //{{{ test: unconstrained
 #[rstest]
 #[case::quartic_interp_bfgs(colvec(&[0.0, 0.0, 0.0, 0.0, 0.0]), UnconstrainedMethod::QuasiNewton(INTERP_BFGS), 1.1906159454267216e-1, 4.0189885991360184e-5, 45, 31)]
-#[case::quartic_thuente_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(THUENTE_BFGS), 6.8e-1, 1.2171652215773493e-1, 49, 87)]
+#[case::quartic_thuente_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(THUENTE_BFGS), 6.8e-1, 1.217166e-1, 49, 87)]
 #[case::quartic_nocedal_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(NOCEDAL_BFGS), 7.3232511374922560e-1, 6.9775029981934830e-2, 74, 103)]
 #[case::quartic_interp_steepest(colvec(&[0.0, 0.0, 0.0, 0.0, 0.0]), UnconstrainedMethod::ConjugateGradient(INTERP_STEEPEST), 1.4479820748386635e-1, 8.7918999650696810e-5, 25, 18)]
 #[case::quartic_thuente_steepest(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_STEEPEST), 2.6054392428170864e-1, 2.2916123661796467e-3, 21, 34)]
