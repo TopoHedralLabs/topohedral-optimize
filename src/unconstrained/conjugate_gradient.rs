@@ -217,6 +217,7 @@ impl<F: RealFn> UnconstrainedMinimizer for ConjugateGradient<F>
             {
                 //{{{ trace
                 info!(target: "cg", "Converging with reason {reason:?}");
+                self.print_status(k, &iter_k);
                 //}}}
                 return Ok(Returns {
                     fmin: iter_k.fx,

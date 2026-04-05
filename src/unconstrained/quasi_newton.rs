@@ -239,6 +239,7 @@ impl<F: RealFn> UnconstrainedMinimizer for QuasiNewton<F>
             {
                 //{{{ trace
                 info!(target: "qn", "Converging with reason {reason:?}");
+                self.print_status(k, &iter_k);
                 //}}}
                 return Ok(Returns {
                     fmin: iter_k.fx,
