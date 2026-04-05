@@ -5,14 +5,15 @@
 //{{{ crate imports
 use topohedral_optimize::constrained::{
     minimize as constrained_minimize, AugmentedLagrangianOptions, BoundsConstraints,
-    ConstrainedMethod, ConstrainedReturns, ConstriainedOptions, NoConstraints,
+    ConstrainedError, ConstrainedMethod, ConstrainedReturns, ConstriainedOptions, NoConstraints,
 };
 use topohedral_optimize::line_search::{
-    InterpOptions, LineSearchMethod, LineSearchOptions, NocedalOptions, ThuenteOptions,
+    InterpOptions, LineSearchError, LineSearchMethod, LineSearchOptions, NocedalOptions,
+    ThuenteOptions,
 };
 use topohedral_optimize::unconstrained::{
-    ConjugateGradientOptions, Direction, QuasiNewtonOptions, UnconstrainedMethod,
-    UnonstrainedOptions, UpdateMethod,
+    ConjugateGradientOptions, Direction, QuasiNewtonOptions, UnconstrainedError,
+    UnconstrainedMethod, UnonstrainedOptions, UpdateMethod,
 };
 use topohedral_optimize::{RealFn, Vector};
 //}}}
@@ -536,14 +537,20 @@ fn test_quadratic_without_constraints_matches_unconstrained_reference(
 //}}}
 //{{{ test: bound constrained
 #[rstest]
-#[case::quadratic_interp_bfgs(colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]), UnconstrainedMethod::QuasiNewton(THUENTE_BFGS), 1e-2, 1e-2, 1, 1)]
-fn test_quadratic_with_bound_constraints(
+#[case::quadratic_thuente_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(THUENTE_BFGS), 1e-6, 1e-6, 101.999999935435, 43, 83)]
+#[case::quadratic_nocedal_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(NOCEDAL_BFGS), 1e-6, 1e-6, 101.9999999925769, 60, 76)]
+#[case::quadratic_thuente_steepest(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_STEEPEST), 1e-6, 1e-6, 119.99999992446388, 59, 108)]
+#[case::quadratic_thuente_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_FR), 1e-6, 1e-6, 119.99999993106374, 59, 108)]
+#[case::quadratic_thuente_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_PR), 1e-6, 1e-6, 101.99999998230446, 40, 72)]
+#[case::quadratic_nocedal_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_PR), 1e-6, 1e-6, 101.99999999224114, 73, 71)]
+fn test_quadratic_with_bound_constraints_matches_reference(
     #[case] x0: Vector,
     #[case] unconstrained_method: UnconstrainedMethod,
-    #[case] _xmin_tol: f64,
-    #[case] _fmin_tol: f64,
-    #[case] _exp_num_fun_evals: usize,
-    #[case] _exp_num_grad_evals: usize,
+    #[case] xmin_tol: f64,
+    #[case] fmin_tol: f64,
+    #[case] exp_fmin: f64,
+    #[case] exp_num_fun_evals: usize,
+    #[case] exp_num_grad_evals: usize,
 )
 {
     let quad = Quadratic {
@@ -563,14 +570,51 @@ fn test_quadratic_with_bound_constraints(
     .unwrap();
 
     println!("ret = {ret:?}");
-    // assert_answer(
-    //     &ret,
-    //     &colvec(&[1000.0, -100.0, 0.0, 567.0, -23.0]),
-    //     0.0,
-    //     xmin_tol,
-    //     fmin_tol,
-    // );
-    // assert_counts(&ret, exp_num_fun_evals, exp_num_grad_evals);
+    assert_answer(
+        &ret,
+        &colvec(&[20.0, 10.0, 10.0, 10.0, 10.0]),
+        exp_fmin,
+        xmin_tol,
+        fmin_tol,
+    );
+    assert_counts(&ret, exp_num_fun_evals, exp_num_grad_evals);
+}
+//}}}
+//{{{ test: bound constrained line search failures
+#[rstest]
+#[case::quadratic_interp_bfgs(colvec(&[0.0, 0.0, 0.0, 0.0, 0.0]), UnconstrainedMethod::QuasiNewton(INTERP_BFGS), LineSearchError::MaxIterations)]
+#[case::quadratic_interp_steepest(colvec(&[0.0, 0.0, 0.0, 0.0, 0.0]), UnconstrainedMethod::ConjugateGradient(INTERP_STEEPEST), LineSearchError::MaxIterations)]
+#[case::quadratic_nocedal_steepest(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_STEEPEST), LineSearchError::NotDecreasing)]
+#[case::quadratic_interp_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(INTERP_FR), LineSearchError::MaxIterations)]
+#[case::quadratic_nocedal_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_FR), LineSearchError::NotDecreasing)]
+#[case::quadratic_interp_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(INTERP_PR), LineSearchError::MaxIterations)]
+fn test_quadratic_with_bound_constraints_propagates_expected_line_search_failures(
+    #[case] x0: Vector,
+    #[case] unconstrained_method: UnconstrainedMethod,
+    #[case] exp_line_search_err: LineSearchError,
+)
+{
+    let quad = Quadratic {
+        xmin: colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
+    };
+
+    let mut ieq_constraints = BoundsConstraints::new(5);
+    ieq_constraints.add_bounds(0, Some(20.0), None);
+
+    let err = constrained_minimize(
+        quad,
+        None::<NoConstraints>,
+        Some(ieq_constraints),
+        x0,
+        auglag_method(unconstrained_method),
+    )
+    .unwrap_err();
+
+    assert!(matches!(
+        err,
+        ConstrainedError::UnconstrainedError(UnconstrainedError::LineSearch(line_search_err))
+            if line_search_err == exp_line_search_err
+    ));
 }
 //}}}
 //}}}
