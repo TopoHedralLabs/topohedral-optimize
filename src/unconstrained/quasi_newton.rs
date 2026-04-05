@@ -5,9 +5,9 @@
 
 //{{{ crate imports
 use super::common::Options as UnonstrainedOptions;
-use super::common::{ConvergedReason, Error, IterData, Returns, UnconstrainedMinimizer};
+use super::common::{Error, UnconstrainedMinimizer};
 use crate::line_search as ls;
-use crate::{RealFn, Vector};
+use crate::{ConvergedReason, IterData, RealFn, Returns, Vector};
 //}}}
 //{{{ std imports
 use topohedral_linalg::MatrixOps;

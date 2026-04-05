@@ -4,13 +4,9 @@
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
-use super::common::Returns;
 use crate::{
-    common::{arc_real_fn, CountingRealFn},
-    constrained::{
-        common::{ConvergedReason, IterData},
-        ConstrainedMinimizer, ConstriainedOptions,
-    },
+    common::{arc_real_fn, ConvergedReason, CountingRealFn, IterData, Returns},
+    constrained::{ConstrainedMinimizer, ConstriainedOptions},
     unconstrained::{minimize, UnconstrainedMethod},
     Matrix, RealFn, RealVectorFn, Vector,
 };
@@ -593,7 +589,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
         info!(target: "aug", "******************************************************************************************** i = {k}");
         info!(target: "aug", "Current values: {current_iter}");
         info!(target: "aug","Convergence measures:");
-        let grad_ratio = current_iter.grad_x.norm() / self.norm_grad_fx_init;
+        let grad_ratio = current_iter.norm_grad_fx / self.norm_grad_fx_init;
         info!(target: "aug", "||∇f(k)|| / ||∇f(0)|| = {grad_ratio:1.4e}");
         info!(target: "aug", "Kmax = {current_max_violation:1.4e}");
         //}}}
@@ -645,18 +641,14 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> ConstrainedMinimizer
     for AugmentedLagrangian<F1, F2, F3>
 {
     #[trace_fn]
-    fn minimize(&mut self) -> Result<super::common::Returns, super::common::Error>
+    fn minimize(&mut self) -> Result<crate::Returns, super::common::Error>
     {
         let n = self.x_init.len();
         let n_iter = self.opts.constrained_opts.max_iter;
         let mut inner_rtol = 1e-2;
         let mut constraint_violation_max = f64::INFINITY;
 
-        let mut iter_k = IterData {
-            fx: self.fcn.eval(&self.x_init),
-            x: self.x_init.clone(),
-            grad_x: self.fcn.grad(&self.x_init),
-        };
+        let mut iter_k = IterData::new(self.fcn.clone(), &self.x_init);
         let mut iter_prev_k: IterData;
 
         let mut max_violation_k = self
@@ -672,19 +664,21 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> ConstrainedMinimizer
             self.set_inner_tol(inner_rtol);
 
             iter_prev_k = iter_k;
-            iter_k = minimize(
-                self.fcn.clone(),
-                iter_prev_k.x.clone(),
-                self.opts.uncon_method,
-            )?
-            .into();
+            let ret = minimize(self.fcn.clone(), iter_prev_k.x.clone(), self.opts.uncon_method)?;
+            iter_k = IterData {
+                fx: ret.fmin,
+                x: ret.xmin,
+                grad_fx: Vector::zeros_cvec(n, Col),
+                norm_grad_fx: 0.0,
+            };
 
             (max_violation_k, constraint_violation_max) =
                 self.update_penalties_shifts(constraint_violation_max);
 
-            iter_k.grad_x = self.fcn.grad(&iter_k.x);
+            iter_k.grad_fx = self.fcn.grad(&iter_k.x);
+            iter_k.norm_grad_fx = iter_k.grad_fx.norm();
 
-            if let Some(reason) = self.is_converged(iter_k.grad_x.norm(), max_violation_k)
+            if let Some(reason) = self.is_converged(iter_k.norm_grad_fx, max_violation_k)
             {
                 //{{{ trace
                 info!(target: "qn", "Converging with reason {reason:?}");

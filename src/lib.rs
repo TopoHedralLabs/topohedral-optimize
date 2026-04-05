@@ -31,7 +31,7 @@ mod common;
 //{{{ pub use: common exports
 pub use common::{
     arc_real_vector_fn, rc_real_fn, rc_real_vector_fn, ArcRealVectorFn, Matrix, RcRealFn,
-    RcRealVectorFn, RealFn, RealFn1, RealVectorFn, Vector,
+    RcRealVectorFn, ConvergedReason, IterData, RealFn, RealFn1, RealVectorFn, Returns, Vector,
 };
 //}}}
 //{{{ pub mod: public modules

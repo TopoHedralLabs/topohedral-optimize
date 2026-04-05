@@ -7,13 +7,14 @@
 //}}}
 //{{{ std imports
 use std::cell::RefCell;
-use std::fmt::Debug;
+use std::fmt::{self, Debug, Display, Formatter};
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 //}}}
 //{{{ dep imports
 use topohedral_linalg::dmatrix::DMatrix;
 use topohedral_linalg::dvector::DVector;
+use topohedral_linalg::VectorOps;
 //}}}
 //--------------------------------------------------------------------------------------------------
 
@@ -47,6 +48,71 @@ pub trait RealFn: Clone + Debug
         &mut self,
         x: &Vector,
     ) -> Vector;
+}
+//}}}
+//{{{ enum: ConvergedReason
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum ConvergedReason
+{
+    Rtol,
+    Atol,
+}
+//}}}
+//{{{ struct: Returns
+#[derive(Clone, Debug)]
+pub struct Returns
+{
+    pub xmin: Vector,
+    pub fmin: f64,
+    pub reason: ConvergedReason,
+    pub num_iterations: usize,
+    pub num_fun_evals: usize,
+    pub num_grad_evals: usize,
+}
+//}}}
+//{{{ struct: IterData
+#[derive(Debug, Clone)]
+pub struct IterData
+{
+    pub x: Vector,
+    pub fx: f64,
+    pub grad_fx: Vector,
+    pub norm_grad_fx: f64,
+}
+//}}}
+//{{{ impl: IterData
+impl IterData
+{
+    pub fn new<F: RealFn>(
+        mut fcn: F,
+        x: &Vector,
+    ) -> Self
+    {
+        let fx = fcn.eval(x);
+        let grad_fx = fcn.grad(x);
+        let norm_grad_fx = grad_fx.norm();
+        IterData {
+            x: x.clone(),
+            fx,
+            grad_fx,
+            norm_grad_fx,
+        }
+    }
+}
+//}}}
+//{{{ impl: Display for IterData
+impl Display for IterData
+{
+    fn fmt(
+        &self,
+        f: &mut Formatter<'_>,
+    ) -> fmt::Result
+    {
+        let fx = self.fx;
+        let norm_grad_fx = self.norm_grad_fx;
+        let out = format!("fx={fx:1.4e}, norm_grad_fx={norm_grad_fx:1.4e}");
+        f.pad(&out)
+    }
 }
 //}}}
 //{{{ impl: RealFn for Rc<RefCell<T>>

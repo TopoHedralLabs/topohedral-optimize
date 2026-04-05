@@ -484,7 +484,7 @@ const NOCEDAL_PR: ConjugateGradientOptions = ConjugateGradientOptions {
 };
 //}}}
 
-//{{{ test: quadratic
+//{{{ collection: quadratic
 //{{{ test: unconstrained
 #[rstest]
 #[case::quadratic_interp_bfgs(colvec(&[0.0, 0.0, 0.0, 0.0, 0.0]), UnconstrainedMethod::QuasiNewton(INTERP_BFGS), 2.0183860421701553e-9, 4.0738822152273034e-18, 8, 7)]
@@ -573,7 +573,8 @@ fn test_quadratic_with_bound_constraints(
 }
 //}}}
 //}}}
-//{{{ test: quartic
+//{{{ collection: quartic
+//{{{ test: unconstrained
 #[rstest]
 #[case::quartic_interp_bfgs(colvec(&[0.0, 0.0, 0.0, 0.0, 0.0]), UnconstrainedMethod::QuasiNewton(INTERP_BFGS), 1.1906159454267216e-1, 4.0189885991360184e-5, 45, 31)]
 #[case::quartic_thuente_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(THUENTE_BFGS), 6.8e-1, 1.2171652215773493e-1, 49, 87)]
@@ -600,8 +601,6 @@ fn test_quartic_without_constraints_matches_unconstrained_reference(
         xmin: colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
     };
 
-    unconstrained_method.uncon_opts_mut().grad_rtol = 1e-12;
-    unconstrained_method.uncon_opts_mut().grad_atol = 1e-12;
     unconstrained_method.uncon_opts_mut().max_iter = 1000;
 
     let ret = constrained_minimize(
@@ -624,7 +623,9 @@ fn test_quartic_without_constraints_matches_unconstrained_reference(
     assert_counts(&ret, exp_num_fun_evals, exp_num_grad_evals);
 }
 //}}}
-//{{{ test: rosenbrock
+//}}}
+//{{{ collection: rosenbrock
+//{{{ test: unconstrained
 #[rstest]
 #[case::rosenbrock_interp_bfgs(colvec(&[0.0, 3.0]), UnconstrainedMethod::QuasiNewton(INTERP_BFGS), 5.5239410319076359e-8, 4.2600533772335230e-14, 124, 54)]
 #[case::rosenbrock_thuente_bfgs(colvec(&[0.0, 3.0]), UnconstrainedMethod::QuasiNewton(THUENTE_BFGS), 9.0284228790531235e-7, 3.3156139251068023e-13, 34, 59)]
@@ -668,4 +669,5 @@ fn test_rosenbrock_without_constraints_matches_unconstrained_reference(
     assert_answer(&ret, &colvec(&[1.0, 1.0]), 0.0, xmin_tol, fmin_tol);
     assert_counts(&ret, exp_num_fun_evals, exp_num_grad_evals);
 }
+//}}}
 //}}}

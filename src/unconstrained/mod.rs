@@ -22,8 +22,11 @@ mod quasi_newton;
 //}}}
 //{{{ pub use: common exports
 pub use common::{
-    ConvergedReason as UnconstrainedConvergedReason, Error as UnconstrainedError,
-    IterData, Options as UnonstrainedOptions, Returns as UnconstrainedReturns,
+    Error as UnconstrainedError, Options as UnonstrainedOptions,
+};
+pub use crate::common::{
+    ConvergedReason as UnconstrainedConvergedReason, IterData,
+    Returns as UnconstrainedReturns,
 };
 //}}}
 //{{{ pub use: conjugate_gradient exports
