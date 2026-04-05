@@ -30,7 +30,7 @@ pub use augmented_lagrangian::{
 };
 //}}}
 //{{{ pub use: constraints
-pub use constraints::NoConstraints;
+pub use constraints::{BoundsConstraints, NoConstraints};
 //}}}
 //{{{ pub use: factory export
 pub use factory::Method as ConstrainedMethod;

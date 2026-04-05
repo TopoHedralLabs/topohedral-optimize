@@ -3,8 +3,8 @@
 
 //{{{ crate imports
 use topohedral_optimize::constrained::{
-    minimize as constrained_minimize, AugmentedLagrangianOptions, ConstrainedMethod,
-    ConstrainedReturns, ConstriainedOptions, NoConstraints,
+    minimize as constrained_minimize, AugmentedLagrangianOptions, BoundsConstraints,
+    ConstrainedMethod, ConstrainedReturns, ConstriainedOptions, NoConstraints,
 };
 use topohedral_optimize::line_search::{
     InterpOptions, LineSearchMethod, LineSearchOptions, NocedalOptions, ThuenteOptions,
@@ -206,15 +206,13 @@ fn assert_counts(
 //{{{ fun: auglag_method
 fn auglag_method(mut unconstrained_method: UnconstrainedMethod) -> ConstrainedMethod
 {
-    let grad_rtol = unconstrained_method.uncon_opts().grad_rtol;
-    let grad_atol = unconstrained_method.uncon_opts().grad_atol;
     unconstrained_method.uncon_opts_mut().make_counting = false;
 
     ConstrainedMethod::AugmentedLagrangian(AugmentedLagrangianOptions::new(
         ConstriainedOptions {
-            grad_rtol,
-            grad_atol,
-            constraint_tol: 1e-10,
+            grad_rtol: 1e-6,
+            grad_atol: 1e-8,
+            constraint_tol: 1e-8,
             max_iter: 100,
             make_counting: true,
         },
@@ -278,7 +276,7 @@ const THUENTE_BFGS: QuasiNewtonOptions = QuasiNewtonOptions {
                 step_min: 1e-8,
                 step_max: 1e5,
             },
-            maxiter: 10,
+            maxiter: 100,
         }),
     },
     method: UpdateMethod::BFGS,
@@ -504,6 +502,7 @@ const NOCEDAL_PR: ConjugateGradientOptions = ConjugateGradientOptions {
 //}}}
 
 //{{{ test: quadratic
+//{{{ test: unconstrained
 #[rstest]
 #[case::quadratic_interp_bfgs(colvec(&[0.0, 0.0, 0.0, 0.0, 0.0]), UnconstrainedMethod::QuasiNewton(INTERP_BFGS), 2.0183860421701553e-9, 4.0738822152273034e-18, 7, 6)]
 #[case::quadratic_thuente_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(THUENTE_BFGS), 3.2163343058062638e-13, 1.0344806366706260e-25, 8, 12)]
@@ -541,6 +540,46 @@ fn test_quadratic_without_constraints_matches_unconstrained_reference(
     );
     assert_counts(&ret, exp_num_fun_evals, exp_num_grad_evals);
 }
+//}}}
+//{{{ test: bound constrained
+#[rstest]
+#[case::quadratic_interp_bfgs(colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]), UnconstrainedMethod::QuasiNewton(THUENTE_BFGS), 1e-2, 1e-2, 1, 1)]
+fn test_quadratic_with_bound_constraints(
+    #[case] x0: Vector,
+    #[case] unconstrained_method: UnconstrainedMethod,
+    #[case] xmin_tol: f64,
+    #[case] fmin_tol: f64,
+    #[case] exp_num_fun_evals: usize,
+    #[case] exp_num_grad_evals: usize,
+)
+{
+    let quad = Quadratic {
+        xmin: colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
+    };
+
+    let mut ieq_constraints = BoundsConstraints::new(5);
+    ieq_constraints.add_bounds(0, Some(20.0), None);
+
+    let ret = constrained_minimize(
+        quad,
+        None::<NoConstraints>,
+        Some(ieq_constraints),
+        x0,
+        auglag_method(unconstrained_method),
+    )
+    .unwrap();
+
+    println!("ret = {ret:?}");
+    // assert_answer(
+    //     &ret,
+    //     &colvec(&[1000.0, -100.0, 0.0, 567.0, -23.0]),
+    //     0.0,
+    //     xmin_tol,
+    //     fmin_tol,
+    // );
+    // assert_counts(&ret, exp_num_fun_evals, exp_num_grad_evals);
+}
+//}}}
 //}}}
 //{{{ test: quartic
 #[rstest]

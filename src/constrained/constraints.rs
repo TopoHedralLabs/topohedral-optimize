@@ -10,6 +10,7 @@ use crate::{Matrix, RealVectorFn, Vector};
 use std::collections::HashMap;
 //}}}
 //{{{ dep imports
+use topohedral_linalg::{Shape, TransformOps, VectorOps};
 //}}}
 //--------------------------------------------------------------------------------------------------
 
@@ -51,12 +52,21 @@ impl RealVectorFn for NoConstraints
 #[derive(Debug, Clone)]
 pub struct BoundsConstraints
 {
+    num_variables: usize,
     bounds: HashMap<usize, (Option<f64>, Option<f64>)>,
 }
 //}}}
 //{{{ impl: BoundsConstraints
 impl BoundsConstraints
 {
+    pub fn new(num_variables: usize) -> Self
+    {
+        Self {
+            num_variables,
+            bounds: HashMap::<usize, (Option<f64>, Option<f64>)>::new(),
+        }
+    }
+
     pub fn add_bounds(
         &mut self,
         variable_index: usize,
@@ -64,6 +74,8 @@ impl BoundsConstraints
         upper_bound: Option<f64>,
     )
     {
+        assert!(variable_index < self.dimension_domain());
+        assert!(!self.bounds.contains_key(&variable_index));
         self.bounds
             .insert(variable_index, (lower_bound, upper_bound));
     }
@@ -73,7 +85,7 @@ impl BoundsConstraints
         0
     }
 
-    fn nun_ieq_constraints(&self) -> usize
+    fn num_ieq_constraints(&self) -> usize
     {
         let mut num_constraints = 0;
         for (_, (lower_bound, upper_bound)) in &self.bounds
@@ -91,18 +103,17 @@ impl BoundsConstraints
     }
 }
 //}}}
-
 //{{{ impl: RealVectorFn for BoundsConstraints
 impl RealVectorFn for BoundsConstraints
 {
     fn dimension_domain(&self) -> usize
     {
-        todo!()
+        self.num_variables
     }
 
     fn dimension_range(&self) -> usize
     {
-        todo!()
+        self.num_ieq_constraints()
     }
 
     fn eval(
@@ -111,6 +122,25 @@ impl RealVectorFn for BoundsConstraints
         val: &mut Vector,
     )
     {
+        assert_eq!(x.len(), self.dimension_domain());
+        assert_eq!(val.len(), self.dimension_range());
+
+        let mut constraint_index = 0;
+        for (variable_index, (opt_lower, opt_upper)) in self.bounds.iter()
+        {
+            let xi = x[*variable_index];
+            if let Some(lower) = opt_lower
+            {
+                (*val)[constraint_index] = lower - xi;
+                constraint_index += 1;
+            }
+
+            if let Some(upper) = opt_upper
+            {
+                (*val)[constraint_index] = xi - upper;
+                constraint_index += 1;
+            }
+        }
     }
 
     fn grad(
@@ -119,42 +149,26 @@ impl RealVectorFn for BoundsConstraints
         val: &mut crate::Matrix,
     )
     {
-        todo!()
-    }
-}
-//}}}
+        assert_eq!(x.len(), self.dimension_domain());
+        assert_eq!(val.ncols(), self.dimension_range());
+        assert_eq!(val.nrows(), self.dimension_domain());
 
-//{{{ struct: LinearConstraints
-pub struct LinearConstraints
-{
-    eq_constraints: HashMap<usize, (f64, Vector)>,
-    ieq_constraints: HashMap<usize, (Option<f64>, Option<f64>, Vector)>,
-}
-//}}}
-
-//{{{ impl: LinearConstraints
-impl LinearConstraints
-{
-    fn num_eq_constraints(&self) -> usize
-    {
-        0
-    }
-
-    fn nun_ieq_constraints(&self) -> usize
-    {
-        let mut num_constraints = 0;
-        for (_, (lower_bound, upper_bound, _)) in &self.ieq_constraints
+        val.fill(0.0);
+        let mut constraint_index = 0;
+        for (variable_index, (opt_lower, opt_upper)) in self.bounds.iter()
         {
-            if lower_bound.is_some()
+            if let Some(_) = opt_lower
             {
-                num_constraints += 1;
+                (*val)[(*variable_index, constraint_index)] = -1.0;
+                constraint_index += 1;
             }
-            if upper_bound.is_some()
+
+            if let Some(_) = opt_upper
             {
-                num_constraints += 1;
+                (*val)[(*variable_index, constraint_index)] = 1.0;
+                constraint_index += 1;
             }
         }
-        num_constraints
     }
 }
 //}}}

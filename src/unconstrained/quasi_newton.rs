@@ -185,11 +185,11 @@ impl<F: RealFn> QuasiNewton<F>
     )
     {
         //{{{ trace
-        info!(target: "cg", "======================================================================== i = {k}");
-        info!(target: "cg", "Current values: {current_iter}");
-        info!(target: "cg","Convergence measures:");
+        info!(target: "qn", "======================================================================== i = {k}");
+        info!(target: "qn", "Current values: {current_iter}");
+        info!(target: "qn","Convergence measures:");
         let grad_ratio = current_iter.norm_grad_fx / self.norm_grad_fx_init;
-        info!(target: "cg", "||∇f(k)|| / ||∇f(0)|| = {grad_ratio:1.4e}");
+        info!(target: "qn", "||∇f(k)|| / ||∇f(0)|| = {grad_ratio:1.4e}");
         //}}}
     }
 }
