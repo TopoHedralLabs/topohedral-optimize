@@ -692,7 +692,14 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> ConstrainedMinimizer
             if let Some(reason) = self.is_converged(iter_k.norm_grad_fx, max_violation_k)
             {
                 //{{{ trace
-                info!(target: "qn", "Converging with reason {reason:?}");
+                info!(target: "cg", "*********************************************");
+                info!(target: "cg", "Converging with reason {reason:?}");
+                info!(target: "cg","Convergence measures:");
+                let _grad_ratio = iter_k.norm_grad_fx / self.norm_grad_fx_init;
+                info!(target: "cg", "||∇L(k)|| / ||∇L(0)|| = {_grad_ratio:1.4e}");
+                info!(target: "cg", "||∇L(k)|| = {:1.4e}", iter_k.norm_grad_fx);
+                info!(target: "cg", "Kmax = {:1.4e}", max_violation_k);
+                info!(target: "cg", "*********************************************");
                 //}}}
                 let fmin = self.fcn.lock().unwrap().inner_mut().fcn.eval(&iter_k.x);
                 let xmin = iter_k.x;

@@ -238,8 +238,13 @@ impl<F: RealFn> UnconstrainedMinimizer for QuasiNewton<F>
             if let Some(reason) = self.is_converged(iter_k.norm_grad_fx)
             {
                 //{{{ trace
-                info!(target: "qn", "Converging with reason {reason:?}");
-                self.print_status(k, &iter_k);
+                info!(target: "cg", "=============================================");
+                info!(target: "cg", "Converging with reason {reason:?}");
+                info!(target: "cg","Convergence measures:");
+                let _grad_ratio = iter_k.norm_grad_fx / self.norm_grad_fx_init;
+                info!(target: "cg", "||∇f(k)|| / ||∇f(0)|| = {_grad_ratio:1.4e}");
+                info!(target: "cg", "||∇f(k)|| = {:1.4e}", iter_k.norm_grad_fx);
+                info!(target: "cg", "=============================================");
                 //}}}
                 return Ok(Returns {
                     fmin: iter_k.fx,

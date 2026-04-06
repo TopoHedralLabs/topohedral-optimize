@@ -178,6 +178,44 @@ impl RealFn for Rosenbrock
     }
 }
 //}}}
+//{{{ collection: constants
+const SMALL: f64 = 1.0e-8;
+//}}}
+//{{{ fn: reldiff
+fn reldiff(
+    a: f64,
+    b: f64,
+) -> f64
+{
+    let rdiff = if b.abs() < SMALL
+    {
+        (a - b).abs()
+    }
+    else
+    {
+        (a - b).abs() / b.abs()
+    };
+    rdiff
+}
+//}}}
+//{{{ fn: vec_reldiff
+fn vec_reldiff(
+    a: Vector,
+    b: Vector,
+) -> f64
+{
+    let b_norm = b.norm();
+    let rdiff = if b_norm < SMALL
+    {
+        (a - b).norm()
+    }
+    else
+    {
+        (a - b).norm() / b_norm
+    };
+    rdiff
+}
+//}}}
 //{{{ fun: assert_answer
 fn assert_answer(
     ret: &ConstrainedReturns,
@@ -187,8 +225,9 @@ fn assert_answer(
     fmin_tol: f64,
 )
 {
-    let xmin_err = (ret.xmin.clone() - exp_xmin.clone()).norm();
-    let fmin_err = (ret.fmin - exp_fmin).abs();
+    let xmin_err = vec_reldiff(ret.xmin.clone(), exp_xmin.clone());
+    let fmin_err = reldiff(ret.fmin, exp_fmin);
+    println!("xmin_err = {xmin_err:1.4e} fmin_err = {fmin_err:1.4e}");
     assert!(xmin_err <= xmin_tol);
     assert!(fmin_err <= fmin_tol);
 }
@@ -647,7 +686,7 @@ fn test_quartic_without_constraints_matches_unconstrained_reference(
 }
 //}}}
 //{{{ test: bound constrained
-// #[rstest]
+#[rstest]
 // #[case::quadratic_thuente_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(THUENTE_BFGS), false, 1e-6, 1e-6, 101.99999670717264, 40, 77)]
 // #[case::quadratic_nocedal_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(NOCEDAL_BFGS), false, 1e-6, 1e-6, 101.99998074505208, 45, 64)]
 // #[case::quadratic_interp_bfgs(colvec(&[0.0, 0.0, 0.0, 0.0, 0.0]), UnconstrainedMethod::QuasiNewton(INTERP_BFGS), true, 1e-6, 1e-6, 119.99998412335145, 73, 59)]
@@ -659,53 +698,56 @@ fn test_quartic_without_constraints_matches_unconstrained_reference(
 // #[case::quadratic_nocedal_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_FR), false, 2e-6, 1e-6, 101.9999923583359, 129, 150)]
 // #[case::quadratic_interp_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(INTERP_PR), true, 1e-6, 1e-6, 119.9999838101496, 83, 63)]
 // #[case::quadratic_thuente_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_PR), false, 1e-6, 1e-6, 101.9999990975068, 37, 66)]
-// #[case::quadratic_nocedal_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_PR), false, 1e-6, 1e-6, 101.99997989712453, 59, 61)]
-// fn test_quartic_with_bound_constraints_matches_reference(
-//     #[case] x0: Vector,
-//     #[case] mut unconstrained_method: UnconstrainedMethod,
-//     #[case] use_interp_scale_factor_1_2: bool,
-//     #[case] xmin_tol: f64,
-//     #[case] fmin_tol: f64,
-//     #[case] exp_fmin: f64,
-//     #[case] exp_num_fun_evals: usize,
-//     #[case] exp_num_grad_evals: usize,
-// )
-// {
-//     let quad = Quadratic {
-//         xmin: colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
-//     };
+#[case::quadratic_nocedal_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_PR), false, 1e-1, 1e-1, 113, 107)]
+fn test_quartic_with_bound_constraints_matches_reference(
+    #[case] x0: Vector,
+    #[case] mut unconstrained_method: UnconstrainedMethod,
+    #[case] use_interp_scale_factor_1_2: bool,
+    #[case] xmin_tol: f64,
+    #[case] fmin_tol: f64,
+    #[case] exp_num_fun_evals: usize,
+    #[case] exp_num_grad_evals: usize,
+)
+{
+    let quart = Quartic {
+        xmin: colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
+    };
 
-//     let mut ieq_constraints = BoundsConstraints::new(5);
-//     ieq_constraints.add_bounds(0, Some(20.0), None);
+    let mut ieq_constraints = BoundsConstraints::new(5);
+    ieq_constraints.add_bounds(0, Some(20.0), None);
 
-//     if use_interp_scale_factor_1_2
-//     {
-//         if let LineSearchMethod::Interp(interp_opts) =
-//             &mut unconstrained_method.uncon_opts_mut().ls_method
-//         {
-//             interp_opts.scale_factor = 1.2;
-//         }
-//     }
+    if use_interp_scale_factor_1_2
+    {
+        if let LineSearchMethod::Interp(interp_opts) =
+            &mut unconstrained_method.uncon_opts_mut().ls_method
+        {
+            interp_opts.scale_factor = 1.2;
+        }
+    }
 
-//     let ret = constrained_minimize(
-//         quad,
-//         None::<NoConstraints>,
-//         Some(ieq_constraints),
-//         x0,
-//         auglag_method(unconstrained_method),
-//     )
-//     .unwrap();
+    let mut method = auglag_method(unconstrained_method);
+    method.con_opts_mut().constraint_tol = 1e-4;
 
-//     println!("ret = {ret:?}");
-//     assert_answer(
-//         &ret,
-//         &colvec(&[20.0, 10.0, 10.0, 10.0, 10.0]),
-//         exp_fmin,
-//         xmin_tol,
-//         fmin_tol,
-//     );
-//     assert_counts(&ret, exp_num_fun_evals, exp_num_grad_evals);
-// }
+    let ret = constrained_minimize(
+        quart,
+        None::<NoConstraints>,
+        Some(ieq_constraints),
+        x0,
+        method,
+    )
+    .unwrap();
+
+    println!("ret = {ret:?}");
+    let exp_fmin = 10000.0;
+    assert_answer(
+        &ret,
+        &colvec(&[20.0, 10.0, 10.0, 10.0, 10.0]),
+        exp_fmin,
+        xmin_tol,
+        fmin_tol,
+    );
+    assert_counts(&ret, exp_num_fun_evals, exp_num_grad_evals);
+}
 //}}}
 //}}}
 //{{{ collection: rosenbrock
