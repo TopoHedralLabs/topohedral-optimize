@@ -179,41 +179,41 @@ impl RealFn for Rosenbrock
 }
 //}}}
 //{{{ collection: constants
-const SMALL: f64 = 1.0e-8;
+const UNIT_SCALE: f64 = 1.0;
 //}}}
 //{{{ fn: reldiff
 fn reldiff(
     a: f64,
     b: f64,
+    atol: f64,
+    rtol: f64,
 ) -> f64
 {
-    let rdiff = if b.abs() < SMALL
+    let scale = b.abs().max(UNIT_SCALE);
+    let tol = atol + rtol * scale;
+    if tol == 0.0
     {
-        (a - b).abs()
+        return if a == b { 0.0 } else { f64::INFINITY };
     }
-    else
-    {
-        (a - b).abs() / b.abs()
-    };
-    rdiff
+    (a - b).abs() / tol
 }
 //}}}
 //{{{ fn: vec_reldiff
 fn vec_reldiff(
-    a: Vector,
-    b: Vector,
+    a: &Vector,
+    b: &Vector,
+    atol: f64,
+    rtol: f64,
 ) -> f64
 {
-    let b_norm = b.norm();
-    let rdiff = if b_norm < SMALL
+    let scale = b.norm().max(UNIT_SCALE);
+    let tol = atol + rtol * scale;
+    let diff = (a.clone() - b.clone()).norm();
+    if tol == 0.0
     {
-        (a - b).norm()
+        return if diff == 0.0 { 0.0 } else { f64::INFINITY };
     }
-    else
-    {
-        (a - b).norm() / b_norm
-    };
-    rdiff
+    diff / tol
 }
 //}}}
 //{{{ fun: assert_answer
@@ -225,11 +225,11 @@ fn assert_answer(
     fmin_tol: f64,
 )
 {
-    let xmin_err = vec_reldiff(ret.xmin.clone(), exp_xmin.clone());
-    let fmin_err = reldiff(ret.fmin, exp_fmin);
+    let xmin_err = vec_reldiff(&ret.xmin, exp_xmin, xmin_tol, xmin_tol);
+    let fmin_err = reldiff(ret.fmin, exp_fmin, fmin_tol, fmin_tol);
     println!("xmin_err = {xmin_err:1.4e} fmin_err = {fmin_err:1.4e}");
-    assert!(xmin_err <= xmin_tol);
-    assert!(fmin_err <= fmin_tol);
+    assert!(xmin_err <= 1.0);
+    assert!(fmin_err <= 1.0);
 }
 //}}}
 //{{{ fun: assert_counts
