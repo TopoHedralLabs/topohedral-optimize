@@ -16,19 +16,19 @@ use core::f64;
 use std::sync::{Arc, Mutex};
 //}}}
 //{{{ dep imports
-use topohedral_linalg::{dvector::VecType::Col, ReduceOps, VectorOps};
+use topohedral_linalg::{dvector::VecType::Col, MatrixOps, ReduceOps, VectorOps};
 use topohedral_tracing::*;
 //}}}
 //--------------------------------------------------------------------------------------------------
 //{{{ struct Options
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub struct Options
 {
     pub constrained_opts: ConstriainedOptions,
-    uncon_method: UnconstrainedMethod,
-    initial_penalty: f64,
-    constraint_improvement_factor: f64,
-    penalty_growth_factor: f64,
+    pub uncon_method: UnconstrainedMethod,
+    pub initial_penalty: f64,
+    pub constraint_improvement_factor: f64,
+    pub penalty_growth_factor: f64,
 }
 //}}}
 //{{{ impl: Options
@@ -594,6 +594,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
     {
         //{{{ trace
         info!(target: "aug", "******************************************************************************************** i = {_k}");
+        trace!(target: "aug", "Current solution: {}", current_iter.x.clone().transpose());
         info!(target: "aug", "Current values: {current_iter}");
         info!(target: "aug","Convergence measures:");
         let _grad_ratio = current_iter.norm_grad_fx / self.norm_grad_fx_init;
@@ -674,7 +675,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> ConstrainedMinimizer
             let ret = minimize(
                 self.fcn.clone(),
                 iter_prev_k.x.clone(),
-                self.opts.uncon_method,
+                self.opts.uncon_method.clone(),
             )?;
             iter_k = IterData {
                 fx: ret.fmin,

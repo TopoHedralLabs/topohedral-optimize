@@ -21,7 +21,7 @@ use topohedral_tracing::trace_fn;
 //--------------------------------------------------------------------------------------------------
 
 //{{{ enum: Method
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub enum Method
 {
     AugmentedLagrangian(AugmentedLagrangianOptions),

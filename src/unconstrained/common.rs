@@ -14,7 +14,7 @@ use thiserror::Error;
 //--------------------------------------------------------------------------------------------------
 
 //{{{ struct: Options
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub struct Options
 {
     pub grad_rtol: f64,

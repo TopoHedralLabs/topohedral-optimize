@@ -20,7 +20,7 @@ use crate::{RealFn, Vector};
 //--------------------------------------------------------------------------------------------------
 
 //{{{ enum: Method
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub enum Method
 {
     ConjugateGradient(ConjugateGradientOptions),

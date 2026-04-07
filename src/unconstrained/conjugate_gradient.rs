@@ -27,7 +27,7 @@ pub enum Direction
 }
 //}}}
 //{{{ struct: Options
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub struct Options
 {
     pub uncon_opts: UnonstrainedOptions,
@@ -201,7 +201,7 @@ impl<F: RealFn> UnconstrainedMinimizer for ConjugateGradient<F>
                 &iter_k_prev,
                 &dir_k,
                 alpha_init,
-                self.opts.uncon_opts.ls_method,
+                self.opts.uncon_opts.ls_method.clone(),
             )?;
 
             dir_k = self.update_direction(

@@ -18,7 +18,7 @@ use topohedral_tracing::*;
 //--------------------------------------------------------------------------------------------------
 
 //{{{ enum: Method
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub enum Method
 {
     Interp(interp::Options),

@@ -695,14 +695,15 @@ fn test_quartic_without_constraints_matches_unconstrained_reference(
 // #[case::quadratic_nocedal_steepest(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_STEEPEST), false, 1e-6, 1e-6, 119.99998531000307, 63, 81)]
 // #[case::quadratic_interp_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(INTERP_FR), true, 2e-6, 1e-6, 101.99999101682535, 585, 244)]
 // #[case::quadratic_thuente_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_FR), false, 1e-6, 1e-6, 119.99998534803942, 48, 87)]
-// #[case::quadratic_nocedal_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_FR), false, 2e-6, 1e-6, 101.9999923583359, 129, 150)]
-// #[case::quadratic_interp_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(INTERP_PR), true, 1e-6, 1e-6, 119.9999838101496, 83, 63)]
-// #[case::quadratic_thuente_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_PR), false, 1e-6, 1e-6, 101.9999990975068, 37, 66)]
-#[case::quadratic_nocedal_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_PR), false, 1e-1, 1e-1, 113, 107)]
+#[case::quadratic_nocedal_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_FR), false, 2.0, 2e-1, 1e-3, 129, 150)]
+#[case::quadratic_interp_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(INTERP_PR), true, 2.0, 2e-1, 1e-3, 239, 98)]
+#[case::quadratic_thuente_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_PR), false, 1.0, 5e-2, 1e-3, 85, 135)]
+#[case::quadratic_nocedal_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_PR), false, 1.0, 5e-2, 1e-3, 113, 107)]
 fn test_quartic_with_bound_constraints_matches_reference(
     #[case] x0: Vector,
-    #[case] mut unconstrained_method: UnconstrainedMethod,
+    #[case] unconstrained_method: UnconstrainedMethod,
     #[case] use_interp_scale_factor_1_2: bool,
+    #[case] initial_penalty: f64,
     #[case] xmin_tol: f64,
     #[case] fmin_tol: f64,
     #[case] exp_num_fun_evals: usize,
@@ -713,20 +714,23 @@ fn test_quartic_with_bound_constraints_matches_reference(
         xmin: colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
     };
 
-    let mut ieq_constraints = BoundsConstraints::new(5);
-    ieq_constraints.add_bounds(0, Some(20.0), None);
+    let mut method = auglag_method(unconstrained_method);
+    method.con_opts_mut().constraint_tol = 1e-4;
 
     if use_interp_scale_factor_1_2
     {
         if let LineSearchMethod::Interp(interp_opts) =
-            &mut unconstrained_method.uncon_opts_mut().ls_method
+            &mut method.uncon_method_mut().uncon_opts_mut().ls_method
         {
             interp_opts.scale_factor = 1.2;
         }
     }
 
-    let mut method = auglag_method(unconstrained_method);
-    method.con_opts_mut().constraint_tol = 1e-4;
+    let ConstrainedMethod::AugmentedLagrangian(opts) = &mut method;
+    opts.initial_penalty = initial_penalty;
+
+    let mut ieq_constraints = BoundsConstraints::new(5);
+    ieq_constraints.add_bounds(0, Some(20.0), None);
 
     let ret = constrained_minimize(
         quart,
