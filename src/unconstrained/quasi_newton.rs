@@ -185,6 +185,7 @@ impl<F: RealFn> QuasiNewton<F>
     {
         //{{{ trace
         info!(target: "qn", "======================================================================== i = {_k}");
+        trace!(target: "aug", "Current solution: {}", current_iter.x.clone().transpose());
         info!(target: "qn", "Current values: {current_iter}");
         info!(target: "qn","Convergence measures:");
         let _grad_ratio = current_iter.norm_grad_fx / self.norm_grad_fx_init;

@@ -12,7 +12,7 @@ use crate::{ConvergedReason, IterData, RealFn, Returns, Vector};
 //{{{ std imports
 //}}}
 //{{{ dep imports
-use topohedral_linalg::VectorOps;
+use topohedral_linalg::{MatrixOps, VectorOps};
 use topohedral_tracing::*;
 //}}}
 //--------------------------------------------------------------------------------------------------
@@ -164,6 +164,7 @@ impl<F: RealFn> ConjugateGradient<F>
     {
         //{{{ trace
         info!(target: "cg", "======================================================================== i = {_k}");
+        trace!(target: "aug", "Current solution: {}", current_iter.x.clone().transpose());
         info!(target: "cg", "Current values: {current_iter}");
         info!(target: "cg","Convergence measures:");
         let _grad_ratio = current_iter.norm_grad_fx / self.norm_grad_fx_init;
