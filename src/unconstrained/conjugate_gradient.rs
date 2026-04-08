@@ -91,12 +91,12 @@ impl<F: RealFn> ConjugateGradient<F>
         grad_fk_prev: &Vector,
         grad_fk: &Vector,
         norm_grad_fk_prev: f64,
-        _norm_grad_fk: f64,
+        norm_grad_fk: f64,
         dir_k: &Vector,
     ) -> Vector
     {
         //{{{ trace
-        trace!(target: "cg", "norm_grad_fk1 = {norm_grad_fk_prev:1.4e} norm_grad_fk = {_norm_grad_fk:1.4e}");
+        trace!(target: "cg", "norm_grad_fk1 = {norm_grad_fk_prev:1.4e} norm_grad_fk = {norm_grad_fk:1.4e}");
         //}}}
 
         // direction updates
@@ -115,7 +115,7 @@ impl<F: RealFn> ConjugateGradient<F>
                 debug!(target: "cg", "Applying fletcher-reeves update");
                 //}}}
 
-                grad_fk.dot(grad_fk_prev) / norm_grad_fk_prev.powi(2)
+                norm_grad_fk.powi(2) / norm_grad_fk_prev.powi(2)
             }
             Direction::PolakRibiere =>
             {

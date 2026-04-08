@@ -76,6 +76,7 @@ struct ConstraintData<F: RealVectorFn>
 //{{{ impl: ConstraintData
 impl<F: RealVectorFn> ConstraintData<F>
 {
+    //{{{ fn: new
     pub fn new(
         fcn: F,
         initial_penalty: f64,
@@ -99,7 +100,8 @@ impl<F: RealVectorFn> ConstraintData<F>
             gradients: zero_matrix,
         }
     }
-
+    //}}}
+    //{{{ fn: update_values
     fn update_values(
         &mut self,
         x: &Vector,
@@ -107,7 +109,8 @@ impl<F: RealVectorFn> ConstraintData<F>
     {
         self.function.eval(x, &mut self.values);
     }
-
+    //}}}
+    //{{{ fn: update_gradients
     fn update_gradients(
         &mut self,
         x: &Vector,
@@ -115,6 +118,7 @@ impl<F: RealVectorFn> ConstraintData<F>
     {
         self.function.grad(x, &mut self.gradients);
     }
+    //}}}
 }
 //}}}
 //{{{ fun: eq_penalty_value
@@ -539,10 +543,12 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
     #[trace_fn]
     fn set_inner_tol(
         &mut self,
-        tol: f64,
+        iter_k: &IterData,
+        max_violation_k: f64,
     )
     {
-        self.opts.uncon_method.uncon_opts_mut().grad_rtol = tol;
+        let mut counting_fcn = self.fcn.lock().unwrap();
+        let auglag_fcn = counting_fcn.inner_mut();
     }
     //}}}
     //{{{ fn: is_converged
@@ -653,7 +659,6 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> ConstrainedMinimizer
     {
         let n = self.x_init.len();
         let n_iter = self.opts.constrained_opts.max_iter;
-        let inner_rtol = 1e-2;
         let mut constraint_violation_max = f64::INFINITY;
 
         let mut iter_k = IterData::new(self.fcn.clone(), &self.x_init);
@@ -669,7 +674,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> ConstrainedMinimizer
         for k in 1..n_iter
         {
             self.print_status(k, &iter_k, max_violation_k);
-            self.set_inner_tol(inner_rtol);
+            self.set_inner_tol(&iter_k, max_violation_k);
 
             iter_prev_k = iter_k;
             let ret = minimize(
