@@ -13,7 +13,10 @@ use crate::{
 use core::f64;
 //}}}
 //{{{ std imports
-use std::sync::{Arc, Mutex};
+use std::{
+    cmp::max,
+    sync::{Arc, Mutex},
+};
 //}}}
 //{{{ dep imports
 use topohedral_linalg::{dvector::VecType::Col, MatrixOps, ReduceOps, VectorOps};
@@ -264,7 +267,26 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangianFcn<F1, 
         }
     }
     //}}}
-    //{{{ fn: max_constraint_violation
+    //{{{ fn: compute_max_penalty
+    #[trace_fn]
+    fn compute_max_penalty(&self) -> f64
+    {
+        let mut max_penalty = 0.0f64;
+
+        if let Some(eq_constraint_data) = &self.eq_constraint_data
+        {
+            max_penalty = max_penalty.max(eq_constraint_data.penalties.max().unwrap());
+        }
+
+        if let Some(ieq_constraint_data) = &self.ieq_constraint_data
+        {
+            max_penalty = max_penalty.max(ieq_constraint_data.penalties.max().unwrap());
+        }
+
+        max_penalty
+    }
+    //}}}
+    //{{{ fn: compute_max_constraint_violation
     #[trace_fn]
     fn compute_max_constraint_violation(&self) -> f64
     {
@@ -541,7 +563,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
     //}}}
     //{{{ fn: set_innter_rtol
     #[trace_fn]
-    fn set_inner_tol(
+    fn set_uncon_options(
         &mut self,
         iter_k: &IterData,
         max_violation_k: f64,
@@ -549,6 +571,8 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
     {
         let mut counting_fcn = self.fcn.lock().unwrap();
         let auglag_fcn = counting_fcn.inner_mut();
+
+        let max_penalty = auglag_fcn.compute_max_penalty();
     }
     //}}}
     //{{{ fn: is_converged
@@ -674,7 +698,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> ConstrainedMinimizer
         for k in 1..n_iter
         {
             self.print_status(k, &iter_k, max_violation_k);
-            self.set_inner_tol(&iter_k, max_violation_k);
+            self.set_uncon_options(&iter_k, max_violation_k);
 
             iter_prev_k = iter_k;
             let ret = minimize(
