@@ -23,6 +23,10 @@ use topohedral_linalg::{dvector::VecType::Col, MatrixOps, ReduceOps, VectorOps};
 use topohedral_tracing::*;
 //}}}
 //--------------------------------------------------------------------------------------------------
+//{{{ constants
+const MIN_RTOL: f64 = 1e-8;
+const MAX_RTOL: f64 = 1e-3;
+//}}}
 //{{{ struct Options
 #[derive(Clone)]
 pub struct Options
@@ -572,7 +576,40 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
         let mut counting_fcn = self.fcn.lock().unwrap();
         let auglag_fcn = counting_fcn.inner_mut();
 
-        let max_penalty = auglag_fcn.compute_max_penalty();
+        let max_penalty_k = auglag_fcn.compute_max_penalty();
+        let rk = max_violation_k.max(1.0 / max_penalty_k);
+        let grad_rtol_k = (0.01 * rk.powi(2)).clamp(MIN_RTOL, MAX_RTOL);
+
+        let max_iter_k = if grad_rtol_k > 1e-3
+        {
+            30
+        }
+        else if grad_rtol_k > 1e-6
+        {
+            50
+        }
+        else
+        {
+            100
+        };
+        //{{{ trace
+        //{{{ trace
+        trace!(
+            "max_penalty = {:1.4e} max_violation = {:1.4e} raw rtol = {:1.4e}",
+            max_penalty_k,
+            max_violation_k,
+            (0.1 * rk.powi(2)),
+        );
+        //}}}
+        trace!(
+            "Setting Unconstrained options rtol = {:1.4e}  max_iter {}",
+            grad_rtol_k,
+            max_iter_k
+        );
+        //}}}
+        self.opts.uncon_method.uncon_opts_mut().grad_atol = grad_rtol_k;
+        self.opts.uncon_method.uncon_opts_mut().grad_rtol = grad_rtol_k;
+        self.opts.uncon_method.uncon_opts_mut().max_iter = max_iter_k;
     }
     //}}}
     //{{{ fn: is_converged

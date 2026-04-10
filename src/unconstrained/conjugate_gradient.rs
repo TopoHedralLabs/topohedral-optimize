@@ -115,7 +115,7 @@ impl<F: RealFn> ConjugateGradient<F>
                 debug!(target: "cg", "Applying fletcher-reeves update");
                 //}}}
 
-                norm_grad_fk.powi(2) / norm_grad_fk_prev.powi(2)
+                (norm_grad_fk.powi(2) / norm_grad_fk_prev.powi(2)).max(0.0)
             }
             Direction::PolakRibiere =>
             {
