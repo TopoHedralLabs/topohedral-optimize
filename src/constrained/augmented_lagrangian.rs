@@ -499,48 +499,33 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangianFcn<F1, 
         }
     }
     //}}}
-    //{{{ fn: gradient_diagnostics
-    // fn gradient_diagnostics(
-    //     &mut self,
-    //     x: &Vector,
-    // ) -> AugLagDiagnostics
-    // {
-    //     if let Some(ieq_constraint_data) = &mut self.ieq_constraint_data
-    //     {
-    //         ieq_constraint_data.update_values(x);
-    //         ieq_constraint_data.update_gradients(x);
-    //         ieq_penalty_grad = ieq_penalty_gradient(ieq_constraint_data);
+    //{{{ fn: update_constraint_diagnostics
+    fn update_constraint_diagnostics(&mut self)
+    {
+        let diagonstics = &mut self.gradient_diagnostics;
+        diagonstics.max_ieq_activation = 0.0;
+        diagonstics.num_active_ieq_constraints = 0;
+        diagonstics.max_weighted_ieq_activation = 0.0;
 
-    //         for ((&q_i, &g_i), &phi_i) in ieq_constraint_data
-    //             .penalties
-    //             .iter()
-    //             .zip(ieq_constraint_data.values.iter())
-    //             .zip(ieq_constraint_data.shifts.iter())
-    //         {
-    //             let activation_i = (g_i + phi_i).max(0.0);
-    //             if activation_i > 0.0
-    //             {
-    //                 num_active_ieq_constraints += 1;
-    //             }
-    //             max_ieq_activation = max_ieq_activation.max(activation_i);
-    //             max_weighted_ieq_activation = max_weighted_ieq_activation.max(q_i * activation_i);
-    //         }
-    //     }
-
-    //     AugLagDiagnostics {
-    //         objective_value: 0.0,
-    //         eq_penalty_value: 0.0,
-    //         ieq_penalty_value: 0.0,
-    //         objective_grad_norm,
-    //         total_penalty_grad_norm,
-    //         auglag_grad_norm: total_grad_norm,
-    //         cancellation_ratio,
-    //         objective_penalty_cosine,
-    //         penalty_to_objective_ratio,
-    //         num_active_ieq_constraints,
-    //         max_ieq_activation,
-    //         max_weighted_ieq_activation,
-    //     }
+        if let Some(ieq_constraint_data) = &mut self.ieq_constraint_data
+        {
+            for ((&q_i, &g_i), &phi_i) in ieq_constraint_data
+                .penalties
+                .iter()
+                .zip(ieq_constraint_data.values.iter())
+                .zip(ieq_constraint_data.shifts.iter())
+            {
+                let activation_i = (g_i + phi_i).max(0.0);
+                if activation_i > 0.0
+                {
+                    diagonstics.num_active_ieq_constraints += 1;
+                }
+                diagonstics.max_ieq_activation = diagonstics.max_ieq_activation.max(activation_i);
+                diagonstics.max_weighted_ieq_activation = diagonstics
+                    .max_weighted_ieq_activation
+                    .max(q_i * activation_i);
+            }
+        }
     }
     //}}}
 }
@@ -603,7 +588,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> RealFn for AugmentedLagrang
         if let Some(ieq_constraint_data) = &mut self.ieq_constraint_data
         {
             ieq_constraint_data.update_gradients(x);
-            total_penalty += eq_penalty_gradient(ieq_constraint_data);
+            total_penalty += ieq_penalty_gradient(ieq_constraint_data);
         }
 
         gd.objective_grad_norm = grad_aug_lag.norm();
@@ -623,6 +608,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> RealFn for AugmentedLagrang
             gd.penalty_to_objective_ratio = gd.objective_grad_norm / gd.total_penalty_grad_norm;
         }
 
+        self.update_constraint_diagnostics();
         grad_aug_lag += total_penalty;
         gd.auglag_grad_norm = grad_aug_lag.norm();
         grad_aug_lag
@@ -680,11 +666,11 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
         &mut self,
         iter_k: &IterData,
         max_violation_k: f64,
-        diagnostics: AugLagDiagnostics,
     )
     {
         let mut counting_fcn = self.fcn.lock().unwrap();
         let auglag_fcn = counting_fcn.inner_mut();
+        let diagnostics = &auglag_fcn.gradient_diagnostics;
         let max_penalty_k = auglag_fcn.compute_max_penalty();
         let rk = max_violation_k.max(1.0 / max_penalty_k);
         let grad_rtol_k = (0.01 * rk).clamp(MIN_RTOL, MAX_RTOL);
@@ -754,12 +740,9 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
         _current_max_violation: f64,
     )
     {
-        let diagnostics = {
-            let mut counting_fcn = self.fcn.lock().unwrap();
-            let auglag_fcn = counting_fcn.inner_mut();
-            auglag_fcn.gradient_diagnostics(&current_iter.x)
-        };
-        let _ = &diagnostics;
+        let mut counting_fcn = self.fcn.lock().unwrap();
+        let auglag_fcn = counting_fcn.inner_mut();
+        let diagnostics = &auglag_fcn.gradient_diagnostics;
         //{{{ trace
         info!(target: "aug", "******************************************************************************************** i = {_k}");
         trace!(target: "aug", "Current solution: {}", current_iter.x.clone().transpose());
@@ -828,6 +811,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
             auglag_fcn.increase_shifts();
             constraint_violation_max = max_violation_k;
         }
+
         (max_violation_k, constraint_violation_max)
     }
     //}}}
@@ -857,7 +841,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> ConstrainedMinimizer
         for k in 1..n_iter
         {
             self.print_status(k, &iter_k, max_violation_k);
-            self.set_uncon_options(&iter_k, max_violation_k, self);
+            self.set_uncon_options(&iter_k, max_violation_k);
 
             iter_prev_k = iter_k;
             let ret = minimize(
