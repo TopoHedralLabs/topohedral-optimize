@@ -575,7 +575,6 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> RealFn for AugmentedLagrang
         x: &Vector,
     ) -> Vector
     {
-        let gd = &mut self.gradient_diagnostics;
         let mut grad_aug_lag = self.fcn.grad(x);
         let mut total_penalty = Vector::zeros_cvec(grad_aug_lag.len(), Col);
 
@@ -591,26 +590,29 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> RealFn for AugmentedLagrang
             total_penalty += ieq_penalty_gradient(ieq_constraint_data);
         }
 
-        gd.objective_grad_norm = grad_aug_lag.norm();
-        gd.total_penalty_grad_norm = total_penalty.norm();
-        gd.cancellation_ratio = 0.0;
-        gd.objective_penalty_cosine = 0.0;
-        gd.penalty_to_objective_ratio = 0.0;
-        if gd.auglag_grad_norm > 0.0 && gd.total_penalty_grad_norm > 0.0
         {
-            gd.objective_penalty_cosine =
-                grad_aug_lag.dot(&total_penalty) / gd.auglag_grad_norm * gd.total_penalty_grad_norm;
+            let gd = &mut self.gradient_diagnostics;
+            gd.objective_grad_norm = grad_aug_lag.norm();
+            gd.total_penalty_grad_norm = total_penalty.norm();
+            gd.cancellation_ratio = 0.0;
+            gd.objective_penalty_cosine = 0.0;
+            gd.penalty_to_objective_ratio = 0.0;
+            if gd.auglag_grad_norm > 0.0 && gd.total_penalty_grad_norm > 0.0
+            {
+                gd.objective_penalty_cosine = grad_aug_lag.dot(&total_penalty)
+                    / gd.auglag_grad_norm
+                    * gd.total_penalty_grad_norm;
 
-            gd.cancellation_ratio = ((gd.auglag_grad_norm - gd.total_penalty_grad_norm)
-                / gd.auglag_grad_norm)
-                .clamp(0.0, 1.0);
+                gd.cancellation_ratio = ((gd.auglag_grad_norm - gd.total_penalty_grad_norm)
+                    / gd.auglag_grad_norm)
+                    .clamp(0.0, 1.0);
 
-            gd.penalty_to_objective_ratio = gd.objective_grad_norm / gd.total_penalty_grad_norm;
+                gd.penalty_to_objective_ratio = gd.objective_grad_norm / gd.total_penalty_grad_norm;
+            }
+            grad_aug_lag += total_penalty;
+            gd.auglag_grad_norm = grad_aug_lag.norm();
         }
-
         self.update_constraint_diagnostics();
-        grad_aug_lag += total_penalty;
-        gd.auglag_grad_norm = grad_aug_lag.norm();
         grad_aug_lag
     }
     //}}}
