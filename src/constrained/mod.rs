@@ -12,7 +12,7 @@ use crate::common::{arc_real_fn, CountingRealFn, RealFn, RealVectorFn, Vector};
 //--------------------------------------------------------------------------------------------------
 
 //{{{ mod: submodules
-mod augmented_lagrangian;
+mod augmented_lagrangian2;
 mod common;
 mod constraints;
 mod factory;
@@ -25,7 +25,7 @@ pub use crate::common::{
 pub use common::{ConstrainedMinimizer, Error as ConstrainedError, Options as ConstriainedOptions};
 //}}}
 //{{{ pub use: augmented_lagrangian exports
-pub use augmented_lagrangian::{
+pub use augmented_lagrangian2::{
     AugmentedLagrangian, AugmentedLagrangianFcn, Options as AugmentedLagrangianOptions,
 };
 //}}}
