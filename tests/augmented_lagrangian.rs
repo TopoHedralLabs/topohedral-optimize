@@ -258,8 +258,8 @@ fn auglag_method(mut unconstrained_method: UnconstrainedMethod) -> ConstrainedMe
         },
         unconstrained_method,
         1.0,
-        4.0,
-        10.0,
+        1.5,
+        2.0,
     ))
 }
 //}}}
@@ -278,7 +278,7 @@ const INTERP_BFGS: QuasiNewtonOptions = QuasiNewtonOptions {
                 step_max: 1e5,
             },
             scale_factor: 1.5,
-            maxiter: 10,
+            maxiter: 20,
         }),
     },
     method: UpdateMethod::BFGS,
@@ -316,11 +316,11 @@ const NOCEDAL_BFGS: QuasiNewtonOptions = QuasiNewtonOptions {
         ls_method: LineSearchMethod::Nocedal(NocedalOptions {
             ls_opts: LineSearchOptions {
                 c1: 1.0e-4,
-                c2: 0.9,
+                c2: 0.4,
                 step_min: 1e-8,
                 step_max: 1e5,
             },
-            maxiter: 10,
+            maxiter: 20,
             zoom_maxiter: 10,
         }),
     },
@@ -338,12 +338,12 @@ const INTERP_STEEPEST: ConjugateGradientOptions = ConjugateGradientOptions {
         ls_method: LineSearchMethod::Interp(InterpOptions {
             ls_opts: LineSearchOptions {
                 c1: 1.0e-4,
-                c2: 0.4,
+                c2: 0.9,
                 step_min: 1e-8,
                 step_max: 1e5,
             },
             scale_factor: 1.5,
-            maxiter: 10,
+            maxiter: 20,
         }),
     },
     direction: Direction::Steepest,
@@ -360,12 +360,12 @@ const INTERP_FR: ConjugateGradientOptions = ConjugateGradientOptions {
         ls_method: LineSearchMethod::Interp(InterpOptions {
             ls_opts: LineSearchOptions {
                 c1: 1.0e-4,
-                c2: 0.4,
+                c2: 0.9,
                 step_min: 1e-8,
                 step_max: 1e5,
             },
             scale_factor: 1.5,
-            maxiter: 10,
+            maxiter: 20,
         }),
     },
     direction: Direction::FletcherReeves,
@@ -382,12 +382,12 @@ const INTERP_PR: ConjugateGradientOptions = ConjugateGradientOptions {
         ls_method: LineSearchMethod::Interp(InterpOptions {
             ls_opts: LineSearchOptions {
                 c1: 1.0e-4,
-                c2: 0.4,
+                c2: 0.9,
                 step_min: 1e-8,
                 step_max: 1e5,
             },
             scale_factor: 1.5,
-            maxiter: 10,
+            maxiter: 20,
         }),
     },
     direction: Direction::PolakRibiere,
@@ -404,7 +404,7 @@ const THUENTE_STEEPEST: ConjugateGradientOptions = ConjugateGradientOptions {
         ls_method: LineSearchMethod::Thuente(ThuenteOptions {
             ls_opts: LineSearchOptions {
                 c1: 1.0e-4,
-                c2: 0.4,
+                c2: 0.9,
                 step_min: 1e-8,
                 step_max: 1e5,
             },
@@ -425,7 +425,7 @@ const THUENTE_FR: ConjugateGradientOptions = ConjugateGradientOptions {
         ls_method: LineSearchMethod::Thuente(ThuenteOptions {
             ls_opts: LineSearchOptions {
                 c1: 1.0e-4,
-                c2: 0.4,
+                c2: 0.9,
                 step_min: 1e-8,
                 step_max: 1e5,
             },
@@ -446,7 +446,7 @@ const THUENTE_PR: ConjugateGradientOptions = ConjugateGradientOptions {
         ls_method: LineSearchMethod::Thuente(ThuenteOptions {
             ls_opts: LineSearchOptions {
                 c1: 1.0e-4,
-                c2: 0.4,
+                c2: 0.9,
                 step_min: 1e-8,
                 step_max: 1e5,
             },
@@ -467,11 +467,11 @@ const NOCEDAL_STEEPEST: ConjugateGradientOptions = ConjugateGradientOptions {
         ls_method: LineSearchMethod::Nocedal(NocedalOptions {
             ls_opts: LineSearchOptions {
                 c1: 1.0e-4,
-                c2: 0.4,
+                c2: 0.9,
                 step_min: 1e-8,
                 step_max: 1e5,
             },
-            maxiter: 10,
+            maxiter: 20,
             zoom_maxiter: 10,
         }),
     },
@@ -489,12 +489,12 @@ const NOCEDAL_FR: ConjugateGradientOptions = ConjugateGradientOptions {
         ls_method: LineSearchMethod::Nocedal(NocedalOptions {
             ls_opts: LineSearchOptions {
                 c1: 1.0e-4,
-                c2: 0.4,
+                c2: 0.9,
                 step_min: 1e-8,
                 step_max: 1e5,
             },
-            maxiter: 10,
-            zoom_maxiter: 10,
+            maxiter: 20,
+            zoom_maxiter: 20,
         }),
     },
     direction: Direction::FletcherReeves,
@@ -511,12 +511,12 @@ const NOCEDAL_PR: ConjugateGradientOptions = ConjugateGradientOptions {
         ls_method: LineSearchMethod::Nocedal(NocedalOptions {
             ls_opts: LineSearchOptions {
                 c1: 1.0e-4,
-                c2: 0.4,
+                c2: 0.9,
                 step_min: 1e-8,
                 step_max: 1e5,
             },
-            maxiter: 10,
-            zoom_maxiter: 10,
+            maxiter: 20,
+            zoom_maxiter: 20,
         }),
     },
     direction: Direction::PolakRibiere,
