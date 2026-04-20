@@ -325,19 +325,28 @@ impl<F: RealVectorFn> RealFn for IeqPenalty<F>
         x: &Vector,
     ) -> Vector
     {
-        // self.data.update_gradients(x, true);
-        // let weighted_constraint_values: Vector = match self.lagrangian_type
-        // {
-        //     // LagrangianType::AugmentedLagrangian =>
-        //     // {
-        //     //     let shifted_values = (&self.data.values + &self.data.shifts).into();
-        //     //     shifted_values.
-        //     // }
-        //     LagrangianType::Lagrangian => (&self.data.penalties * &self.data.shifts).into(),
-        // };
-        // let constraint_gradient = self.data.gradients.matmul(&weighted_constraint_values);
-        // constraint_gradient
-        todo!()
+        self.data.update_gradients(x, true);
+        let weighted_constraint_values: Vector = match self.lagrangian_type
+        {
+            LagrangianType::AugmentedLagrangian =>
+            {
+                let mut shifted_values: Vector = (&self.data.values + &self.data.shifts).into();
+                shifted_values.transform(|value| {
+                    if value > 0.0
+                    {
+                        value
+                    }
+                    else
+                    {
+                        0.0
+                    }
+                });
+                (&self.data.penalties * &shifted_values).into()
+            }
+            LagrangianType::Lagrangian => (&self.data.penalties * &self.data.shifts).into(),
+        };
+        let constraint_gradient = self.data.gradients.matmul(&weighted_constraint_values);
+        constraint_gradient
     }
 }
 //}}}
@@ -429,6 +438,24 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangianFcn<F1, 
             cached_value: CachedValues::new(n),
         }
     }
+    //}}}
+    //{{{ fn: set_lagrangian_type
+    fn set_lagrangian_type(
+        &mut self,
+        lagrangian_type: LagrangianType,
+    )
+    {
+        if let Some(eq_penalty) = &mut self.eq_constraint_data
+        {
+            eq_penalty.lagrangian_type = lagrangian_type
+        }
+
+        if let Some(ieq_penalty) = &mut self.ieq_constraint_data
+        {
+            ieq_penalty.lagrangian_type = lagrangian_type
+        }
+    }
+
     //}}}
 }
 
