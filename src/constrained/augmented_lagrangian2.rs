@@ -542,6 +542,8 @@ pub struct AugmentedLagrangian<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn>
     x_init: Vector,
     norm_grad_fx_init: f64,
     opts: Options,
+    max_eq_violations: Vector,
+    max_ieq_violations: Vector,
 }
 //}}}
 //{{{ impl: AugmentedLagrangian
@@ -572,6 +574,13 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
 
         let _ = fcn_shared.eval(&x0);
         let norm_grad_f0 = fcn_shared.grad(&x0).norm();
+
+        let (max_eq_violations, max_ieq_violations) =
+        {
+            let auglag_fcn = fcn_shared.lock().unwrap().inner_mut();
+            // let
+        }
+
         Self {
             fcn: fcn_shared,
             x_init: x0,
