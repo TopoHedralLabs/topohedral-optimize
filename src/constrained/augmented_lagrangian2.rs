@@ -456,8 +456,27 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangianFcn<F1, 
             ieq_penalty.lagrangian_type = lagrangian_type
         }
     }
-
     //}}}
+
+    #[trace_fn]
+    fn update_max_eq_violations(
+        &self,
+        max_eq_violations: &mut Vector,
+    )
+    {
+        let eq_penalty = self.eq_penalty.as_ref().unwrap();
+        for (i, hi) in eq_penalty.data.values.iter().enumerate()
+        {
+            // max_eq_violations[i] = max_eq_violations[i].max(hi.abs());
+        }
+    }
+
+    fn update_max_ieq_violations(
+        &self,
+        max_ieq_violations: &mut Vector,
+    )
+    {
+    }
 }
 
 //}}}
@@ -542,8 +561,8 @@ pub struct AugmentedLagrangian<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn>
     x_init: Vector,
     norm_grad_fx_init: f64,
     opts: Options,
-    max_eq_violations: Vector,
-    max_ieq_violations: Vector,
+    max_eq_violations: Option<Vector>,
+    max_ieq_violations: Option<Vector>,
 }
 //}}}
 //{{{ impl: AugmentedLagrangian
@@ -564,6 +583,14 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
         //{{{ trace
         trace!("Creating new Augmented Lagrangian function");
         //}}}
+        let max_eq_violations = eq_constraints
+            .as_ref()
+            .map(|constraints| Vector::zeros_cvec(constraints.dimension_range(), Col));
+
+        let max_ieq_violations = ieq_constraints
+            .as_ref()
+            .map(|constraints| Vector::zeros_cvec(constraints.dimension_range(), Col));
+
         let mut fcn_shared = arc_real_fn(CountingRealFn::new(AugmentedLagrangianFcn::new(
             fcn,
             eq_constraints,
@@ -575,17 +602,13 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
         let _ = fcn_shared.eval(&x0);
         let norm_grad_f0 = fcn_shared.grad(&x0).norm();
 
-        let (max_eq_violations, max_ieq_violations) =
-        {
-            let auglag_fcn = fcn_shared.lock().unwrap().inner_mut();
-            // let
-        }
-
         Self {
             fcn: fcn_shared,
             x_init: x0,
             norm_grad_fx_init: norm_grad_f0,
             opts,
+            max_eq_violations,
+            max_ieq_violations,
         }
     }
     //}}}

@@ -221,6 +221,14 @@ impl<F: RealFn> CountingRealFn<F>
     {
         &mut self.fcn
     }
+
+    pub(crate) fn with_inner_mut<R>(
+        &mut self,
+        f: impl FnOnce(&mut F) -> R,
+    ) -> R
+    {
+        f(&mut self.fcn)
+    }
 }
 //}}}
 //{{{ type: aliases for Rc<RefCell<F>> and Arc<Mutex<F>>
