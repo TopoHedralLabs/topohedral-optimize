@@ -223,6 +223,7 @@ impl<F: RealFn> UnconstrainedMinimizer for ConjugateGradient<F>
                 let _grad_ratio = iter_k.norm_grad_fx / self.norm_grad_fx_init;
                 info!(target: "cg", "||∇f(k)|| / ||∇f(0)|| = {_grad_ratio:1.4e}");
                 info!(target: "cg", "||∇f(k)|| = {:1.4e}", iter_k.norm_grad_fx);
+                trace!(target: "cg", "fx = {:1.4e} x = {}", iter_k.fx, iter_k.x.clone().transpose());
                 info!(target: "cg", "=============================================");
                 //}}}
                 return Ok(Returns {

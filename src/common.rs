@@ -15,6 +15,7 @@ use std::sync::{Arc, Mutex};
 use topohedral_linalg::dmatrix::DMatrix;
 use topohedral_linalg::dvector::DVector;
 use topohedral_linalg::VectorOps;
+use topohedral_tracing::trace_fn;
 //}}}
 //--------------------------------------------------------------------------------------------------
 
@@ -83,6 +84,7 @@ pub struct IterData
 //{{{ impl: IterData
 impl IterData
 {
+    #[trace_fn]
     pub fn new<F: RealFn>(
         mut fcn: F,
         x: &Vector,
@@ -97,6 +99,17 @@ impl IterData
             grad_fx,
             norm_grad_fx,
         }
+    }
+
+    pub fn copy_from(
+        &mut self,
+        iter_data: &Self,
+    )
+    {
+        self.x.copy_from(&iter_data.x);
+        self.fx = iter_data.fx;
+        self.grad_fx.copy_from(&iter_data.grad_fx);
+        self.norm_grad_fx = iter_data.norm_grad_fx;
     }
 }
 //}}}
