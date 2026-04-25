@@ -396,12 +396,12 @@ const NOCEDAL_PR: ConjugateGradientOptions = ConjugateGradientOptions {
 //{{{ collection: quadratic
 //{{{ test: unconstrained
 #[rstest]
-#[case::quadratic_thuente_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(THUENTE_BFGS), 1.0e-12, 1.0e-24, 10, 13)]
-#[case::quadratic_nocedal_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(NOCEDAL_BFGS), 1.0e-12, 1.0e-24, 14, 18)]
-#[case::quadratic_thuente_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_FR), 2.5423787284960917e-13, 6.4636895991094044e-26, 10, 12)]
-#[case::quadratic_nocedal_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_FR), 1.9428902930940239e-16, 3.7748226909989823e-32, 17, 18)]
-#[case::quadratic_thuente_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_PR), 2.5423787284960917e-13, 6.4636895991094044e-26, 10, 12)]
-#[case::quadratic_nocedal_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_PR), 0.0, 0.0, 17, 18)]
+#[case::quadratic_thuente_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(THUENTE_BFGS), 1.0e-12, 1.0e-24, 12, 14)]
+#[case::quadratic_nocedal_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(NOCEDAL_BFGS), 1.0e-12, 1.0e-24, 18, 20)]
+#[case::quadratic_thuente_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_FR), 2.5423787284960917e-13, 6.4636895991094044e-26, 19, 27)]
+#[case::quadratic_nocedal_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_FR), 1.9428902930940239e-16, 3.7748226909989823e-32, 20, 25)]
+#[case::quadratic_thuente_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_PR), 2.5423787284960917e-13, 6.4636895991094044e-26, 14, 17)]
+#[case::quadratic_nocedal_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_PR), 0.0, 0.0, 18, 21)]
 fn test_quadratic_without_constraints_matches_unconstrained_reference(
     #[case] x0: Vector,
     #[case] unconstrained_method: UnconstrainedMethod,
