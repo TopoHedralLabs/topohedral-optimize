@@ -18,6 +18,7 @@ use std::{
     collections::HashMap,
     fmt::{self, Display, Formatter},
     iter,
+    ptr::eq,
     sync::{Arc, Mutex},
 };
 //}}}
@@ -848,13 +849,13 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
             let stationarity_rtol_satisfied = residual_stationarity_scaled < rtol;
             let stationarity_atol_satisfied = residual_stationarity< atol;
 
-            // if constraints_satsifed && stationarity_rtol_satisfied {
-            //     return Some(ConvergedReason::Rtol)
-            // }
+            if constraints_satsifed && stationarity_rtol_satisfied {
+                return Some(ConvergedReason::Rtol)
+            }
 
-            // if constraints_satsifed && stationarity_atol_satisfied {
-            //     return Some(ConvergedReason::Atol)
-            // }
+            if constraints_satsifed && stationarity_atol_satisfied {
+                return Some(ConvergedReason::Atol)
+            }
             return None
         })
     }
@@ -924,6 +925,50 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
         IterData::new(self.fcn.clone(), &uncon_ret.xmin)
     }
     //}}}
+    #[trace_fn]
+    fn set_inner_tolerances(&self) -> UnconstrainedMethod
+    {
+        let mut uncon_method = self.opts.uncon_method.clone();
+        uncon_method.uncon_opts_mut().grad_rtol = 0.0;
+
+        self.fcn.lock().unwrap().with_inner_mut(|fcn| {
+            let (norm_eq, max_penalty_eq) = if let Some(eq_penalty) = &fcn.eq_penalty
+            {
+                (
+                    eq_penalty.data.values.abs_max().unwrap(),
+                    eq_penalty.data.penalties.max().unwrap(),
+                )
+            }
+            else
+            {
+                (0.0, 1.0)
+            };
+            let (norm_ieq, max_penalty_ieq) = if let Some(ieq_penalty) = &fcn.ieq_penalty
+            {
+                (
+                    ieq_penalty.data.values.posed().abs_max().unwrap(),
+                    ieq_penalty.data.penalties.max().unwrap(),
+                )
+            }
+            else
+            {
+                (0.0, 1.0)
+            };
+
+            let residual_primal = norm_eq.max(norm_ieq);
+            let penalty_max = max_penalty_eq.max(max_penalty_ieq);
+            let atol_min = 1e-6;
+            let atol_max = 1e-2;
+            let atol = (0.1 * (residual_primal.max(1.0 / penalty_max)).powf(1.5))
+                .clamp(atol_min, atol_max);
+            //{{{ trace
+            info!(target: "aug", "Setting innner atol to {atol:1.4e}");
+            //}}}
+            uncon_method.uncon_opts_mut().grad_atol = atol;
+        });
+
+        uncon_method
+    }
 }
 //}}}
 //{{{ impl: ConstrainedMinimizer for AugmentedLagrangian
@@ -939,25 +984,33 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> ConstrainedMinimizer
         let mut iter_k = IterData::new(self.fcn.clone(), &self.x_init);
         let mut iter_prev_k = iter_k.clone();
 
-        let mut uncon_method = self.opts.uncon_method.clone();
-        uncon_method.uncon_opts_mut().grad_rtol = 1e-2;
-        uncon_method.uncon_opts_mut().grad_atol = 1e-4;
-
         for k in 1..n_iter
         {
             self.print_status(k, &iter_k);
-
-            let ret = minimize(
-                self.fcn.clone(),
-                iter_prev_k.x.clone(),
-                uncon_method.clone(),
-            )?;
-
+            let uncon_method = self.set_inner_tolerances();
+            let ret = minimize(self.fcn.clone(), iter_prev_k.x.clone(), uncon_method)?;
             iter_k = self.update_lagrangian(alpha, beta, ret);
             iter_prev_k.copy_from(&iter_k);
-
             if let Some(reason) = self.is_converged(&iter_k)
-            {}
+            {
+                //{{{ trace
+                info!(target: "cg", "*********************************************");
+                info!(target: "cg", "Converging with reason {reason:?}");
+                info!(target: "cg","Convergence measures:");
+                info!(target: "cg", "||∇L(k)|| = {:1.4e}", iter_k.norm_grad_fx);
+                info!(target: "cg", "*********************************************");
+                //}}}
+                let fmin = self.fcn.lock().unwrap().inner_mut().fcn.eval(&iter_k.x);
+                let xmin = iter_k.x;
+                return Ok(Returns {
+                    fmin,
+                    xmin,
+                    reason,
+                    num_iterations: k as usize,
+                    num_fun_evals: 0,
+                    num_grad_evals: 0,
+                });
+            }
         }
 
         Err(ConstrainedError::MaxIterations(0 as usize))
