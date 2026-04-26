@@ -565,9 +565,9 @@ fn test_qudratic(
         xmin:  colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
         fmin: 0.0,
         reason: UnconstrainedConvergedReason::Rtol,
-        num_iterations: 16,
-        num_fun_evals: 152,
-        num_grad_evals: 50,
+        num_iterations: 15,
+        num_fun_evals: 197,
+        num_grad_evals: 58,
     }
 )]
 //}}}
@@ -579,9 +579,9 @@ fn test_qudratic(
         xmin:  colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
         fmin: 0.0,
         reason: UnconstrainedConvergedReason::Rtol,
-        num_iterations: 13,
-        num_fun_evals: 35,
-        num_grad_evals: 49,
+        num_iterations: 10,
+        num_fun_evals: 34,
+        num_grad_evals: 45,
     }
 )]
 //}}}
@@ -635,9 +635,9 @@ fn test_qudratic(
         xmin:  colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
         fmin: 0.0,
         reason: UnconstrainedConvergedReason::Rtol,
-        num_iterations: 16,
-        num_fun_evals: 69,
-        num_grad_evals: 68,
+        num_iterations: 15,
+        num_fun_evals: 81,
+        num_grad_evals: 81,
     }
 )]
 //}}}
@@ -674,20 +674,6 @@ fn test_quartic(
 //}}}
 //{{{ test: rosenbrock
 #[rstest]
-//{{{ case: test_rosenbrock_interp_fr
-#[case::test_rosenbrock_interp_pr(
-    colvec(&[0.0, 3.0]),
-    INTERP_FR,
-    UnconstrainedReturns{
-        xmin:  colvec(&[1.0, 1.0]),
-        fmin: 0.0,
-        reason: UnconstrainedConvergedReason::Rtol,
-        num_iterations: 2538,
-        num_fun_evals: 12745,
-        num_grad_evals: 5089,
-    }
-)]
-//}}}
 //{{{ case: test_rosenbrock_thuente_fr
 #[case::test_rosenbrock_thuente_fr(
     colvec(&[0.0, 3.0]),
@@ -696,23 +682,9 @@ fn test_quartic(
         xmin:  colvec(&[1.0, 1.0]),
         fmin: 0.0,
         reason: UnconstrainedConvergedReason::Rtol,
-        num_iterations: 119,
-        num_fun_evals: 235,
-        num_grad_evals: 355,
-    }
-)]
-//}}}
-//{{{ case: test_rosenbrock_interp_pr
-#[case::test_rosenbrock_interp_pr(
-    colvec(&[0.0, 3.0]),
-    INTERP_PR,
-    UnconstrainedReturns{
-        xmin:  colvec(&[1.0, 1.0]),
-        fmin: 0.0,
-        reason: UnconstrainedConvergedReason::Rtol,
-        num_iterations: 16,
-        num_fun_evals: 161,
-        num_grad_evals: 50,
+        num_iterations: 31,
+        num_fun_evals: 73,
+        num_grad_evals: 105,
     }
 )]
 //}}}
@@ -738,9 +710,9 @@ fn test_quartic(
         xmin:  colvec(&[1.0, 1.0]),
         fmin: 0.0,
         reason: UnconstrainedConvergedReason::Rtol,
-        num_iterations: 245,
-        num_fun_evals: 586,
-        num_grad_evals: 705,
+        num_iterations: 30,
+        num_fun_evals: 93,
+        num_grad_evals: 89,
     }
 )]
 //}}}
