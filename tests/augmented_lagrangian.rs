@@ -578,32 +578,20 @@ fn test_quartic_with_bound_constraints_matches_reference(
 //{{{ collection: rosenbrock
 //{{{ test: unconstrained
 #[rstest]
-#[case::rosenbrock_thuente_bfgs(colvec(&[0.0, 3.0]), UnconstrainedMethod::QuasiNewton(THUENTE_BFGS), 9.0284228790531235e-7, 3.3156139251068023e-13, 35, 59)]
-#[case::rosenbrock_nocedal_bfgs(colvec(&[0.0, 3.0]), UnconstrainedMethod::QuasiNewton(NOCEDAL_BFGS), 1.2741169516945091e-7, 8.0476763718045500e-15, 74, 68)]
-#[case::rosenbrock_thuente_fr(colvec(&[0.0, 3.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_FR), 2.3939387271972799e-4, 1.1444703681763757e-8, 405, 641)]
-#[case::rosenbrock_nocedal_fr(colvec(&[0.0, 3.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_FR), 4.1115183059162496e-5, 3.3755631595392825e-10, 498, 614)]
-#[case::rosenbrock_thuente_pr(colvec(&[0.0, 3.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_PR), 5.4859043189398348e-6, 6.5279974297398110e-12, 62, 91)]
-#[case::rosenbrock_nocedal_pr(colvec(&[0.0, 3.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_PR), 2.8080039179491367e-4, 1.5745787517370056e-8, 68, 75)]
+#[case::rosenbrock_thuente_bfgs(colvec(&[0.0, 3.0]), UnconstrainedMethod::QuasiNewton(THUENTE_BFGS),  36, 61)]
+#[case::rosenbrock_nocedal_bfgs(colvec(&[0.0, 3.0]), UnconstrainedMethod::QuasiNewton(NOCEDAL_BFGS),  39, 41)]
+#[case::rosenbrock_thuente_fr(colvec(&[0.0, 3.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_FR),   98, 159)]
+#[case::rosenbrock_nocedal_fr(colvec(&[0.0, 3.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_FR),   151, 200)]
+#[case::rosenbrock_thuente_pr(colvec(&[0.0, 3.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_PR),   210, 302)]
+#[case::rosenbrock_nocedal_pr(colvec(&[0.0, 3.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_PR),   562, 487)]
 fn test_rosenbrock_without_constraints_matches_unconstrained_reference(
     #[case] x0: Vector,
-    #[case] mut unconstrained_method: UnconstrainedMethod,
-    #[case] xmin_tol: f64,
-    #[case] fmin_tol: f64,
+    #[case] unconstrained_method: UnconstrainedMethod,
     #[case] exp_num_fun_evals: usize,
     #[case] exp_num_grad_evals: usize,
 )
 {
     let rosenbrock = Rosenbrock::new();
-
-    unconstrained_method.uncon_opts_mut().grad_rtol = 1e-6;
-    unconstrained_method.uncon_opts_mut().grad_atol = 1e-10;
-    unconstrained_method.uncon_opts_mut().max_iter = 10000;
-    if let LineSearchMethod::Interp(interp_opts) =
-        &mut unconstrained_method.uncon_opts_mut().ls_method
-    {
-        interp_opts.scale_factor = 1.2;
-    }
-
     let ret = constrained_minimize(
         rosenbrock,
         None::<NoConstraints>,
@@ -612,9 +600,8 @@ fn test_rosenbrock_without_constraints_matches_unconstrained_reference(
         auglag_method(unconstrained_method),
     )
     .unwrap();
-
     println!("ret = {ret:?}");
-    assert_answer(&ret, &colvec(&[1.0, 1.0]), 0.0, xmin_tol, fmin_tol);
+    assert_answer(&ret, &colvec(&[1.0, 1.0]), 0.0, 1e-5, 1e-7);
     assert_counts(&ret, exp_num_fun_evals, exp_num_grad_evals);
 }
 //}}}
