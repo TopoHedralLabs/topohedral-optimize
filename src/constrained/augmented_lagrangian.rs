@@ -142,6 +142,7 @@ impl<F: RealVectorFn> LagrangianPenaltyData<F>
     fn update_max_violations(
         &mut self,
         improvement_factor: f64,
+        is_ineq: bool,
     )
     {
         let current_max_violations = &mut self.max_violations;
@@ -159,7 +160,15 @@ impl<F: RealVectorFn> LagrangianPenaltyData<F>
             .map(|(i, ((max_violation, was_violated), hi))| (i, max_violation, was_violated, hi))
         {
             let max_violation_val = *max_violation;
-            *was_violated = constraint_value_i.abs() > improvement_factor * max_violation_val;
+            let constraint_val_tmp = if is_ineq
+            {
+                constraint_value_i.max(0.0)
+            }
+            else
+            {
+                constraint_value_i.abs()
+            };
+            *was_violated = constraint_val_tmp > improvement_factor * max_violation_val;
             if *was_violated
             {
                 *max_violation = constraint_value_i.abs()
@@ -213,7 +222,7 @@ impl<F: RealVectorFn> EqPenalty<F>
         penalty_increase_factor: f64,
     )
     {
-        self.data.update_max_violations(improvement_factor);
+        self.data.update_max_violations(improvement_factor, false);
 
         for (i, (_, was_violated)) in self.data.max_violations.iter().enumerate()
         {
@@ -323,25 +332,6 @@ impl<F: RealVectorFn> IeqPenalty<F>
         }
     }
     //}}}
-    //{{{ fn: update_max_violations
-    #[trace_fn]
-    fn update_max_violations(
-        &mut self,
-        improvement_factor: f64,
-    )
-    {
-        let current_max_violations = &mut self.data.max_violations;
-        let current_values = &self.data.values;
-
-        for ((max_violation, was_violated), gi) in
-            current_max_violations.iter_mut().zip(current_values.iter())
-        {
-            let max_violation_val = *max_violation;
-            *was_violated = max_violation_val > improvement_factor * max_violation_val;
-            *max_violation = max_violation_val.max(gi.abs());
-        }
-    }
-    //}}}
     //{{{ fn: update_penalties_shifts
     #[trace_fn]
     fn update_penalties_shifts(
@@ -350,7 +340,7 @@ impl<F: RealVectorFn> IeqPenalty<F>
         penalty_increase_factor: f64,
     )
     {
-        self.data.update_max_violations(improvement_factor);
+        self.data.update_max_violations(improvement_factor, true);
 
         for (i, (_, was_violated)) in self.data.max_violations.iter().enumerate()
         {
