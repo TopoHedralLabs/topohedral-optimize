@@ -6,7 +6,7 @@
 //{{{ crate imports
 use crate::{
     constrained::{
-        augmented_lagrangian2::AugmentedLagrangian, common::ConstrainedMinimizer,
+        augmented_lagrangian::AugmentedLagrangian, common::ConstrainedMinimizer,
         AugmentedLagrangianOptions, ConstriainedOptions,
     },
     unconstrained::UnconstrainedMethod,

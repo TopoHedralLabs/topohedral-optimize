@@ -13,7 +13,7 @@ use crate::unconstrained;
 //--------------------------------------------------------------------------------------------------
 
 //{{{ mod: submodules
-mod augmented_lagrangian2;
+mod augmented_lagrangian;
 mod common;
 mod constraints;
 mod factory;
@@ -26,7 +26,7 @@ pub use crate::common::{
 pub use common::{ConstrainedMinimizer, Error as ConstrainedError, Options as ConstriainedOptions};
 //}}}
 //{{{ pub use: augmented_lagrangian exports
-pub use augmented_lagrangian2::{
+pub use augmented_lagrangian::{
     AugmentedLagrangian, AugmentedLagrangianFcn, Options as AugmentedLagrangianOptions,
 };
 //}}}
