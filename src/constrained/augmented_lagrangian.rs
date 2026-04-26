@@ -14,18 +14,13 @@ use core::f64;
 //}}}
 //{{{ std imports
 use std::{
-    cmp::max,
     collections::HashMap,
-    fmt::{self, Display, Formatter},
-    iter,
-    ptr::eq,
     sync::{Arc, Mutex},
 };
 //}}}
 //{{{ dep imports
 use topohedral_linalg::{
-    dvector::VecType::Col, FloatTransformOps, MatMul, MatrixOps, ReduceOps, Shape, TransformOps,
-    VectorOps,
+    dvector::VecType::Col, FloatTransformOps, MatMul, MatrixOps, ReduceOps, TransformOps, VectorOps,
 };
 use topohedral_tracing::*;
 //}}}
@@ -179,8 +174,7 @@ impl<F: RealVectorFn> LagrangianPenaltyData<F>
     //{{{ fn: compute_lagrange_multiplier_estimates
     fn compute_lagrange_multiplier_estimates(&self) -> Vector
     {
-        let lagrange_multipliers = (&self.penalties * &self.shifts).into();
-        lagrange_multipliers
+        (&self.penalties * &self.shifts).into()
     }
     //}}}
 }
@@ -272,7 +266,7 @@ impl<F: RealVectorFn> RealFn for EqPenalty<F>
                 //{{{ trace
                 trace!(target: "aug", "Computing classical lagrangian");
                 //}}}
-                let lambda: Vector = (&self.data.penalties * &self.data.shifts).into();
+                let lambda = self.data.compute_lagrange_multiplier_estimates();
                 lambda.dot(&self.data.values)
             }
         };
@@ -296,10 +290,9 @@ impl<F: RealVectorFn> RealFn for EqPenalty<F>
             {
                 (&self.data.penalties * (&self.data.values + &self.data.shifts)).into()
             }
-            LagrangianType::Lagrangian => (&self.data.penalties * &self.data.shifts).into(),
+            LagrangianType::Lagrangian => self.data.compute_lagrange_multiplier_estimates(),
         };
-        let constraint_gradient = self.data.gradients.matmul(&weighted_constraint_values);
-        constraint_gradient
+        self.data.gradients.matmul(&weighted_constraint_values)
     }
     //}}}
 }
@@ -404,7 +397,7 @@ impl<F: RealVectorFn> RealFn for IeqPenalty<F>
     ) -> f64
     {
         self.data.update_values(x);
-        let constraint_value = match self.lagrangian_type
+        match self.lagrangian_type
         {
             LagrangianType::AugmentedLagrangian =>
             {
@@ -414,11 +407,10 @@ impl<F: RealVectorFn> RealFn for IeqPenalty<F>
             }
             LagrangianType::Lagrangian =>
             {
-                let mu: Vector = (&self.data.penalties * &self.data.shifts).into();
+                let mu = self.data.compute_lagrange_multiplier_estimates();
                 mu.dot(&self.data.values)
             }
-        };
-        constraint_value
+        }
     }
     //}}}
     //{{{ fn: grad
@@ -436,10 +428,9 @@ impl<F: RealVectorFn> RealFn for IeqPenalty<F>
                 shifted_values.pos();
                 (&self.data.penalties * &shifted_values).into()
             }
-            LagrangianType::Lagrangian => (&self.data.penalties * &self.data.shifts).into(),
+            LagrangianType::Lagrangian => self.data.compute_lagrange_multiplier_estimates(),
         };
-        let constraint_gradient = self.data.gradients.matmul(&weighted_constraint_values);
-        constraint_gradient
+        self.data.gradients.matmul(&weighted_constraint_values)
     }
     //}}}
 }
@@ -510,17 +501,11 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangianFcn<F1, 
         lagrangian_type: LagrangianType,
     ) -> Self
     {
-        let eq_penalty = match eq_constraints
-        {
-            Some(eq_con) => Some(EqPenalty::new(eq_con, initial_penalty, lagrangian_type)),
-            None => None,
-        };
+        let eq_penalty =
+            eq_constraints.map(|eq_con| EqPenalty::new(eq_con, initial_penalty, lagrangian_type));
 
-        let ieq_penalty = match ieq_constraints
-        {
-            Some(ieq_con) => Some(IeqPenalty::new(ieq_con, initial_penalty, lagrangian_type)),
-            None => None,
-        };
+        let ieq_penalty = ieq_constraints
+            .map(|ieq_con| IeqPenalty::new(ieq_con, initial_penalty, lagrangian_type));
 
         let n = fcn.dimension();
         let mut cached_values = HashMap::<LagrangianType, CachedValues>::new();
@@ -605,13 +590,13 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangianFcn<F1, 
     //{{{ fn: get_cached_values
     fn get_cached_values(&self) -> &CachedValues
     {
-        return self.cached_values.get(&self.lagrangian_type).unwrap();
+        self.cached_values.get(&self.lagrangian_type).unwrap()
     }
     //}}}
     //{{{ fn: get_cached_values_mut
     fn get_cached_values_mut(&mut self) -> &mut CachedValues
     {
-        return self.cached_values.get_mut(&self.lagrangian_type).unwrap();
+        self.cached_values.get_mut(&self.lagrangian_type).unwrap()
     }
     //}}}
 }
@@ -741,7 +726,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> RealFn for AugmentedLagrang
         trace!(target: "aug", "Evaluated Augmented Lagrangian Gradient = {}",
                     grad_aug_lag.clone().transpose());
         //}}}
-        return grad_aug_lag;
+        grad_aug_lag
     }
     //}}}
 }
@@ -752,7 +737,6 @@ pub struct AugmentedLagrangian<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn>
 {
     fcn: Arc<Mutex<CountingRealFn<AugmentedLagrangianFcn<F1, F2, F3>>>>,
     x_init: Vector,
-    norm_grad_fx_init: f64,
     opts: Options,
 }
 //}}}
@@ -784,12 +768,11 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
         )));
 
         let _ = fcn_shared.eval(&x0);
-        let norm_grad_f0 = fcn_shared.grad(&x0).norm();
+        let _ = fcn_shared.grad(&x0);
 
         Self {
             fcn: fcn_shared,
             x_init: x0,
-            norm_grad_fx_init: norm_grad_f0,
             opts,
         }
     }
@@ -849,14 +832,18 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
             let stationarity_rtol_satisfied = residual_stationarity_scaled < rtol;
             let stationarity_atol_satisfied = residual_stationarity< atol;
 
-            if constraints_satsifed && stationarity_rtol_satisfied {
-                return Some(ConvergedReason::Rtol)
+            if constraints_satsifed && stationarity_rtol_satisfied
+            {
+                Some(ConvergedReason::Rtol)
             }
-
-            if constraints_satsifed && stationarity_atol_satisfied {
-                return Some(ConvergedReason::Atol)
+            else if constraints_satsifed && stationarity_atol_satisfied
+            {
+                Some(ConvergedReason::Atol)
             }
-            return None
+            else
+            {
+                None
+            }
         })
     }
     //}}}
@@ -1013,7 +1000,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> ConstrainedMinimizer
             }
         }
 
-        Err(ConstrainedError::MaxIterations(0 as usize))
+        Err(ConstrainedError::MaxIterations(0_usize))
     }
 }
 //}}}

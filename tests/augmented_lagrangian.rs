@@ -8,7 +8,7 @@ use topohedral_optimize::constrained::{
     ConstrainedMethod, ConstrainedReturns, ConstriainedOptions, NoConstraints,
 };
 use topohedral_optimize::line_search::{
-    InterpOptions, LineSearchMethod, LineSearchOptions, NocedalOptions, ThuenteOptions,
+    LineSearchMethod, LineSearchOptions, NocedalOptions, ThuenteOptions,
 };
 use topohedral_optimize::unconstrained::{
     ConjugateGradientOptions, Direction, QuasiNewtonOptions, UnconstrainedMethod,
