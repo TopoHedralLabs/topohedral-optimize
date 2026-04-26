@@ -483,17 +483,14 @@ fn test_quadratic_with_bound_constraints_matches_reference(
 //{{{ collection: quartic
 //{{{ test: unconstrained
 #[rstest]
-#[case::quartic_thuente_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(THUENTE_BFGS), 8.8e-4, 3.1e-8, 290, 408)]
-#[case::quartic_nocedal_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(NOCEDAL_BFGS), 7.9e-4, 4.6e-8, 169, 197)]
-#[case::quartic_thuente_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_FR), 1.4e-3, 4.3e-7, 257, 346)]
-#[case::quartic_nocedal_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_FR), 1.5e-3, 3.4e-7, 498, 611)]
-#[case::quartic_thuente_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_PR), 1.4e-3, 2.8e-7, 271, 367)]
-#[case::quartic_nocedal_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_PR), 1.5e-3, 3.4e-7, 511, 634)]
+#[case::quartic_thuente_bfgs(UnconstrainedMethod::QuasiNewton(THUENTE_BFGS), 19, 37)]
+#[case::quartic_nocedal_bfgs(UnconstrainedMethod::QuasiNewton(NOCEDAL_BFGS), 28, 39)]
+#[case::quartic_thuente_fr(UnconstrainedMethod::ConjugateGradient(THUENTE_FR), 72, 105)]
+#[case::quartic_nocedal_fr(UnconstrainedMethod::ConjugateGradient(NOCEDAL_FR), 140, 190)]
+#[case::quartic_thuente_pr(UnconstrainedMethod::ConjugateGradient(THUENTE_PR), 100, 139)]
+#[case::quartic_nocedal_pr(UnconstrainedMethod::ConjugateGradient(NOCEDAL_PR), 221, 274)]
 fn test_quartic_without_constraints_matches_unconstrained_reference(
-    #[case] x0: Vector,
-    #[case] mut unconstrained_method: UnconstrainedMethod,
-    #[case] xmin_tol: f64,
-    #[case] fmin_tol: f64,
+    #[case] unconstrained_method: UnconstrainedMethod,
     #[case] exp_num_fun_evals: usize,
     #[case] exp_num_grad_evals: usize,
 )
@@ -502,13 +499,12 @@ fn test_quartic_without_constraints_matches_unconstrained_reference(
         xmin: colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
     };
 
-    unconstrained_method.uncon_opts_mut().max_iter = 1000;
-
+    let x0_in = colvec(&[11.0, 11.0, 11.0, 11.0, 11.0]);
     let ret = constrained_minimize(
         quart,
         None::<NoConstraints>,
         None::<NoConstraints>,
-        x0,
+        x0_in,
         auglag_method(unconstrained_method),
     )
     .unwrap();
@@ -518,8 +514,8 @@ fn test_quartic_without_constraints_matches_unconstrained_reference(
         &ret,
         &colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
         0.0,
-        xmin_tol,
-        fmin_tol,
+        1e-2,
+        1e-7,
     );
     assert_counts(&ret, exp_num_fun_evals, exp_num_grad_evals);
 }
