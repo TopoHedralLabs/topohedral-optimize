@@ -5,7 +5,6 @@
 
 //{{{ crate imports
 use super::common::*;
-use super::interp;
 use super::nocedal;
 use super::thuente;
 use crate::RealFn1;
@@ -21,7 +20,6 @@ use topohedral_tracing::*;
 #[derive(Clone)]
 pub enum Method
 {
-    Interp(interp::Options),
     Thuente(thuente::Options),
     Nocedal(nocedal::Options),
 }
@@ -35,7 +33,6 @@ pub fn create<'a, F: RealFn1 + 'a>(
 {
     match method
     {
-        Method::Interp(opts) => Box::new(interp::Interp { opts, f: fcn }),
         Method::Thuente(opts) => Box::new(thuente::Thuente::new(fcn, opts)),
         Method::Nocedal(opts) => Box::new(nocedal::Nocedal::new(fcn, opts)),
     }

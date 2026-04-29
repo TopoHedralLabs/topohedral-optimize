@@ -3,7 +3,7 @@
 
 //{{{ crate imports
 use topohedral_optimize::line_search::{
-    search1d, InterpOptions, LineSearchMethod, LineSearchOptions, NocedalOptions, ThuenteOptions,
+    search1d, LineSearchMethod, LineSearchOptions, NocedalOptions, ThuenteOptions,
 };
 use topohedral_optimize::RealFn1;
 //}}}
@@ -28,13 +28,6 @@ struct Quadratic1D
 {
     pub root1: f64,
     pub root2: f64,
-}
-impl Quadratic1D
-{
-    pub fn extrema(&self) -> f64
-    {
-        (self.root1 + self.root2) / 2.0
-    }
 }
 impl RealFn1 for Quadratic1D
 {
@@ -62,19 +55,6 @@ struct Cubic1D
     pub root1: f64,
     pub root2: f64,
     pub root3: f64,
-}
-impl Cubic1D
-{
-    fn extrema(&self) -> [f64; 2]
-    {
-        let (r1, r2, r3) = (self.root1, self.root2, self.root3);
-        let a = 3.0;
-        let b = -2.0 * (r1 + r2 + r3);
-        let c = r1 * r2 + r1 * r3 + r2 * r3;
-        let v1 = (-b / (2.0 * a)) - ((b.powi(2) - 4.0 * a * c).sqrt() / (2.0 * a));
-        let v2 = (-b / (2.0 * a)) + ((b.powi(2) - 4.0 * a * c).sqrt() / (2.0 * a));
-        [v1, v2]
-    }
 }
 impl RealFn1 for Cubic1D
 {
@@ -124,67 +104,6 @@ impl RealFn1 for RationalQuad1D
         let alpha = x;
         (alpha.powi(2) - self.beta) / (alpha.powi(2) + self.beta).powi(2)
     }
-}
-//}}}
-//{{{ collection: interp tests
-#[test]
-fn test_interp_quadratic_1d()
-{
-    let q1 = Quadratic1D {
-        root1: 1.0,
-        root2: 2.0,
-    };
-    let out = search1d(
-        q1.clone(),
-        1.0,
-        LineSearchMethod::Interp(InterpOptions {
-            ls_opts: LineSearchOptions::default(),
-            scale_factor: 1.5,
-            maxiter: 10,
-        }),
-    )
-    .unwrap();
-    let exp_alpha = q1.extrema();
-    assert_relative_eq!(out.alpha, exp_alpha, epsilon = 1e-10);
-}
-
-#[test]
-fn test_interp_cubic_1d()
-{
-    let c1 = Cubic1D {
-        root1: -1.0,
-        root2: 0.0,
-        root3: 1.0,
-    };
-    let out = search1d(
-        c1.clone(),
-        1.0,
-        LineSearchMethod::Interp(InterpOptions {
-            ls_opts: LineSearchOptions::default(),
-            scale_factor: 1.5,
-            maxiter: 10,
-        }),
-    )
-    .unwrap();
-    let exp_alpha = c1.extrema()[1];
-    assert_relative_eq!(out.alpha, exp_alpha, epsilon = 1e-10);
-}
-
-#[test]
-fn test_interp_fcn1()
-{
-    let fcn1 = RationalQuad1D { beta: 2.0 };
-    let out = search1d(
-        fcn1,
-        1.0,
-        LineSearchMethod::Interp(InterpOptions {
-            ls_opts: LineSearchOptions::default(),
-            scale_factor: 1.5,
-            maxiter: 10,
-        }),
-    )
-    .unwrap();
-    assert_relative_eq!(out.alpha, 1.416666e0, epsilon = 1e-5);
 }
 //}}}
 //{{{ collection: thuente tests

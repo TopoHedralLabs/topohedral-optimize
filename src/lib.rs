@@ -5,7 +5,6 @@
 //! - Approximate Line-Search algorithms, contained in the [`line_search`] module:
 //!     - More-Thuente
 //!     - Nocedal
-//!     - Backtracking + polynomial interpolation
 //! - multidimensional, unconstrained optimisation, contained the [`unconstrained`] module, and has
 //!   the following algorithms:
 //!     - Conjugate Gradient with a selection of direction implementations
