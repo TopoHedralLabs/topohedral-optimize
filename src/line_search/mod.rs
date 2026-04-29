@@ -20,7 +20,6 @@ use topohedral_tracing::*;
 //{{{ mod: submodules
 mod common;
 mod factory;
-mod interp;
 mod nocedal;
 mod thuente;
 mod utils;
@@ -32,9 +31,6 @@ pub use common::{
 //}}}
 //{{{ pub use: factory export
 pub use factory::Method as LineSearchMethod;
-//}}}
-//{{{ pub use: interp exports
-pub use interp::Options as InterpOptions;
 //}}}
 //{{{ pub use: thuente exports
 pub use thuente::Options as ThuenteOptions;

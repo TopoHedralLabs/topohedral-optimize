@@ -3,7 +3,7 @@
 
 //{{{ crate imports
 use topohedral_optimize::line_search::{
-    InterpOptions, LineSearchMethod, LineSearchOptions, NocedalOptions, ThuenteOptions,
+    LineSearchMethod, LineSearchOptions, NocedalOptions, ThuenteOptions,
 };
 use topohedral_optimize::unconstrained::{
     minimize, ConjugateGradientOptions, Direction, UnconstrainedConvergedReason,
@@ -189,72 +189,6 @@ fn assert_returns(
     assert_eq!(ret.num_grad_evals, exp_ret.num_grad_evals);
 }
 //}}}
-//{{{ const: INTERP_STEEPEST
-const INTERP_STEEPEST: ConjugateGradientOptions = ConjugateGradientOptions {
-    uncon_opts: UnonstrainedOptions {
-        grad_rtol: 1e-6,
-        grad_atol: 1e-8,
-        max_iter: 100,
-        make_counting: true,
-        ls_method: LineSearchMethod::Interp(InterpOptions {
-            ls_opts: LineSearchOptions {
-                c1: 1.0e-4,
-                c2: 0.4,
-                step_min: 1e-8,
-                step_max: 1e5,
-            },
-            scale_factor: 1.5,
-            maxiter: 10,
-        }),
-    },
-    direction: Direction::Steepest,
-    restart: 100,
-};
-//}}}
-//{{{ const: INTPER_FR
-const INTERP_FR: ConjugateGradientOptions = ConjugateGradientOptions {
-    uncon_opts: UnonstrainedOptions {
-        grad_rtol: 1e-6,
-        grad_atol: 1e-8,
-        max_iter: 100,
-        make_counting: true,
-        ls_method: LineSearchMethod::Interp(InterpOptions {
-            ls_opts: LineSearchOptions {
-                c1: 1.0e-4,
-                c2: 0.4,
-                step_min: 1e-8,
-                step_max: 1e5,
-            },
-            scale_factor: 1.5,
-            maxiter: 10,
-        }),
-    },
-    direction: Direction::FletcherReeves,
-    restart: 10,
-};
-//}}}
-//{{{ const: INTERP_PR
-const INTERP_PR: ConjugateGradientOptions = ConjugateGradientOptions {
-    uncon_opts: UnonstrainedOptions {
-        grad_rtol: 1e-6,
-        grad_atol: 1e-8,
-        max_iter: 100,
-        make_counting: true,
-        ls_method: LineSearchMethod::Interp(InterpOptions {
-            ls_opts: LineSearchOptions {
-                c1: 1.0e-4,
-                c2: 0.4,
-                step_min: 1e-8,
-                step_max: 1e5,
-            },
-            scale_factor: 1.5,
-            maxiter: 10,
-        }),
-    },
-    direction: Direction::PolakRibiere,
-    restart: 10,
-};
-//}}}
 //{{{ const: THUENTE_STEEPEST
 const THUENTE_STEEPEST: ConjugateGradientOptions = ConjugateGradientOptions {
     uncon_opts: UnonstrainedOptions {
@@ -386,20 +320,6 @@ const NOCEDAL_PR: ConjugateGradientOptions = ConjugateGradientOptions {
 //}}}
 //{{{ test: quadratic
 #[rstest]
-//{{{ case: test_quadratic_interp_steepest
-#[case::test_quadratic_interp_steepest(
-    colvec(&[0.0, 0.0, 0.0, 0.0, 0.0]),
-    INTERP_STEEPEST,
-    UnconstrainedReturns{
-        xmin:  colvec(&[1000.0, -100.0, 0.0, 567.0, -23.0]),
-        fmin: 0.0,
-        reason: UnconstrainedConvergedReason::Rtol,
-        num_iterations: 1,
-        num_fun_evals: 6,
-        num_grad_evals: 4
-    }
-)]
-//}}}
 //{{{ case: test_quadratic_thuente_steepest
 #[case::test_quadratic_thuente_steepest(
     colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
@@ -411,20 +331,6 @@ const NOCEDAL_PR: ConjugateGradientOptions = ConjugateGradientOptions {
         num_iterations: 1,
         num_fun_evals: 7,
         num_grad_evals: 9
-    }
-)]
-//}}}
-//{{{ case: test_quadratic_interp_fr
-#[case::test_quadratic_interp_fr(
-    colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
-    INTERP_FR,
-    UnconstrainedReturns{
-        xmin:  colvec(&[1000.0, -100.0, 0.0, 567.0, -23.0]),
-        fmin: 0.0,
-        reason: UnconstrainedConvergedReason::Rtol,
-        num_iterations: 1,
-        num_fun_evals: 6,
-        num_grad_evals: 4,
     }
 )]
 //}}}
@@ -442,22 +348,8 @@ const NOCEDAL_PR: ConjugateGradientOptions = ConjugateGradientOptions {
     }
 )]
 //}}}
-//{{{ case: test_quadratic_interp_pr
-#[case::test_quadratic_interp_pr(
-    colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
-    INTERP_PR,
-    UnconstrainedReturns{
-        xmin:  colvec(&[1000.0, -100.0, 0.0, 567.0, -23.0]),
-        fmin: 0.0,
-        reason: UnconstrainedConvergedReason::Rtol,
-        num_iterations: 1,
-        num_fun_evals: 6,
-        num_grad_evals: 4,
-    }
-)]
-//}}}
 //{{{ case: test_quadratic_thuente_pr
-#[case::test_quadratic_interp_pr(
+#[case::test_quadratic_thuente_pr(
     colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
     THUENTE_PR,
     UnconstrainedReturns{
@@ -529,20 +421,6 @@ fn test_qudratic(
 //}}}
 //{{{ test: quartic
 #[rstest]
-//{{{ case: test_quartic_interp_steepest
-#[case::test_quartic_interp_steepest(
-    colvec(&[0.0, 0.0, 0.0, 0.0, 0.0]),
-    INTERP_STEEPEST,
-    UnconstrainedReturns{
-        xmin:  colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
-        fmin: 0.0,
-        reason: UnconstrainedConvergedReason::Rtol,
-        num_iterations: 14,
-        num_fun_evals: 59,
-        num_grad_evals: 30
-    }
-)]
-//}}}
 //{{{ case: test_quartic_thuente_steepest
 #[case::test_quartic_thuente_steepest(
     colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
@@ -557,20 +435,6 @@ fn test_qudratic(
     }
 )]
 //}}}
-//{{{ case: test_quartic_interp_fr
-#[case::test_quartic_interp_fr(
-    colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
-    INTERP_FR,
-    UnconstrainedReturns{
-        xmin:  colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
-        fmin: 0.0,
-        reason: UnconstrainedConvergedReason::Rtol,
-        num_iterations: 15,
-        num_fun_evals: 197,
-        num_grad_evals: 58,
-    }
-)]
-//}}}
 //{{{ case: test_quartic_thuente_fr
 #[case::test_quartic_thuente_fr(
     colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
@@ -582,20 +446,6 @@ fn test_qudratic(
         num_iterations: 10,
         num_fun_evals: 34,
         num_grad_evals: 45,
-    }
-)]
-//}}}
-//{{{ case: test_quartic_interp_pr
-#[case::test_quartic_interp_pr(
-    colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
-    INTERP_PR,
-    UnconstrainedReturns{
-        xmin:  colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
-        fmin: 0.0,
-        reason: UnconstrainedConvergedReason::Rtol,
-        num_iterations: 14,
-        num_fun_evals: 177,
-        num_grad_evals: 53,
     }
 )]
 //}}}
@@ -741,10 +591,6 @@ fn test_rosenbrock(
     opts.uncon_opts.grad_rtol = 1e-6;
     opts.uncon_opts.grad_atol = 1e-10;
     opts.uncon_opts.max_iter = 10000;
-    if let LineSearchMethod::Interp(interp_opts) = &mut opts.uncon_opts.ls_method
-    {
-        interp_opts.scale_factor = 1.2;
-    }
     let ret = minimize(rosenbrock, x0, UnconstrainedMethod::ConjugateGradient(opts)).unwrap();
     println!("{ret:?}");
     assert_returns(&ret, &exp_ret, 1e-2, 1e-6);

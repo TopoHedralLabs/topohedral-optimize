@@ -3,7 +3,7 @@
 
 //{{{ crate imports
 use topohedral_optimize::line_search::{
-    InterpOptions, LineSearchMethod, LineSearchOptions, NocedalOptions, ThuenteOptions,
+    LineSearchMethod, LineSearchOptions, NocedalOptions, ThuenteOptions,
 };
 use topohedral_optimize::unconstrained::{
     minimize, QuasiNewtonOptions, UnconstrainedConvergedReason, UnconstrainedMethod,
@@ -189,28 +189,6 @@ fn assert_returns(
     assert_eq!(ret.num_grad_evals, exp_ret.num_grad_evals);
 }
 //}}}
-//{{{ const: INTERP_BFS
-const INTERP_BFGS: QuasiNewtonOptions = QuasiNewtonOptions {
-    uncon_opts: UnonstrainedOptions {
-        grad_rtol: 1e-6,
-        grad_atol: 1e-8,
-        max_iter: 100,
-        make_counting: true,
-        ls_method: LineSearchMethod::Interp(InterpOptions {
-            ls_opts: LineSearchOptions {
-                c1: 1.0e-4,
-                c2: 0.9,
-                step_min: 1e-8,
-                step_max: 1e5,
-            },
-            scale_factor: 1.5,
-            maxiter: 10,
-        }),
-    },
-    method: UpdateMethod::BFGS,
-    restart: 10,
-};
-//}}}
 //{{{ const: THUENTE_BFGS
 const THUENTE_BFGS: QuasiNewtonOptions = QuasiNewtonOptions {
     uncon_opts: UnonstrainedOptions {
@@ -257,20 +235,6 @@ const NOCEDAL_BFGS: QuasiNewtonOptions = QuasiNewtonOptions {
 
 //{{{ test: quadratic
 #[rstest]
-//{{{ case: test_interp_bfgs
-#[case::test_quadratic_interp_bfgs(
-    colvec(&[0.0, 0.0, 0.0, 0.0, 0.0]),
-    INTERP_BFGS,
-    UnconstrainedReturns{
-        xmin:  colvec(&[1000.0, -100.0, 0.0, 567.0, -23.0]),
-        fmin: 0.0,
-        reason: UnconstrainedConvergedReason::Rtol,
-        num_iterations: 1,
-        num_fun_evals: 6,
-        num_grad_evals: 4
-    }
-)]
-//}}}
 //{{{ case: test_thuente_bfgs
 #[case::test_quadratic_thuente_bfgs(
     colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
@@ -315,20 +279,6 @@ fn test_qudratic(
 //}}}
 //{{{ test: quartic
 #[rstest]
-//{{{ case: test_interp_bfgs
-#[case::test_quartic_interp_bfgs(
-    colvec(&[0.0, 0.0, 0.0, 0.0, 0.0]),
-    INTERP_BFGS,
-    UnconstrainedReturns{
-        xmin:  colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
-        fmin: 0.0,
-        reason: UnconstrainedConvergedReason::Rtol,
-        num_iterations: 19,
-        num_fun_evals: 77,
-        num_grad_evals: 40
-    }
-)]
-//}}}
 //{{{ case: test_nocedal_bfgs
 #[case::test_quartic_nocedal_bfgs(
     colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
@@ -376,20 +326,6 @@ fn test_quartic(
 //}}}
 //{{{ test: rosenbrock
 #[rstest]
-//{{{ case: test_interp_bfgs
-#[case::test_interp_bfgs(
-    colvec(&[0.0, 3.0]),
-    INTERP_BFGS,
-    UnconstrainedReturns{
-        xmin:  colvec(&[1.0, 1.0]),
-        fmin: 0.0,
-        reason: UnconstrainedConvergedReason::Rtol,
-        num_iterations: 19,
-        num_fun_evals: 226,
-        num_grad_evals: 67
-    }
-)]
-//}}}
 //{{{ case: test_thuente_bfgs
 #[case::test_thuente_bfgs(
     colvec(&[0.0, 3.0]),
@@ -429,10 +365,6 @@ fn test_rosenbrock(
     opts.uncon_opts.grad_rtol = 1e-6;
     opts.uncon_opts.grad_atol = 1e-10;
     opts.uncon_opts.max_iter = 10000;
-    if let LineSearchMethod::Interp(interp_opts) = &mut opts.uncon_opts.ls_method
-    {
-        interp_opts.scale_factor = 1.2;
-    }
 
     // let mut qn = QuasiNewton::new(rosenbrock, x0, opts);
     let ret = minimize(rosenbrock, x0, UnconstrainedMethod::QuasiNewton(opts)).unwrap();
