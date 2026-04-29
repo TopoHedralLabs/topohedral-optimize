@@ -27,7 +27,7 @@ pub enum UpdateMethod
 }
 //}}}
 //{{{ struct: Options
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub struct Options
 {
     pub uncon_opts: UnonstrainedOptions,
@@ -185,6 +185,7 @@ impl<F: RealFn> QuasiNewton<F>
     {
         //{{{ trace
         info!(target: "qn", "======================================================================== i = {_k}");
+        trace!(target: "qn", "Current solution: {}", current_iter.x.clone().transpose());
         info!(target: "qn", "Current values: {current_iter}");
         info!(target: "qn","Convergence measures:");
         let _grad_ratio = current_iter.norm_grad_fx / self.norm_grad_fx_init;
@@ -224,7 +225,7 @@ impl<F: RealFn> UnconstrainedMinimizer for QuasiNewton<F>
                 &iter_prev_k,
                 &dir_k,
                 alpha_init,
-                self.opts.uncon_opts.ls_method,
+                self.opts.uncon_opts.ls_method.clone(),
             )?;
 
             dir_k = self.update_direction(
@@ -238,7 +239,14 @@ impl<F: RealFn> UnconstrainedMinimizer for QuasiNewton<F>
             if let Some(reason) = self.is_converged(iter_k.norm_grad_fx)
             {
                 //{{{ trace
+                info!(target: "qn", "=============================================");
                 info!(target: "qn", "Converging with reason {reason:?}");
+                info!(target: "qn","Convergence measures:");
+                let _grad_ratio = iter_k.norm_grad_fx / self.norm_grad_fx_init;
+                info!(target: "qn", "||∇f(k)|| / ||∇f(0)|| = {_grad_ratio:1.4e}");
+                info!(target: "qn", "||∇f(k)|| = {:1.4e}", iter_k.norm_grad_fx);
+                trace!(target: "qn", "fx = {:1.4e} x = {}", iter_k.fx, iter_k.x.clone().transpose());
+                info!(target: "qn", "=============================================");
                 //}}}
                 return Ok(Returns {
                     fmin: iter_k.fx,

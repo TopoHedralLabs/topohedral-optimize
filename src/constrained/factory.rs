@@ -9,6 +9,7 @@ use crate::{
         augmented_lagrangian::AugmentedLagrangian, common::ConstrainedMinimizer,
         AugmentedLagrangianOptions, ConstriainedOptions,
     },
+    unconstrained::UnconstrainedMethod,
     RealFn, RealVectorFn, Vector,
 };
 //}}}
@@ -20,7 +21,7 @@ use topohedral_tracing::trace_fn;
 //--------------------------------------------------------------------------------------------------
 
 //{{{ enum: Method
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub enum Method
 {
     AugmentedLagrangian(AugmentedLagrangianOptions),
@@ -29,6 +30,22 @@ pub enum Method
 //{{{ impl: Method
 impl Method
 {
+    pub fn uncon_method_mut(&mut self) -> &mut UnconstrainedMethod
+    {
+        match self
+        {
+            Method::AugmentedLagrangian(aut_opts) => aut_opts.uncon_method_mut(),
+        }
+    }
+
+    pub fn uncon_method(&self) -> &UnconstrainedMethod
+    {
+        match self
+        {
+            Method::AugmentedLagrangian(aut_opts) => aut_opts.uncon_method(),
+        }
+    }
+
     pub fn con_opts_mut(&mut self) -> &mut ConstriainedOptions
     {
         match self

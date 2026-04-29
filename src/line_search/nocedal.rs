@@ -96,7 +96,7 @@ impl<F: RealFn1> LineSearch for Nocedal<F>
 
             // First check if current step is armijo-acceptable, if not then try zoom and check
             // again.
-            if !satisfies_armijo(c1, alpha1, phi_a0, dphi_a0, phi_a1)
+            if !satisfies_armijo(c1, alpha1, phi0, dphi0, phi_a1)
                 || (not_decreasing && not_first_iteration)
             {
                 //{{{ trace

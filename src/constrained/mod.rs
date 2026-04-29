@@ -4,6 +4,7 @@
 
 //{{{ crate imports
 use crate::common::{arc_real_fn, CountingRealFn, RealFn, RealVectorFn, Vector};
+use crate::unconstrained;
 //}}}
 //{{{ std imports
 //}}}
@@ -45,26 +46,43 @@ pub fn minimize<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn>(
     method: ConstrainedMethod,
 ) -> Result<ConstrainedReturns, ConstrainedError>
 {
-    if method.con_opts().make_counting
+    let has_constraints = eq_constraints.is_some() || ieq_constraints.is_some();
+    if has_constraints
     {
-        let counting_fcn = arc_real_fn(CountingRealFn::new(fcn));
-        let mut minimizer = factory::create(
-            counting_fcn.clone(),
-            eq_constraints,
-            ieq_constraints,
-            x0,
-            method,
-        );
-        let mut ret = minimizer.minimize()?;
-        let counting_fcn_lock = counting_fcn.lock().unwrap();
-        ret.num_fun_evals = counting_fcn_lock.num_func_evals;
-        ret.num_grad_evals = counting_fcn_lock.num_grad_evals;
-        Ok(ret)
+        if method.con_opts().make_counting
+        {
+            let counting_fcn = arc_real_fn(CountingRealFn::new(fcn));
+            let mut minimizer = factory::create(
+                counting_fcn.clone(),
+                eq_constraints,
+                ieq_constraints,
+                x0,
+                method,
+            );
+            let mut ret = minimizer.minimize()?;
+            let counting_fcn_lock = counting_fcn.lock().unwrap();
+            ret.num_fun_evals = counting_fcn_lock.num_func_evals;
+            ret.num_grad_evals = counting_fcn_lock.num_grad_evals;
+            Ok(ret)
+        }
+        else
+        {
+            let mut minimizer = factory::create(fcn, eq_constraints, ieq_constraints, x0, method);
+            minimizer.minimize()
+        }
     }
     else
     {
-        let mut minimizer = factory::create(fcn, eq_constraints, ieq_constraints, x0, method);
-        minimizer.minimize()
+        let atol = method.con_opts().grad_atol;
+        let rtol = method.con_opts().grad_rtol;
+        let max_iter = method.con_opts().max_iter;
+        let make_counting = method.con_opts().make_counting;
+        let mut uncon_method = method.uncon_method().clone();
+        uncon_method.uncon_opts_mut().grad_atol = atol;
+        uncon_method.uncon_opts_mut().grad_rtol = rtol;
+        uncon_method.uncon_opts_mut().max_iter = max_iter;
+        uncon_method.uncon_opts_mut().make_counting = make_counting;
+        Ok(unconstrained::minimize(fcn, x0, uncon_method)?)
     }
 }
 //}}}

@@ -9,12 +9,18 @@ use crate::line_search::LineSearchMethod;
 use crate::Returns;
 //}}}
 //{{{ dep imports
+use std::fmt;
 use thiserror::Error;
+//}}}
+//{{{ std imports
+use std::fmt::Display;
+use std::fmt::Formatter;
+
 //}}}
 //--------------------------------------------------------------------------------------------------
 
 //{{{ struct: Options
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub struct Options
 {
     pub grad_rtol: f64,
@@ -22,6 +28,22 @@ pub struct Options
     pub max_iter: u64,
     pub make_counting: bool,
     pub ls_method: LineSearchMethod,
+}
+//}}}
+//{{{ impl Display for Options
+impl Display for Options
+{
+    fn fmt(
+        &self,
+        f: &mut Formatter<'_>,
+    ) -> fmt::Result
+    {
+        let out = format!(
+            "grad_rtol = {:1.4e} grad_atol = {:1.4e} max_iter = {}",
+            self.grad_rtol, self.grad_atol, self.max_iter
+        );
+        f.pad(&out)
+    }
 }
 //}}}
 //{{{ enum: Error

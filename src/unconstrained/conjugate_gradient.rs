@@ -12,7 +12,7 @@ use crate::{ConvergedReason, IterData, RealFn, Returns, Vector};
 //{{{ std imports
 //}}}
 //{{{ dep imports
-use topohedral_linalg::VectorOps;
+use topohedral_linalg::{MatrixOps, VectorOps};
 use topohedral_tracing::*;
 //}}}
 //--------------------------------------------------------------------------------------------------
@@ -27,7 +27,7 @@ pub enum Direction
 }
 //}}}
 //{{{ struct: Options
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub struct Options
 {
     pub uncon_opts: UnonstrainedOptions,
@@ -91,12 +91,12 @@ impl<F: RealFn> ConjugateGradient<F>
         grad_fk_prev: &Vector,
         grad_fk: &Vector,
         norm_grad_fk_prev: f64,
-        _norm_grad_fk: f64,
+        norm_grad_fk: f64,
         dir_k: &Vector,
     ) -> Vector
     {
         //{{{ trace
-        trace!(target: "cg", "norm_grad_fk1 = {norm_grad_fk_prev:1.4e} norm_grad_fk = {_norm_grad_fk:1.4e}");
+        trace!(target: "cg", "norm_grad_fk1 = {norm_grad_fk_prev:1.4e} norm_grad_fk = {norm_grad_fk:1.4e}");
         //}}}
 
         // direction updates
@@ -115,7 +115,7 @@ impl<F: RealFn> ConjugateGradient<F>
                 debug!(target: "cg", "Applying fletcher-reeves update");
                 //}}}
 
-                grad_fk.dot(grad_fk_prev) / norm_grad_fk_prev.powi(2)
+                (norm_grad_fk.powi(2) / norm_grad_fk_prev.powi(2)).max(0.0)
             }
             Direction::PolakRibiere =>
             {
@@ -164,6 +164,7 @@ impl<F: RealFn> ConjugateGradient<F>
     {
         //{{{ trace
         info!(target: "cg", "======================================================================== i = {_k}");
+        trace!(target: "aug", "Current solution: {}", current_iter.x.clone().transpose());
         info!(target: "cg", "Current values: {current_iter}");
         info!(target: "cg","Convergence measures:");
         let _grad_ratio = current_iter.norm_grad_fx / self.norm_grad_fx_init;
@@ -201,7 +202,7 @@ impl<F: RealFn> UnconstrainedMinimizer for ConjugateGradient<F>
                 &iter_k_prev,
                 &dir_k,
                 alpha_init,
-                self.opts.uncon_opts.ls_method,
+                self.opts.uncon_opts.ls_method.clone(),
             )?;
 
             dir_k = self.update_direction(
@@ -216,7 +217,14 @@ impl<F: RealFn> UnconstrainedMinimizer for ConjugateGradient<F>
             if let Some(reason) = self.is_converged(iter_k.norm_grad_fx)
             {
                 //{{{ trace
+                info!(target: "cg", "=============================================");
                 info!(target: "cg", "Converging with reason {reason:?}");
+                info!(target: "cg","Convergence measures:");
+                let _grad_ratio = iter_k.norm_grad_fx / self.norm_grad_fx_init;
+                info!(target: "cg", "||∇f(k)|| / ||∇f(0)|| = {_grad_ratio:1.4e}");
+                info!(target: "cg", "||∇f(k)|| = {:1.4e}", iter_k.norm_grad_fx);
+                trace!(target: "cg", "fx = {:1.4e} x = {}", iter_k.fx, iter_k.x.clone().transpose());
+                info!(target: "cg", "=============================================");
                 //}}}
                 return Ok(Returns {
                     fmin: iter_k.fx,
