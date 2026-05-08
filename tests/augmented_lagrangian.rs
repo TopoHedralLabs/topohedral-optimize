@@ -4,9 +4,10 @@
 
 //{{{ crate imports
 use topohedral_optimize::constrained::{
-    minimize as constrained_minimize, AugmentedLagrangianOptions, BoundsConstraints,
-    ConstrainedMethod, ConstrainedReturns, ConstriainedOptions, NoConstraints,
+    minimize as constrained_minimize, AugmentedLagrangianOptions, ConstrainedMethod,
+    ConstrainedReturns, ConstriainedOptions,
 };
+use topohedral_optimize::constraints::{BoundsConstraints, NoConstraints};
 use topohedral_optimize::line_search::{
     LineSearchMethod, LineSearchOptions, NocedalOptions, ThuenteOptions,
 };

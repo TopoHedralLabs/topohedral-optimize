@@ -15,7 +15,6 @@ use crate::unconstrained;
 //{{{ mod: submodules
 mod augmented_lagrangian;
 mod common;
-mod constraints;
 mod factory;
 //}}}
 
@@ -29,9 +28,6 @@ pub use common::{ConstrainedMinimizer, Error as ConstrainedError, Options as Con
 pub use augmented_lagrangian::{
     AugmentedLagrangian, AugmentedLagrangianFcn, Options as AugmentedLagrangianOptions,
 };
-//}}}
-//{{{ pub use: constraints
-pub use constraints::{BoundsConstraints, NoConstraints};
 //}}}
 //{{{ pub use: factory export
 pub use factory::Method as ConstrainedMethod;

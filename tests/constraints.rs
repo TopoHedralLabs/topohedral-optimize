@@ -2,7 +2,7 @@
 #![allow(incomplete_features)]
 
 //{{{ crate imports
-use topohedral_optimize::constrained::{BoundsConstraints, NoConstraints};
+use topohedral_optimize::constraints::{BoundsConstraints, NoConstraints};
 use topohedral_optimize::{Matrix, RealVectorFn, Vector};
 //}}}
 //{{{ std imports

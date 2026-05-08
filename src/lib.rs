@@ -34,7 +34,9 @@ pub use common::{
 };
 //}}}
 //{{{ pub mod: public modules
+pub mod bound_constrained;
 pub mod constrained;
+pub mod constraints;
 pub mod line_search;
 pub mod unconstrained;
 //}}}
