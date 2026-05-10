@@ -8,6 +8,7 @@ use crate::{Matrix, RealVectorFn, Vector};
 //}}}
 //{{{ std imports
 use std::collections::HashMap;
+use std::ops::IndexMut;
 //}}}
 //{{{ dep imports
 use topohedral_linalg::{Shape, TransformOps, VectorOps};
@@ -59,6 +60,7 @@ pub struct BoundsConstraints
 //{{{ impl: BoundsConstraints
 impl BoundsConstraints
 {
+    //{{{ fn: new
     pub fn new(num_variables: usize) -> Self
     {
         Self {
@@ -66,7 +68,8 @@ impl BoundsConstraints
             bounds: HashMap::<usize, (Option<f64>, Option<f64>)>::new(),
         }
     }
-
+    //}}}
+    //{{{ fn: add_bounds
     pub fn add_bounds(
         &mut self,
         variable_index: usize,
@@ -79,7 +82,8 @@ impl BoundsConstraints
         self.bounds
             .insert(variable_index, (lower_bound, upper_bound));
     }
-
+    //}}}
+    //{{{ fn: num_ieq_constraints
     fn num_ieq_constraints(&self) -> usize
     {
         let mut num_constraints = 0;
@@ -96,6 +100,29 @@ impl BoundsConstraints
         }
         num_constraints
     }
+    //}}}
+    //{{{ fn: clamp
+    ///
+    pub fn clamp(
+        &self,
+        x: &mut Vector,
+    )
+    {
+        for (variable_index, (opt_low_bound, opt_high_bound)) in self.bounds.iter()
+        {
+            if let Some(low_bound) = opt_low_bound
+            {
+                let xi = x[*variable_index];
+                (*x)[*variable_index] = xi.max(*low_bound);
+            }
+            if let (Some(high_bound)) = opt_high_bound
+            {
+                let xi = x[*variable_index];
+                (*x)[*variable_index] = xi.min(*high_bound);
+            }
+        }
+    }
+    //}}}
 }
 //}}}
 //{{{ impl: RealVectorFn for BoundsConstraints
