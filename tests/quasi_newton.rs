@@ -16,8 +16,8 @@ use topohedral_optimize::{RealFn, Vector};
 //{{{ dep imports
 use ctor::ctor;
 use rstest::rstest;
-use topohedral_linalg::dvector::{DVector, VecType};
 use topohedral_linalg::VectorOps;
+use topohedral_linalg::{DVector, VecType};
 use topohedral_tracing::*;
 //}}}
 
@@ -69,7 +69,7 @@ impl RealFn for Quadratic
     ) -> Vector
     {
         let tmp = x_in.clone() - self.xmin.clone();
-        let mut out = DVector::<f64>::zeros_cvec(5, VecType::Col);
+        let mut out = DVector::<f64>::zeros_vec(5, VecType::Col);
         for i in 0..5
         {
             out[i] = 2.0 * tmp[i];
@@ -113,7 +113,7 @@ impl RealFn for Quartic
     ) -> Vector
     {
         let tmp = x_in.clone() - self.xmin.clone();
-        let mut out = DVector::<f64>::zeros_cvec(5, VecType::Col);
+        let mut out = DVector::<f64>::zeros_vec(5, VecType::Col);
         for i in 0..5
         {
             out[i] = 4.0 * tmp[i].powi(3);
@@ -166,7 +166,7 @@ impl RealFn for Rosenbrock
         let b = self.b;
         let x = xvec[0];
         let y = xvec[1];
-        let mut out = DVector::<f64>::zeros_cvec(2, VecType::Col);
+        let mut out = DVector::<f64>::zeros_vec(2, VecType::Col);
         out[0] = -2.0 * (a - x) - 4.0 * b * x * (y - x.powi(2));
         out[1] = 2.0 * b * (y - x.powi(2));
         out

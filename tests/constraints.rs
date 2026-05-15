@@ -9,7 +9,7 @@ use topohedral_optimize::{Matrix, RealVectorFn, Vector};
 //}}}
 //{{{ dep imports
 use approx::assert_relative_eq;
-use topohedral_linalg::dvector::{DVector, VecType};
+use topohedral_linalg::{DVector, VecType};
 use topohedral_linalg::{Shape, TransformOps, VectorOps};
 //}}}
 
@@ -96,7 +96,7 @@ fn test_no_constraints_is_empty_and_noop()
     assert_eq!(constraints.dimension_range(), 0);
 
     let x = colvec(&[]);
-    let mut values = DVector::<f64>::zeros_cvec(0, VecType::Col);
+    let mut values = DVector::<f64>::zeros_vec(0, VecType::Col);
     let mut gradient = Matrix::zeros(0, 0);
 
     constraints.eval(&x, &mut values);
@@ -120,7 +120,7 @@ fn test_bounds_constraints_mixed_bounds_eval_and_grad_match_public_contract()
     assert_eq!(constraints.dimension_range(), 4);
 
     let x = colvec(&[1.5, -3.0, -0.25, 5.0]);
-    let mut values = DVector::<f64>::zeros_cvec(constraints.dimension_range(), VecType::Col);
+    let mut values = DVector::<f64>::zeros_vec(constraints.dimension_range(), VecType::Col);
     let mut gradient = Matrix::zeros(
         constraints.dimension_domain(),
         constraints.dimension_range(),

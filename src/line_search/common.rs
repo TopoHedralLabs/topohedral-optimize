@@ -167,8 +167,8 @@ mod tests
     //}}}
     //{{{ dep imports
     use approx::assert_relative_eq;
-    use topohedral_linalg::dmatrix::DMatrix;
-    use topohedral_linalg::dvector::{DVector, VecType};
+    use topohedral_linalg::DMatrix;
+    use topohedral_linalg::{DVector, VecType};
     use topohedral_linalg::{MatMul, VectorOps};
     //}}}
 
@@ -209,7 +209,7 @@ mod tests
         ) -> Vector
         {
             let n = x.len();
-            let mut out = DVector::<f64>::zeros_cvec(n, VecType::Col);
+            let mut out = DVector::<f64>::zeros_vec(n, VecType::Col);
 
             for i in 0..n
             {
@@ -241,7 +241,7 @@ mod tests
     {
         fn new1() -> Self
         {
-            let center = DVector::<f64>::zeros_cvec(3, VecType::Col);
+            let center = DVector::<f64>::zeros_vec(3, VecType::Col);
             let coeffs = DMatrix::<f64>::from_row_slice(
                 &[5.0, 1.0, 2.0, 1.0, 5.0, 3.0, 2.0, 3.0, 5.0],
                 3,
@@ -257,7 +257,7 @@ mod tests
     {
         let mut line_fcn1 = LineSearchFcn {
             f: QuadraticDynamic::new1(),
-            x: DVector::<f64>::zeros_cvec(3, VecType::Col),
+            x: DVector::<f64>::zeros_vec(3, VecType::Col),
             dir: colvec(&[1.0, -2.0, 1.0]),
         };
 
@@ -266,7 +266,7 @@ mod tests
         assert_relative_eq!(phi1, 0.0, epsilon = 1e-10);
         assert_relative_eq!(dphi1, 0.0, epsilon = 1e-10);
 
-        line_fcn1.x = DVector::<f64>::ones_cvec(3, VecType::Col);
+        line_fcn1.x = DVector::<f64>::ones_vec(3, VecType::Col);
         let phi2 = line_fcn1.eval(0.0);
         let dphi2 = line_fcn1.diff(0.0);
         assert_relative_eq!(phi2, 27.0, epsilon = 1e-10);
@@ -278,7 +278,7 @@ mod tests
     fn test_quadratic_dynamic_rc_line_search()
     {
         let fcn1 = Rc::new(RefCell::new(QuadraticDynamic::new1()));
-        let x = DVector::<f64>::zeros_cvec(3, VecType::Col);
+        let x = DVector::<f64>::zeros_vec(3, VecType::Col);
         let dir = colvec(&[1.0, -2.0, 1.0]);
         let mut line_fcn1 = LineSearchFcn {
             f: fcn1.clone(),
@@ -291,7 +291,7 @@ mod tests
         assert_relative_eq!(phi1, 0.0, epsilon = 1e-10);
         assert_relative_eq!(dphi1, 0.0, epsilon = 1e-10);
 
-        line_fcn1.x = DVector::<f64>::ones_cvec(3, VecType::Col);
+        line_fcn1.x = DVector::<f64>::ones_vec(3, VecType::Col);
         let phi2 = line_fcn1.eval(0.0);
         let dphi2 = line_fcn1.diff(0.0);
         assert_relative_eq!(phi2, 27.0, epsilon = 1e-10);
@@ -304,7 +304,7 @@ mod tests
     {
         let fcn1 = Arc::new(Mutex::new(QuadraticDynamic::new1()));
 
-        let x = DVector::<f64>::zeros_cvec(3, VecType::Col);
+        let x = DVector::<f64>::zeros_vec(3, VecType::Col);
         let dir = colvec(&[1.0, -2.0, 1.0]);
         let mut line_fcn1 = LineSearchFcn {
             f: fcn1.clone(),
@@ -317,7 +317,7 @@ mod tests
         assert_relative_eq!(phi1, 0.0, epsilon = 1e-10);
         assert_relative_eq!(dphi1, 0.0, epsilon = 1e-10);
 
-        line_fcn1.x = DVector::<f64>::ones_cvec(3, VecType::Col);
+        line_fcn1.x = DVector::<f64>::ones_vec(3, VecType::Col);
         let phi2 = line_fcn1.eval(0.0);
         let dphi2 = line_fcn1.diff(0.0);
         assert_relative_eq!(phi2, 27.0, epsilon = 1e-10);

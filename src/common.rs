@@ -12,8 +12,8 @@ use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 //}}}
 //{{{ dep imports
-use topohedral_linalg::dmatrix::DMatrix;
-use topohedral_linalg::dvector::DVector;
+use topohedral_linalg::DMatrix;
+use topohedral_linalg::DVector;
 use topohedral_linalg::VectorOps;
 use topohedral_tracing::trace_fn;
 //}}}

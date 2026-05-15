@@ -10,7 +10,7 @@ use crate::common::RealFn1;
 //{{{ std imports
 //}}}
 //{{{ dep imports
-use topohedral_linalg::{scvector::SCVector, smatrix::SMatrix, MatMul};
+use topohedral_linalg::{MatMul, SCVector, SMatrix};
 use topohedral_tracing::*;
 //}}}
 //--------------------------------------------------------------------------------------------------

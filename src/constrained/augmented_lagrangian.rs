@@ -20,7 +20,7 @@ use std::{
 //}}}
 //{{{ dep imports
 use topohedral_linalg::{
-    dvector::VecType::Col, FloatTransformOps, MatMul, MatrixOps, ReduceOps, TransformOps, VectorOps,
+    FloatTransformOps, MatMul, MatrixOps, ReduceOps, TransformOps, VecType::Col, VectorOps,
 };
 use topohedral_tracing::*;
 //}}}
@@ -106,7 +106,7 @@ impl<F: RealVectorFn> LagrangianPenaltyData<F>
         //}}}
 
         let initial_penalties = Vector::from_value_vec(initial_penalty, num_constraints, Col);
-        let zero_vector = Vector::zeros_cvec(num_constraints, Col);
+        let zero_vector = Vector::zeros_vec(num_constraints, Col);
         let zero_matrix = Matrix::zeros(dimension, num_constraints);
 
         Self {
@@ -449,7 +449,7 @@ impl CachedValues
     #[trace_fn]
     fn new(n: usize) -> Self
     {
-        let zero_vector = Vector::zeros_cvec(n, Col);
+        let zero_vector = Vector::zeros_vec(n, Col);
         Self {
             fcn_value: 0.0,
             fcn_grad: zero_vector.clone(),
@@ -684,7 +684,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> RealFn for AugmentedLagrang
         }
         else
         {
-            Vector::zeros_cvec(n, Col)
+            Vector::zeros_vec(n, Col)
         };
 
         let ieq_penalty_grad = if let Some(ieq_constraint_data) = &mut self.ieq_penalty
@@ -698,7 +698,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> RealFn for AugmentedLagrang
         }
         else
         {
-            Vector::zeros_cvec(n, Col)
+            Vector::zeros_vec(n, Col)
         };
 
         let grad_aug_lag: Vector = (&fcn_grad + &eq_penalty_grad + &ieq_penalty_grad).into();
@@ -913,7 +913,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
             {
                 (
                     eq_penalty.data.values.abs_max().unwrap(),
-                    eq_penalty.data.penalties.max().unwrap(),
+                    eq_penalty.data.penalties.allmax().unwrap(),
                 )
             }
             else
@@ -924,7 +924,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
             {
                 (
                     ieq_penalty.data.values.posed().abs_max().unwrap(),
-                    ieq_penalty.data.penalties.max().unwrap(),
+                    ieq_penalty.data.penalties.allmax().unwrap(),
                 )
             }
             else
