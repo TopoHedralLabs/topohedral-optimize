@@ -248,6 +248,100 @@ fn test_cauchy_path_at_lower_bound_direction_into_bound_returns_t_zero()
     assert_relative_eq!(path[0].0, 0.0, epsilon = 1e-12);
 }
 //}}}
+//{{{ fun: project_at
+fn project_at(
+    constraints: &BoundsConstraints,
+    x: &Vector,
+    d: &Vector,
+    t: f64,
+) -> Vector
+{
+    let vals: Vec<f64> = (0..x.len()).map(|i| x[i] + t * d[i]).collect();
+    let mut p = colvec(&vals);
+    constraints.clamp(&mut p);
+    p
+}
+//}}}
+//{{{ test: cauchy path geometric kinks
+#[test]
+fn test_cauchy_path_geometric_projected_path_kinks_at_breakpoints()
+{
+    // 3 variables, all bounded [0, 2].
+    // x = [0.5, 0.0, 1.5], d = [1, 1, 1].
+    //
+    // Breakpoints from cauchy_path:
+    //   t = 0.5  → var 2 hits upper bound (2.0)
+    //   t = 1.5  → var 0 hits upper bound (2.0)
+    //   t = 2.0  → var 1 hits upper bound (2.0)
+    //
+    // Between breakpoints the path is linear in each free variable; at each
+    // breakpoint one component "kinks" onto its bound and stays there.
+    let mut constraints = BoundsConstraints::new(3);
+    constraints.add_bounds(0, Some(0.0), Some(2.0));
+    constraints.add_bounds(1, Some(0.0), Some(2.0));
+    constraints.add_bounds(2, Some(0.0), Some(2.0));
+
+    let x = colvec(&[0.5, 0.0, 1.5]);
+    let d = colvec(&[1.0, 1.0, 1.0]);
+
+    // Verify the breakpoint sequence first.
+    let path = constraints.cauchy_path(&x, &d);
+    assert_eq!(path.len(), 3);
+    assert_relative_eq!(path[0].0, 0.5, epsilon = 1e-12);
+    assert_eq!(path[0].1, 2);
+    assert_relative_eq!(path[1].0, 1.5, epsilon = 1e-12);
+    assert_eq!(path[1].1, 0);
+    assert_relative_eq!(path[2].0, 2.0, epsilon = 1e-12);
+    assert_eq!(path[2].1, 1);
+
+    // Segment 0: t in [0, 0.5) — all three components move freely.
+    let p = project_at(&constraints, &x, &d, 0.0);
+    assert_relative_eq!(p[0], 0.5, epsilon = 1e-12);
+    assert_relative_eq!(p[1], 0.0, epsilon = 1e-12);
+    assert_relative_eq!(p[2], 1.5, epsilon = 1e-12);
+
+    let p = project_at(&constraints, &x, &d, 0.25);
+    assert_relative_eq!(p[0], 0.75, epsilon = 1e-12);
+    assert_relative_eq!(p[1], 0.25, epsilon = 1e-12);
+    assert_relative_eq!(p[2], 1.75, epsilon = 1e-12);
+
+    // At t = 0.5: var 2 exactly on upper bound (kink point).
+    let p = project_at(&constraints, &x, &d, 0.5);
+    assert_relative_eq!(p[0], 1.0, epsilon = 1e-12);
+    assert_relative_eq!(p[1], 0.5, epsilon = 1e-12);
+    assert_relative_eq!(p[2], 2.0, epsilon = 1e-12);
+
+    // Segment 1: t in (0.5, 1.5) — var 2 pinned at 2.0, vars 0 and 1 still free.
+    let p = project_at(&constraints, &x, &d, 1.0);
+    assert_relative_eq!(p[0], 1.5, epsilon = 1e-12);
+    assert_relative_eq!(p[1], 1.0, epsilon = 1e-12);
+    assert_relative_eq!(p[2], 2.0, epsilon = 1e-12); // pinned
+
+    // At t = 1.5: var 0 exactly on upper bound (kink point), var 2 still pinned.
+    let p = project_at(&constraints, &x, &d, 1.5);
+    assert_relative_eq!(p[0], 2.0, epsilon = 1e-12);
+    assert_relative_eq!(p[1], 1.5, epsilon = 1e-12);
+    assert_relative_eq!(p[2], 2.0, epsilon = 1e-12); // pinned
+
+    // Segment 2: t in (1.5, 2.0) — vars 0 and 2 pinned, only var 1 moves.
+    let p = project_at(&constraints, &x, &d, 1.75);
+    assert_relative_eq!(p[0], 2.0, epsilon = 1e-12); // pinned
+    assert_relative_eq!(p[1], 1.75, epsilon = 1e-12);
+    assert_relative_eq!(p[2], 2.0, epsilon = 1e-12); // pinned
+
+    // At t = 2.0: all variables pinned at their upper bounds.
+    let p = project_at(&constraints, &x, &d, 2.0);
+    assert_relative_eq!(p[0], 2.0, epsilon = 1e-12);
+    assert_relative_eq!(p[1], 2.0, epsilon = 1e-12);
+    assert_relative_eq!(p[2], 2.0, epsilon = 1e-12);
+
+    // Beyond last breakpoint: path stays constant.
+    let p = project_at(&constraints, &x, &d, 3.0);
+    assert_relative_eq!(p[0], 2.0, epsilon = 1e-12);
+    assert_relative_eq!(p[1], 2.0, epsilon = 1e-12);
+    assert_relative_eq!(p[2], 2.0, epsilon = 1e-12);
+}
+//}}}
 //{{{ test: zero stale matrix entries
 #[test]
 fn test_bounds_constraints_grad_clears_stale_matrix_entries()
