@@ -30,7 +30,6 @@ pub enum Error
     MaxIterations(usize),
 }
 //}}}
-
 //{{{ trait: ConstrainedMinimizer
 pub trait BoundConstrainedMinimizer
 {
