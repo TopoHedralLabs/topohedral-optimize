@@ -139,6 +139,115 @@ fn test_bounds_constraints_mixed_bounds_eval_and_grad_match_public_contract()
     );
 }
 //}}}
+//{{{ test: cauchy path upper bound
+#[test]
+fn test_cauchy_path_single_upper_bound_hit()
+{
+    let mut constraints = BoundsConstraints::new(1);
+    constraints.add_bounds(0, Some(0.0), Some(1.0));
+
+    let x = colvec(&[0.5]);
+    let d = colvec(&[1.0]);
+    let path = constraints.cauchy_path(&x, &d);
+
+    assert_eq!(path.len(), 1);
+    assert_eq!(path[0].1, 0);
+    assert_relative_eq!(path[0].0, 0.5, epsilon = 1e-12);
+}
+//}}}
+//{{{ test: cauchy path lower bound
+#[test]
+fn test_cauchy_path_single_lower_bound_hit()
+{
+    let mut constraints = BoundsConstraints::new(1);
+    constraints.add_bounds(0, Some(0.0), Some(1.0));
+
+    let x = colvec(&[0.5]);
+    let d = colvec(&[-1.0]);
+    let path = constraints.cauchy_path(&x, &d);
+
+    assert_eq!(path.len(), 1);
+    assert_eq!(path[0].1, 0);
+    assert_relative_eq!(path[0].0, 0.5, epsilon = 1e-12);
+}
+//}}}
+//{{{ test: cauchy path no hit
+#[test]
+fn test_cauchy_path_direction_away_from_only_bound_returns_empty()
+{
+    // Only a lower bound; direction is positive (moving away from it).
+    let mut constraints = BoundsConstraints::new(1);
+    constraints.add_bounds(0, Some(0.0), None);
+
+    let x = colvec(&[0.5]);
+    let d = colvec(&[1.0]);
+    let path = constraints.cauchy_path(&x, &d);
+
+    assert!(path.is_empty());
+}
+//}}}
+//{{{ test: cauchy path multiple variables sorted
+#[test]
+fn test_cauchy_path_multiple_variables_sorted_by_t()
+{
+    // Three variables all with bounds [0, 2], direction [1, 1, 1].
+    // var 0: hits upper at t = (2 - 0.5) / 1 = 1.5
+    // var 1: hits upper at t = (2 - 0.0) / 1 = 2.0
+    // var 2: hits upper at t = (2 - 1.5) / 1 = 0.5
+    // Sorted: [(0.5, 2), (1.5, 0), (2.0, 1)]
+    let mut constraints = BoundsConstraints::new(3);
+    constraints.add_bounds(0, Some(0.0), Some(2.0));
+    constraints.add_bounds(1, Some(0.0), Some(2.0));
+    constraints.add_bounds(2, Some(0.0), Some(2.0));
+
+    let x = colvec(&[0.5, 0.0, 1.5]);
+    let d = colvec(&[1.0, 1.0, 1.0]);
+    let path = constraints.cauchy_path(&x, &d);
+
+    assert_eq!(path.len(), 3);
+    assert_relative_eq!(path[0].0, 0.5, epsilon = 1e-12);
+    assert_eq!(path[0].1, 2);
+    assert_relative_eq!(path[1].0, 1.5, epsilon = 1e-12);
+    assert_eq!(path[1].1, 0);
+    assert_relative_eq!(path[2].0, 2.0, epsilon = 1e-12);
+    assert_eq!(path[2].1, 1);
+}
+//}}}
+//{{{ test: cauchy path infeasible start clamped
+#[test]
+fn test_cauchy_path_infeasible_start_uses_clamped_location()
+{
+    // x = [1.5] is outside upper bound 1.0; clamped to [1.0].
+    // d = [-1.0], lower = 0.0 → t = (0.0 - 1.0) / (-1.0) = 1.0
+    let mut constraints = BoundsConstraints::new(1);
+    constraints.add_bounds(0, Some(0.0), Some(1.0));
+
+    let x = colvec(&[1.5]);
+    let d = colvec(&[-1.0]);
+    let path = constraints.cauchy_path(&x, &d);
+
+    assert_eq!(path.len(), 1);
+    assert_eq!(path[0].1, 0);
+    assert_relative_eq!(path[0].0, 1.0, epsilon = 1e-12);
+}
+//}}}
+//{{{ test: cauchy path already at bound
+#[test]
+fn test_cauchy_path_at_lower_bound_direction_into_bound_returns_t_zero()
+{
+    // x is at the lower bound; d pushes into it → t = 0.
+    let mut constraints = BoundsConstraints::new(1);
+    constraints.add_bounds(0, Some(0.0), Some(1.0));
+
+    let x = colvec(&[0.0]);
+    let d = colvec(&[-1.0]);
+    let path = constraints.cauchy_path(&x, &d);
+
+    assert_eq!(path.len(), 1);
+    assert_eq!(path[0].1, 0);
+    assert_relative_eq!(path[0].0, 0.0, epsilon = 1e-12);
+}
+//}}}
 //{{{ test: zero stale matrix entries
 #[test]
 fn test_bounds_constraints_grad_clears_stale_matrix_entries()

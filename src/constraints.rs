@@ -102,7 +102,6 @@ impl BoundsConstraints
     }
     //}}}
     //{{{ fn: clamp
-    ///
     pub fn clamp(
         &self,
         x: &mut Vector,
@@ -121,6 +120,45 @@ impl BoundsConstraints
                 (*x)[*variable_index] = xi.min(*high_bound);
             }
         }
+    }
+    //}}}
+    //{{{ fn: feasible_ray
+    pub fn cauchy_path(
+        &self,
+        location: &Vector,
+        direction: &Vector,
+    ) -> Vec<(f64, usize)>
+    {
+        let mut out = Vec::<(f64, usize)>::with_capacity(self.bounds.len());
+
+        let mut x_clamped = location.clone();
+        self.clamp(&mut x_clamped);
+
+        for (variable_index, (opt_low_bound, opt_high_bound)) in self.bounds.iter()
+        {
+            if let Some(low_bound) = opt_low_bound
+            {
+                let gi = direction[*variable_index];
+                if gi < 0.0
+                {
+                    let xi = x_clamped[*variable_index];
+                    let alphai = (low_bound - xi) / gi;
+                    out.push((alphai, *variable_index));
+                }
+            }
+            if let (Some(high_bound)) = opt_high_bound
+            {
+                let gi = direction[*variable_index];
+                if gi > 0.0
+                {
+                    let xi = x_clamped[*variable_index];
+                    let alphai = (high_bound - xi) / gi;
+                    out.push((alphai, *variable_index));
+                }
+            }
+        }
+        out.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
+        out
     }
     //}}}
 }
