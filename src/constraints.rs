@@ -122,7 +122,21 @@ impl BoundsConstraints
         }
     }
     //}}}
-    //{{{ fn: feasible_ray
+    //{{{ fn: projected_direction
+    pub fn projected_direction(
+        &self,
+        location: &Vector,
+        direction: &Vector,
+        alpha: f64,
+    ) -> Vector
+    {
+        let mut new_location: Vector = (location + alpha * direction).into();
+        self.clamp(&mut new_location);
+        new_location -= location.clone();
+        return new_location;
+    }
+    //}}}
+    //{{{ fn: cauchy_path
     pub fn cauchy_path(
         &self,
         location: &Vector,
