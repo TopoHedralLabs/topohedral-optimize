@@ -248,6 +248,122 @@ fn test_cauchy_path_at_lower_bound_direction_into_bound_returns_t_zero()
     assert_relative_eq!(path[0].0, 0.0, epsilon = 1e-12);
 }
 //}}}
+//{{{ test: active_and_inactive — no bounded variables → all inactive
+#[test]
+fn test_active_and_inactive_no_bounds_all_inactive()
+{
+    let constraints = BoundsConstraints::new(3);
+    let x = colvec(&[1.0, 2.0, 3.0]);
+    let d = colvec(&[-1.0, 0.0, 1.0]);
+
+    let (active, inactive) = constraints.active_and_inactive_sets(&x, &d);
+
+    assert!(active.is_empty());
+    assert_eq!(inactive, vec![0, 1, 2]);
+}
+//}}}
+//{{{ test: active_and_inactive — lower bound with negative direction → active
+#[test]
+fn test_active_and_inactive_lower_bound_negative_direction_is_active()
+{
+    let mut constraints = BoundsConstraints::new(1);
+    constraints.add_bounds(0, Some(0.0), None);
+
+    let x = colvec(&[0.5]);
+    let d = colvec(&[-1.0]);
+
+    let (active, inactive) = constraints.active_and_inactive_sets(&x, &d);
+
+    assert_eq!(active, vec![0]);
+    assert!(inactive.is_empty());
+}
+//}}}
+//{{{ test: active_and_inactive — lower bound with positive direction → inactive
+#[test]
+fn test_active_and_inactive_lower_bound_positive_direction_is_inactive()
+{
+    let mut constraints = BoundsConstraints::new(1);
+    constraints.add_bounds(0, Some(0.0), None);
+
+    let x = colvec(&[0.5]);
+    let d = colvec(&[1.0]);
+
+    let (active, inactive) = constraints.active_and_inactive_sets(&x, &d);
+
+    assert!(active.is_empty());
+    assert_eq!(inactive, vec![0]);
+}
+//}}}
+//{{{ test: active_and_inactive — upper bound with positive direction → active
+#[test]
+fn test_active_and_inactive_upper_bound_positive_direction_is_active()
+{
+    let mut constraints = BoundsConstraints::new(1);
+    constraints.add_bounds(0, None, Some(1.0));
+
+    let x = colvec(&[0.5]);
+    let d = colvec(&[1.0]);
+
+    let (active, inactive) = constraints.active_and_inactive_sets(&x, &d);
+
+    assert_eq!(active, vec![0]);
+    assert!(inactive.is_empty());
+}
+//}}}
+//{{{ test: active_and_inactive — upper bound with negative direction → inactive
+#[test]
+fn test_active_and_inactive_upper_bound_negative_direction_is_inactive()
+{
+    let mut constraints = BoundsConstraints::new(1);
+    constraints.add_bounds(0, None, Some(1.0));
+
+    let x = colvec(&[0.5]);
+    let d = colvec(&[-1.0]);
+
+    let (active, inactive) = constraints.active_and_inactive_sets(&x, &d);
+
+    assert!(active.is_empty());
+    assert_eq!(inactive, vec![0]);
+}
+//}}}
+//{{{ test: active_and_inactive — zero direction → inactive regardless of bounds
+#[test]
+fn test_active_and_inactive_zero_direction_is_inactive()
+{
+    let mut constraints = BoundsConstraints::new(1);
+    constraints.add_bounds(0, Some(0.0), Some(1.0));
+
+    let x = colvec(&[0.5]);
+    let d = colvec(&[0.0]);
+
+    let (active, inactive) = constraints.active_and_inactive_sets(&x, &d);
+
+    assert!(active.is_empty());
+    assert_eq!(inactive, vec![0]);
+}
+//}}}
+//{{{ test: active_and_inactive — mixed variables
+#[test]
+fn test_active_and_inactive_mixed_variables()
+{
+    // var 0: no bounds                           → always inactive
+    // var 1: lower bound [0.0, _], d[1] = -1.0  → active (pushing toward lower)
+    // var 2: upper bound [_, 2.0], d[2] = +1.0  → active (pushing toward upper)
+    // var 3: both bounds [0.0, 2.0], d[3] = 0.0 → inactive (zero direction)
+    let mut constraints = BoundsConstraints::new(4);
+    constraints.add_bounds(1, Some(0.0), None);
+    constraints.add_bounds(2, None, Some(2.0));
+    constraints.add_bounds(3, Some(0.0), Some(2.0));
+
+    let x = colvec(&[5.0, 1.0, 1.0, 1.0]);
+    let d = colvec(&[3.0, -1.0, 1.0, 0.0]);
+
+    let (active, inactive) = constraints.active_and_inactive_sets(&x, &d);
+
+    assert_eq!(active, vec![1, 2]);
+    assert_eq!(inactive, vec![0, 3]);
+}
+//}}}
 //{{{ fun: project_at
 fn project_at(
     constraints: &BoundsConstraints,

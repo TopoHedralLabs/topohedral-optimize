@@ -114,7 +114,7 @@ impl BoundsConstraints
                 let xi = x[*variable_index];
                 (*x)[*variable_index] = xi.max(*low_bound);
             }
-            if let (Some(high_bound)) = opt_high_bound
+            if let Some(high_bound) = opt_high_bound
             {
                 let xi = x[*variable_index];
                 (*x)[*variable_index] = xi.min(*high_bound);
@@ -146,7 +146,7 @@ impl BoundsConstraints
                     out.push((alphai, *variable_index));
                 }
             }
-            if let (Some(high_bound)) = opt_high_bound
+            if let Some(high_bound) = opt_high_bound
             {
                 let gi = direction[*variable_index];
                 if gi > 0.0
@@ -159,6 +159,57 @@ impl BoundsConstraints
         }
         out.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
         out
+    }
+    //}}}
+    //{{{ fn: active_set
+    pub fn active_and_inactive_sets(
+        &self,
+        location: &Vector,
+        direction: &Vector,
+    ) -> (Vec<usize>, Vec<usize>)
+    {
+        let mut active_set = Vec::<usize>::with_capacity(self.num_variables);
+
+        let mut inactive_set = Vec::<usize>::with_capacity(self.num_variables);
+        for variable_index in 0..self.num_variables
+        {
+            if !self.bounds.contains_key(&variable_index)
+            {
+                inactive_set.push(variable_index);
+            }
+        }
+
+        let mut x_clamped = location.clone();
+        self.clamp(&mut x_clamped);
+
+        for (variable_index, (opt_low_bound, opt_high_bound)) in self.bounds.iter()
+        {
+            if let Some(low_bound) = opt_low_bound
+            {
+                let gi = direction[*variable_index];
+                if gi < 0.0
+                {
+                    let xi = x_clamped[*variable_index];
+                    active_set.push(*variable_index);
+                    continue;
+                }
+            }
+            if let Some(high_bound) = opt_high_bound
+            {
+                let gi = direction[*variable_index];
+                if gi > 0.0
+                {
+                    let xi = x_clamped[*variable_index];
+                    active_set.push(*variable_index);
+                    continue;
+                }
+            }
+
+            inactive_set.push(*variable_index)
+        }
+        active_set.sort();
+        inactive_set.sort();
+        (active_set, inactive_set)
     }
     //}}}
 }
