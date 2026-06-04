@@ -11,24 +11,25 @@
 //}}}
 //--------------------------------------------------------------------------------------------------
 
-const UNSET: f64 = f64::MIN;
-
-pub struct CircularBuffer
+pub struct CircularBuffer<T>
 {
-    values: Vec<f64>,
+    values: Vec<Option<T>>,
     read_ptr: usize,
     write_ptr: usize,
     len: usize,
 }
 
-impl CircularBuffer
+impl<T> CircularBuffer<T>
 {
     pub fn new(num_elems: usize) -> Self
     {
         assert!(num_elems > 0, "circular buffer capacity must be non-zero");
 
+        let mut values = Vec::with_capacity(num_elems);
+        values.resize_with(num_elems, || None);
+
         Self {
-            values: vec![UNSET; num_elems],
+            values,
             read_ptr: 0,
             write_ptr: 0,
             len: 0,
@@ -37,10 +38,10 @@ impl CircularBuffer
 
     pub fn append(
         &mut self,
-        new_value: f64,
+        new_value: T,
     )
     {
-        self.values[self.write_ptr] = new_value;
+        self.values[self.write_ptr] = Some(new_value);
         self.write_ptr = self.next(self.write_ptr);
 
         if self.len == self.capacity()
@@ -76,17 +77,17 @@ impl CircularBuffer
     pub fn get(
         &self,
         idx: usize,
-    ) -> Option<f64>
+    ) -> Option<&T>
     {
         if idx >= self.len
         {
             return None;
         }
 
-        Some(self.values[(self.read_ptr + idx) % self.capacity()])
+        self.values[(self.read_ptr + idx) % self.capacity()].as_ref()
     }
 
-    pub fn newest(&self) -> Option<f64>
+    pub fn newest(&self) -> Option<&T>
     {
         if self.is_empty()
         {
@@ -94,15 +95,10 @@ impl CircularBuffer
         }
 
         let idx = (self.write_ptr + self.capacity() - 1) % self.capacity();
-        Some(self.values[idx])
+        self.values[idx].as_ref()
     }
 
-    pub fn max(&self) -> Option<f64>
-    {
-        self.iter().reduce(f64::max)
-    }
-
-    pub fn oldest(&self) -> Option<f64>
+    pub fn oldest(&self) -> Option<&T>
     {
         self.get(0)
     }
@@ -115,7 +111,7 @@ impl CircularBuffer
         (ptr + 1) % self.capacity()
     }
 
-    pub fn iter(&self) -> CircularBufferIter<'_>
+    pub fn iter(&self) -> CircularBufferIter<'_, T>
     {
         CircularBufferIter {
             buffer: self,
@@ -124,15 +120,32 @@ impl CircularBuffer
     }
 }
 
-pub struct CircularBufferIter<'a>
+impl<T: Clone + PartialOrd> CircularBuffer<T>
 {
-    buffer: &'a CircularBuffer,
+    pub fn max(&self) -> Option<T>
+    {
+        self.iter().cloned().reduce(|lhs, rhs| {
+            if lhs >= rhs
+            {
+                lhs
+            }
+            else
+            {
+                rhs
+            }
+        })
+    }
+}
+
+pub struct CircularBufferIter<'a, T>
+{
+    buffer: &'a CircularBuffer<T>,
     idx: usize,
 }
 
-impl Iterator for CircularBufferIter<'_>
+impl<'a, T> Iterator for CircularBufferIter<'a, T>
 {
-    type Item = f64;
+    type Item = &'a T;
 
     fn next(&mut self) -> Option<Self::Item>
     {
@@ -151,7 +164,7 @@ mod tests
     #[test]
     fn new_buffer_is_empty_with_fixed_capacity()
     {
-        let buffer = CircularBuffer::new(3);
+        let buffer = CircularBuffer::<f64>::new(3);
 
         assert_eq!(buffer.len(), 0);
         assert_eq!(buffer.capacity(), 3);
@@ -160,7 +173,10 @@ mod tests
         assert_eq!(buffer.oldest(), None);
         assert_eq!(buffer.newest(), None);
         assert_eq!(buffer.get(0), None);
-        assert_eq!(buffer.iter().collect::<Vec<_>>(), Vec::<f64>::new());
+        assert_eq!(
+            buffer.iter().copied().collect::<Vec<_>>(),
+            Vec::<f64>::new()
+        );
     }
 
     #[test]
@@ -173,18 +189,21 @@ mod tests
 
         assert_eq!(buffer.len(), 2);
         assert!(!buffer.is_full());
-        assert_eq!(buffer.oldest(), Some(1.0));
-        assert_eq!(buffer.newest(), Some(2.0));
-        assert_eq!(buffer.get(0), Some(1.0));
-        assert_eq!(buffer.get(1), Some(2.0));
+        assert_eq!(buffer.oldest(), Some(&1.0));
+        assert_eq!(buffer.newest(), Some(&2.0));
+        assert_eq!(buffer.get(0), Some(&1.0));
+        assert_eq!(buffer.get(1), Some(&2.0));
         assert_eq!(buffer.get(2), None);
-        assert_eq!(buffer.iter().collect::<Vec<_>>(), vec![1.0, 2.0]);
+        assert_eq!(buffer.iter().copied().collect::<Vec<_>>(), vec![1.0, 2.0]);
 
         buffer.append(3.0);
 
         assert_eq!(buffer.len(), 3);
         assert!(buffer.is_full());
-        assert_eq!(buffer.iter().collect::<Vec<_>>(), vec![1.0, 2.0, 3.0]);
+        assert_eq!(
+            buffer.iter().copied().collect::<Vec<_>>(),
+            vec![1.0, 2.0, 3.0]
+        );
     }
 
     #[test]
@@ -200,19 +219,22 @@ mod tests
         assert_eq!(buffer.len(), 3);
         assert_eq!(buffer.capacity(), 3);
         assert!(buffer.is_full());
-        assert_eq!(buffer.oldest(), Some(3.0));
-        assert_eq!(buffer.newest(), Some(5.0));
-        assert_eq!(buffer.get(0), Some(3.0));
-        assert_eq!(buffer.get(1), Some(4.0));
-        assert_eq!(buffer.get(2), Some(5.0));
+        assert_eq!(buffer.oldest(), Some(&3.0));
+        assert_eq!(buffer.newest(), Some(&5.0));
+        assert_eq!(buffer.get(0), Some(&3.0));
+        assert_eq!(buffer.get(1), Some(&4.0));
+        assert_eq!(buffer.get(2), Some(&5.0));
         assert_eq!(buffer.get(3), None);
-        assert_eq!(buffer.iter().collect::<Vec<_>>(), vec![3.0, 4.0, 5.0]);
+        assert_eq!(
+            buffer.iter().copied().collect::<Vec<_>>(),
+            vec![3.0, 4.0, 5.0]
+        );
     }
 
     #[test]
     fn max_returns_none_for_empty_buffer()
     {
-        let buffer = CircularBuffer::new(3);
+        let buffer = CircularBuffer::<f64>::new(3);
 
         assert_eq!(buffer.max(), None);
     }
@@ -239,8 +261,29 @@ mod tests
             buffer.append(value);
         }
 
-        assert_eq!(buffer.iter().collect::<Vec<_>>(), vec![1.0, 2.0, 3.0]);
+        assert_eq!(
+            buffer.iter().copied().collect::<Vec<_>>(),
+            vec![1.0, 2.0, 3.0]
+        );
         assert_eq!(buffer.max(), Some(3.0));
+    }
+
+    #[test]
+    fn stores_non_copy_values()
+    {
+        let mut buffer = CircularBuffer::new(2);
+
+        buffer.append(String::from("first"));
+        buffer.append(String::from("second"));
+        buffer.append(String::from("third"));
+
+        assert_eq!(buffer.len(), 2);
+        assert_eq!(buffer.oldest().map(String::as_str), Some("second"));
+        assert_eq!(buffer.newest().map(String::as_str), Some("third"));
+        assert_eq!(
+            buffer.iter().map(String::as_str).collect::<Vec<_>>(),
+            vec!["second", "third"]
+        );
     }
 
     #[test]
@@ -255,9 +298,9 @@ mod tests
         assert_eq!(buffer.len(), 1);
         assert_eq!(buffer.capacity(), 1);
         assert!(buffer.is_full());
-        assert_eq!(buffer.oldest(), Some(3.0));
-        assert_eq!(buffer.newest(), Some(3.0));
-        assert_eq!(buffer.iter().collect::<Vec<_>>(), vec![3.0]);
+        assert_eq!(buffer.oldest(), Some(&3.0));
+        assert_eq!(buffer.newest(), Some(&3.0));
+        assert_eq!(buffer.iter().copied().collect::<Vec<_>>(), vec![3.0]);
     }
 
     #[test]
@@ -278,6 +321,6 @@ mod tests
     #[should_panic(expected = "circular buffer capacity must be non-zero")]
     fn zero_capacity_buffer_panics()
     {
-        CircularBuffer::new(0);
+        CircularBuffer::<f64>::new(0);
     }
 }
