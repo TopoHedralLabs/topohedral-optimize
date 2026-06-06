@@ -172,6 +172,7 @@ mod tests
     use topohedral_linalg::{MatMul, VectorOps};
     //}}}
 
+    #[trace_fn]
     fn colvec(values: &[f64]) -> Vector
     {
         DVector::<f64>::from_slice_vec(values, values.len(), VecType::Col)
@@ -188,11 +189,13 @@ mod tests
     //{{{ impl: RealFn for QuadraticDynamic
     impl RealFn for QuadraticDynamic
     {
+        #[trace_fn]
         fn dimension(&self) -> usize
         {
             self.center.len()
         }
 
+        #[trace_fn]
         fn eval(
             &mut self,
             x: &Vector,
@@ -203,6 +206,7 @@ mod tests
             x1.dot(&x2)
         }
 
+        #[trace_fn]
         fn grad(
             &mut self,
             x: &Vector,
@@ -239,6 +243,7 @@ mod tests
     //{{{ impl: QuadraticDynamic
     impl QuadraticDynamic
     {
+        #[trace_fn]
         fn new1() -> Self
         {
             let center = DVector::<f64>::zeros_vec(3, VecType::Col);
@@ -253,6 +258,7 @@ mod tests
     //}}}
     //{{{ test: test_quadratic_dynamic_3d_line_search
     #[test]
+    #[trace_fn]
     fn test_quadratic_dynamic_3d_line_search()
     {
         let mut line_fcn1 = LineSearchFcn {
@@ -275,6 +281,7 @@ mod tests
     //}}}
     //{{{ test: test_quadratic_dynamic_rc_line_search
     #[test]
+    #[trace_fn]
     fn test_quadratic_dynamic_rc_line_search()
     {
         let fcn1 = Rc::new(RefCell::new(QuadraticDynamic::new1()));
@@ -300,6 +307,7 @@ mod tests
     //}}}
     //{{{ test: test_quadratic_dynamic_arc_line_search
     #[test]
+    #[trace_fn]
     fn test_quadratic_dynamic_arc_line_search()
     {
         let fcn1 = Arc::new(Mutex::new(QuadraticDynamic::new1()));

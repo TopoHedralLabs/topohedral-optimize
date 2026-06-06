@@ -9,6 +9,7 @@ use crate::unconstrained;
 //{{{ std imports
 //}}}
 //{{{ dep imports
+use topohedral_tracing::*;
 //}}}
 //--------------------------------------------------------------------------------------------------
 
@@ -34,6 +35,7 @@ pub use factory::Method as ConstrainedMethod;
 //}}}
 
 //{{{ fn: minimize
+#[trace_fn]
 pub fn minimize<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn>(
     fcn: F1,
     eq_constraints: Option<F2>,

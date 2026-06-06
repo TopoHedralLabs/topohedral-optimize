@@ -27,6 +27,7 @@ use std::sync::{Arc, Mutex};
 use approx::RelativeEq;
 use serde_json::map::Iter;
 use topohedral_linalg::{ReduceOps, VecType, VectorOps};
+use topohedral_tracing::*;
 //}}}
 //--------------------------------------------------------------------------------------------------
 
@@ -74,6 +75,7 @@ struct RestrictedFunction<F: RealFn>
 impl<F: RealFn> RestrictedFunction<F>
 {
     //{{{ fn: new
+    #[trace_fn]
     fn new(
         fcn: F,
         x: &Vector,
@@ -90,6 +92,7 @@ impl<F: RealFn> RestrictedFunction<F>
     }
     //}}}
     //{{{ fn: lift
+    #[trace_fn]
     fn lift(
         &self,
         x: &Vector,
@@ -125,6 +128,7 @@ impl<F: RealFn> RestrictedFunction<F>
     }
     //}}}
     //{{{ fn: restrict
+    #[trace_fn]
     fn restrict(
         &self,
         x: &Vector,
@@ -146,12 +150,14 @@ impl<F: RealFn> RestrictedFunction<F>
 impl<F: RealFn> RealFn for RestrictedFunction<F>
 {
     //{{{ fn: dimension
+    #[trace_fn]
     fn dimension(&self) -> usize
     {
         self.inactive_indices.len()
     }
     //}}}
     //{{{ fn: eval
+    #[trace_fn]
     fn eval(
         &mut self,
         x: &Vector,
@@ -162,6 +168,7 @@ impl<F: RealFn> RealFn for RestrictedFunction<F>
     }
     //}}}
     //{{{ fn: grad
+    #[trace_fn]
     fn grad(
         &mut self,
         x: &Vector,
@@ -198,6 +205,7 @@ enum Phase
 //{{{ impl: ActiveSetAlgorithm
 impl<F: RealFn> ActiveSetAlgorithm<F>
 {
+    #[trace_fn]
     pub fn new(
         mut fcn: F,
         mut x0: Vector,
@@ -224,6 +232,7 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
         }
     }
 
+    #[trace_fn]
     fn is_converged(
         &self,
         iter_k: &IterData,
@@ -251,6 +260,7 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
         None
     }
 
+    #[trace_fn]
     fn bb_step(
         &mut self,
         s: &Vector,
@@ -268,6 +278,7 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
         a
     }
 
+    #[trace_fn]
     fn ngpa_step(
         &mut self,
         iter_k: &IterData,
@@ -312,6 +323,7 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
         })
     }
 
+    #[trace_fn]
     fn undecided_set_is_empy(
         &self,
         x: &Vector,
@@ -338,6 +350,7 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
         false
     }
 
+    #[trace_fn]
     fn active_sets_are_stable(&self) -> bool
     {
         if self.active_signature_history.len() < self.opts.n1
@@ -357,6 +370,7 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
 //{{{ impl: BoundConstrainedMinimizer for ActiveSetAlgorithm
 impl<F: RealFn> BoundConstrainedMinimizer for ActiveSetAlgorithm<F>
 {
+    #[trace_fn]
     fn minimize(&mut self) -> Result<crate::Returns, super::common::Error>
     {
         let n = self.fcn.dimension();

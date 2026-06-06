@@ -84,6 +84,7 @@ impl<F: RealFn> QuasiNewton<F>
         }
     }
 
+    #[trace_fn]
     fn apply_restart(
         &self,
         k: u64,
@@ -177,6 +178,7 @@ impl<F: RealFn> QuasiNewton<F>
         -hess_k.matmul(grad_fk)
     }
 
+    #[trace_fn]
     fn print_status(
         &self,
         _k: u64,

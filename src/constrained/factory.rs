@@ -30,6 +30,7 @@ pub enum Method
 //{{{ impl: Method
 impl Method
 {
+    #[trace_fn]
     pub fn uncon_method_mut(&mut self) -> &mut UnconstrainedMethod
     {
         match self
@@ -38,6 +39,7 @@ impl Method
         }
     }
 
+    #[trace_fn]
     pub fn uncon_method(&self) -> &UnconstrainedMethod
     {
         match self
@@ -46,6 +48,7 @@ impl Method
         }
     }
 
+    #[trace_fn]
     pub fn con_opts_mut(&mut self) -> &mut ConstriainedOptions
     {
         match self
@@ -54,6 +57,7 @@ impl Method
         }
     }
 
+    #[trace_fn]
     pub fn con_opts(&self) -> &ConstriainedOptions
     {
         match self

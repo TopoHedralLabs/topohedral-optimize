@@ -8,6 +8,7 @@
 //{{{ std imports
 //}}}
 //{{{ dep imports
+use topohedral_tracing::*;
 //}}}
 //--------------------------------------------------------------------------------------------------
 
@@ -21,6 +22,7 @@ pub struct CircularBuffer<T>
 
 impl<T> CircularBuffer<T>
 {
+    #[trace_fn]
     pub fn new(num_elems: usize) -> Self
     {
         assert!(num_elems > 0, "circular buffer capacity must be non-zero");
@@ -36,6 +38,7 @@ impl<T> CircularBuffer<T>
         }
     }
 
+    #[trace_fn]
     pub fn append(
         &mut self,
         new_value: T,
@@ -54,26 +57,31 @@ impl<T> CircularBuffer<T>
         }
     }
 
+    #[trace_fn]
     pub fn len(&self) -> usize
     {
         self.len
     }
 
+    #[trace_fn]
     pub fn capacity(&self) -> usize
     {
         self.values.len()
     }
 
+    #[trace_fn]
     pub fn is_empty(&self) -> bool
     {
         self.len == 0
     }
 
+    #[trace_fn]
     pub fn is_full(&self) -> bool
     {
         self.len == self.capacity()
     }
 
+    #[trace_fn]
     pub fn get(
         &self,
         idx: usize,
@@ -87,6 +95,7 @@ impl<T> CircularBuffer<T>
         self.values[(self.read_ptr + idx) % self.capacity()].as_ref()
     }
 
+    #[trace_fn]
     pub fn newest(&self) -> Option<&T>
     {
         if self.is_empty()
@@ -98,11 +107,13 @@ impl<T> CircularBuffer<T>
         self.values[idx].as_ref()
     }
 
+    #[trace_fn]
     pub fn oldest(&self) -> Option<&T>
     {
         self.get(0)
     }
 
+    #[trace_fn]
     pub fn next(
         &self,
         ptr: usize,
@@ -111,6 +122,7 @@ impl<T> CircularBuffer<T>
         (ptr + 1) % self.capacity()
     }
 
+    #[trace_fn]
     pub fn iter(&self) -> CircularBufferIter<'_, T>
     {
         CircularBufferIter {
@@ -122,6 +134,7 @@ impl<T> CircularBuffer<T>
 
 impl<T: Clone + PartialOrd> CircularBuffer<T>
 {
+    #[trace_fn]
     pub fn max(&self) -> Option<T>
     {
         self.iter().cloned().reduce(|lhs, rhs| {
@@ -147,6 +160,7 @@ impl<'a, T> Iterator for CircularBufferIter<'a, T>
 {
     type Item = &'a T;
 
+    #[trace_fn]
     fn next(&mut self) -> Option<Self::Item>
     {
         let value = self.buffer.get(self.idx)?;
@@ -162,6 +176,7 @@ mod tests
     use super::*;
 
     #[test]
+    #[trace_fn]
     fn new_buffer_is_empty_with_fixed_capacity()
     {
         let buffer = CircularBuffer::<f64>::new(3);
@@ -180,6 +195,7 @@ mod tests
     }
 
     #[test]
+    #[trace_fn]
     fn appends_values_until_full_without_changing_order()
     {
         let mut buffer = CircularBuffer::new(3);
@@ -207,6 +223,7 @@ mod tests
     }
 
     #[test]
+    #[trace_fn]
     fn overwrites_oldest_value_after_capacity_is_reached()
     {
         let mut buffer = CircularBuffer::new(3);
@@ -232,6 +249,7 @@ mod tests
     }
 
     #[test]
+    #[trace_fn]
     fn max_returns_none_for_empty_buffer()
     {
         let buffer = CircularBuffer::<f64>::new(3);
@@ -240,6 +258,7 @@ mod tests
     }
 
     #[test]
+    #[trace_fn]
     fn max_returns_largest_stored_value()
     {
         let mut buffer = CircularBuffer::new(4);
@@ -252,6 +271,7 @@ mod tests
     }
 
     #[test]
+    #[trace_fn]
     fn max_ignores_values_that_have_been_overwritten()
     {
         let mut buffer = CircularBuffer::new(3);
@@ -269,6 +289,7 @@ mod tests
     }
 
     #[test]
+    #[trace_fn]
     fn stores_non_copy_values()
     {
         let mut buffer = CircularBuffer::new(2);
@@ -287,6 +308,7 @@ mod tests
     }
 
     #[test]
+    #[trace_fn]
     fn single_element_buffer_always_keeps_latest_value()
     {
         let mut buffer = CircularBuffer::new(1);
@@ -304,6 +326,7 @@ mod tests
     }
 
     #[test]
+    #[trace_fn]
     fn append_does_not_reallocate_storage()
     {
         let mut buffer = CircularBuffer::new(2);
@@ -319,6 +342,7 @@ mod tests
 
     #[test]
     #[should_panic(expected = "circular buffer capacity must be non-zero")]
+    #[trace_fn]
     fn zero_capacity_buffer_panics()
     {
         CircularBuffer::<f64>::new(0);

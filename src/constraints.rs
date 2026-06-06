@@ -15,6 +15,7 @@ use std::ops::IndexMut;
 //}}}
 //{{{ dep imports
 use topohedral_linalg::{Shape, TransformOps, VecType, VectorOps};
+use topohedral_tracing::*;
 //}}}
 //--------------------------------------------------------------------------------------------------
 
@@ -25,16 +26,19 @@ pub struct NoConstraints;
 //{{{ impl: RealVectorFn for NoConstraints
 impl RealVectorFn for NoConstraints
 {
+    #[trace_fn]
     fn dimension_domain(&self) -> usize
     {
         0
     }
 
+    #[trace_fn]
     fn dimension_range(&self) -> usize
     {
         0
     }
 
+    #[trace_fn]
     fn eval(
         &mut self,
         _x: &Vector,
@@ -43,6 +47,7 @@ impl RealVectorFn for NoConstraints
     {
     }
 
+    #[trace_fn]
     fn grad(
         &mut self,
         _x: &Vector,
@@ -77,6 +82,7 @@ pub struct BoundSignature(Box<[(usize, BoundStatus)]>);
 impl BoundsConstraints
 {
     //{{{ fn: new
+    #[trace_fn]
     pub fn new(num_variables: usize) -> Self
     {
         Self {
@@ -86,6 +92,7 @@ impl BoundsConstraints
     }
     //}}}
     //{{{ fn: add_bounds
+    #[trace_fn]
     pub fn add_bounds(
         &mut self,
         variable_index: usize,
@@ -100,6 +107,7 @@ impl BoundsConstraints
     }
     //}}}
     //{{{ fn: get_lower
+    #[trace_fn]
     pub fn get_lower(
         &self,
         idx: usize,
@@ -114,6 +122,7 @@ impl BoundsConstraints
     }
     //}}}
     //{{{ fn: get_higher
+    #[trace_fn]
     pub fn get_upper(
         &self,
         idx: usize,
@@ -128,6 +137,7 @@ impl BoundsConstraints
     }
     //}}}
     //{{{ fn: num_ieq_constraints
+    #[trace_fn]
     pub fn num_ieq_constraints(&self) -> usize
     {
         let mut num_constraints = 0;
@@ -146,6 +156,7 @@ impl BoundsConstraints
     }
     //}}}
     //{{{ fn: clamp
+    #[trace_fn]
     pub fn clamp(
         &self,
         x: &mut Vector,
@@ -167,6 +178,7 @@ impl BoundsConstraints
     }
     //}}}
     //{{{ fn: projected_direction
+    #[trace_fn]
     pub fn projected_direction(
         &self,
         location: &Vector,
@@ -181,6 +193,7 @@ impl BoundsConstraints
     }
     //}}}
     //{{{ fn: cauchy_path
+    #[trace_fn]
     pub fn cauchy_path(
         &self,
         location: &Vector,
@@ -220,6 +233,7 @@ impl BoundsConstraints
     }
     //}}}
     //{{{ fn: active_set
+    #[trace_fn]
     pub fn active_and_inactive_sets(
         &self,
         location: &Vector,
@@ -296,6 +310,7 @@ impl BoundsConstraints
     }
     //}}}
     //{{{ fn active_signature
+    #[trace_fn]
     pub fn active_signature(
         &self,
         x: &Vector,
@@ -322,6 +337,7 @@ impl BoundsConstraints
     }
     //}}}
     //{{{ fn: mask_gradient_in_place
+    #[trace_fn]
     pub fn mask_gradient_in_place(
         &self,
         x: &Vector,
@@ -344,6 +360,7 @@ impl BoundsConstraints
     }
     //}}}
     //{{{ fn: masked_gradient
+    #[trace_fn]
     pub fn masked_gradient(
         &self,
         x: &Vector,
@@ -357,6 +374,7 @@ impl BoundsConstraints
 
     //}}}
     //{{{ fn: minimum_distance
+    #[trace_fn]
     pub fn minimum_distance(
         &self,
         x: &Vector,
@@ -385,6 +403,7 @@ impl BoundsConstraints
     }
     //}}}
     //{{{ fn: all_distances
+    #[trace_fn]
     pub fn all_distances(
         &self,
         x: &Vector,
@@ -417,16 +436,19 @@ impl BoundsConstraints
 //{{{ impl: RealVectorFn for BoundsConstraints
 impl RealVectorFn for BoundsConstraints
 {
+    #[trace_fn]
     fn dimension_domain(&self) -> usize
     {
         self.num_variables
     }
 
+    #[trace_fn]
     fn dimension_range(&self) -> usize
     {
         self.num_ieq_constraints()
     }
 
+    #[trace_fn]
     fn eval(
         &mut self,
         x: &Vector,
@@ -454,6 +476,7 @@ impl RealVectorFn for BoundsConstraints
         }
     }
 
+    #[trace_fn]
     fn grad(
         &mut self,
         x: &Vector,

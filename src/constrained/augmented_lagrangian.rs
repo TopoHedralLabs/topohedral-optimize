@@ -49,6 +49,7 @@ pub struct Options
 //{{{ impl: Options
 impl Options
 {
+    #[trace_fn]
     pub fn new(
         constrained_opts: ConstriainedOptions,
         uncon_method: UnconstrainedMethod,
@@ -66,11 +67,13 @@ impl Options
         }
     }
 
+    #[trace_fn]
     pub(crate) fn uncon_method_mut(&mut self) -> &mut UnconstrainedMethod
     {
         &mut self.uncon_method
     }
 
+    #[trace_fn]
     pub(crate) fn uncon_method(&self) -> &UnconstrainedMethod
     {
         &self.uncon_method
@@ -94,6 +97,7 @@ struct LagrangianPenaltyData<F: RealVectorFn>
 impl<F: RealVectorFn> LagrangianPenaltyData<F>
 {
     //{{{ fn: new
+    #[trace_fn]
     pub fn new(
         fcn: F,
         initial_penalty: f64,
@@ -120,6 +124,7 @@ impl<F: RealVectorFn> LagrangianPenaltyData<F>
     }
     //}}}
     //{{{ fn: update_values
+    #[trace_fn]
     fn update_values(
         &mut self,
         x: &Vector,
@@ -129,6 +134,7 @@ impl<F: RealVectorFn> LagrangianPenaltyData<F>
     }
     //}}}
     //{{{ fn: update_gradients
+    #[trace_fn]
     fn update_gradients(
         &mut self,
         x: &Vector,
@@ -181,6 +187,7 @@ impl<F: RealVectorFn> LagrangianPenaltyData<F>
     }
     //}}}
     //{{{ fn: compute_lagrange_multiplier_estimates
+    #[trace_fn]
     fn compute_lagrange_multiplier_estimates(&self) -> Vector
     {
         (&self.penalties * &self.shifts).into()
@@ -245,6 +252,7 @@ impl<F: RealVectorFn> EqPenalty<F>
 impl<F: RealVectorFn> RealFn for EqPenalty<F>
 {
     //{{{ fn: dimension
+    #[trace_fn]
     fn dimension(&self) -> usize
     {
         self.data.function.dimension_domain()
@@ -375,12 +383,14 @@ impl<F: RealVectorFn> IeqPenalty<F>
 impl<F: RealVectorFn> RealFn for IeqPenalty<F>
 {
     //{{{ fn: dimension
+    #[trace_fn]
     fn dimension(&self) -> usize
     {
         self.data.function.dimension_domain()
     }
     //}}}
     //{{{ fn: eval
+    #[trace_fn]
     fn eval(
         &mut self,
         x: &Vector,
@@ -404,6 +414,7 @@ impl<F: RealVectorFn> RealFn for IeqPenalty<F>
     }
     //}}}
     //{{{ fn: grad
+    #[trace_fn]
     fn grad(
         &mut self,
         x: &Vector,
@@ -566,24 +577,28 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangianFcn<F1, 
     }
     //}}}
     //{{{ fn: has_eq_penalty
+    #[trace_fn]
     fn has_eq_penalty(&self) -> bool
     {
         self.eq_penalty.is_some()
     }
     //}}}
     //{{{ fn: has_ieq_penalty
+    #[trace_fn]
     fn has_ieq_penalty(&self) -> bool
     {
         self.ieq_penalty.is_some()
     }
     //}}}
     //{{{ fn: get_cached_values
+    #[trace_fn]
     fn get_cached_values(&self) -> &CachedValues
     {
         self.cached_values.get(&self.lagrangian_type).unwrap()
     }
     //}}}
     //{{{ fn: get_cached_values_mut
+    #[trace_fn]
     fn get_cached_values_mut(&mut self) -> &mut CachedValues
     {
         self.cached_values.get_mut(&self.lagrangian_type).unwrap()
@@ -596,6 +611,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangianFcn<F1, 
 impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> RealFn for AugmentedLagrangianFcn<F1, F2, F3>
 {
     //{{{ fn: dimension
+    #[trace_fn]
     fn dimension(&self) -> usize
     {
         self.fcn.dimension()
@@ -838,6 +854,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
     }
     //}}}
     //{{{ fn: print_status
+    #[trace_fn]
     fn print_status(
         &self,
         k: u64,
