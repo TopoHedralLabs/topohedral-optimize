@@ -4,14 +4,17 @@
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
-use crate::{Matrix, RealVectorFn, Vector};
+use crate::{
+    constraints::BoundStatus::{AtLower, AtUpper},
+    Matrix, RealVectorFn, Vector,
+};
 //}}}
 //{{{ std imports
 use std::collections::HashMap;
 use std::ops::IndexMut;
 //}}}
 //{{{ dep imports
-use topohedral_linalg::{Shape, TransformOps, VectorOps};
+use topohedral_linalg::{Shape, TransformOps, VecType, VectorOps};
 //}}}
 //--------------------------------------------------------------------------------------------------
 
@@ -57,6 +60,19 @@ pub struct BoundsConstraints
     bounds: HashMap<usize, (Option<f64>, Option<f64>)>,
 }
 //}}}
+//{{{ enum: BoundStatus
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum BoundStatus
+{
+    Free,
+    AtLower,
+    AtUpper,
+}
+//}}}
+//{{{ struct: BoundSignature
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct BoundSignature(Box<[(usize, BoundStatus)]>);
+//}}}
 //{{{ impl: BoundsConstraints
 impl BoundsConstraints
 {
@@ -84,7 +100,7 @@ impl BoundsConstraints
     }
     //}}}
     //{{{ fn: num_ieq_constraints
-    fn num_ieq_constraints(&self) -> usize
+    pub fn num_ieq_constraints(&self) -> usize
     {
         let mut num_constraints = 0;
         for (lower_bound, upper_bound) in self.bounds.values()
@@ -201,9 +217,9 @@ impl BoundsConstraints
             if let Some(low_bound) = opt_low_bound
             {
                 let gi = direction[*variable_index];
-                if gi < 0.0
+                let xi = x_clamped[*variable_index];
+                if gi < 0.0 && xi == *low_bound
                 {
-                    let xi = x_clamped[*variable_index];
                     active_set.push(*variable_index);
                     continue;
                 }
@@ -211,9 +227,9 @@ impl BoundsConstraints
             if let Some(high_bound) = opt_high_bound
             {
                 let gi = direction[*variable_index];
-                if gi > 0.0
+                let xi = x_clamped[*variable_index];
+                if gi > 0.0 && xi == *high_bound
                 {
-                    let xi = x_clamped[*variable_index];
                     active_set.push(*variable_index);
                     continue;
                 }
@@ -224,6 +240,123 @@ impl BoundsConstraints
         active_set.sort();
         inactive_set.sort();
         (active_set, inactive_set)
+    }
+    //}}}
+    //{{{ fn active_signature
+    pub fn active_signature(
+        &self,
+        x: &Vector,
+    ) -> BoundSignature
+    {
+        let mut sig = Vec::<(usize, BoundStatus)>::with_capacity(self.bounds.len());
+
+        for (&idx, (lower, upper)) in &self.bounds
+        {
+            let xi = x[idx];
+
+            if lower.is_some_and(|lower| xi <= lower)
+            {
+                sig.push((idx, BoundStatus::AtLower));
+            }
+            else if upper.is_some_and(|upper| xi >= upper)
+            {
+                sig.push((idx, BoundStatus::AtUpper));
+            }
+        }
+
+        sig.sort_unstable_by_key(|(idx, _)| *idx);
+        BoundSignature(sig.into_boxed_slice())
+    }
+    //}}}
+    //{{{ fn: mask_gradient_in_place
+    pub fn mask_gradient_in_place(
+        &self,
+        x: &Vector,
+        grad_f: &mut Vector,
+    )
+    {
+        for (&idx, (lower, upper)) in &self.bounds
+        {
+            let xi = x[idx];
+
+            if lower.is_some_and(|lower| xi <= lower)
+            {
+                (*grad_f)[idx] = 0.0;
+            }
+            else if upper.is_some_and(|upper| xi >= upper)
+            {
+                (*grad_f)[idx] = 0.0;
+            }
+        }
+    }
+    //}}}
+    //{{{ fn: masked_gradient
+    pub fn masked_gradient(
+        &self,
+        x: &Vector,
+        grad: &Vector,
+    ) -> Vector
+    {
+        let mut out = grad.clone();
+        self.mask_gradient_in_place(x, &mut out);
+        return out;
+    }
+
+    //}}}
+    //{{{ fn: minimum_distance
+    pub fn minimum_distance(
+        &self,
+        x: &Vector,
+    ) -> f64
+    {
+        let mut min_dist = f64::MAX;
+        for (idx, (opt_lower, opt_upper)) in self.bounds.iter()
+        {
+            let xi = x[*idx];
+            let mut lower_dist = f64::MAX;
+            let mut upper_dist = f64::MAX;
+
+            if let Some(lower) = opt_lower
+            {
+                lower_dist = xi - lower
+            }
+
+            if let Some(upper) = opt_upper
+            {
+                upper_dist = upper - xi;
+            }
+
+            min_dist = min_dist.min(f64::min(lower_dist, upper_dist));
+        }
+        min_dist
+    }
+    //}}}
+    //{{{ fn: all_distances
+    pub fn all_distances(
+        &self,
+        x: &Vector,
+    ) -> Vector
+    {
+        let mut distances = Vector::from_value_vec(f64::INFINITY, x.len(), VecType::Col);
+        for (idx, (opt_lower, opt_upper)) in self.bounds.iter()
+        {
+            let xi = x[*idx];
+            let mut lower_dist = f64::MAX;
+            let mut upper_dist = f64::MAX;
+
+            if let Some(lower) = opt_lower
+            {
+                lower_dist = xi - lower
+            }
+
+            if let Some(upper) = opt_upper
+            {
+                upper_dist = upper - xi;
+            }
+
+            distances[*idx] = lower_dist.min(upper_dist);
+        }
+        distances
     }
     //}}}
 }
