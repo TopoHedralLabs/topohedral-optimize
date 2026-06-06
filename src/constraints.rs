@@ -195,10 +195,10 @@ impl BoundsConstraints
     pub fn active_and_inactive_sets(
         &self,
         location: &Vector,
-        direction: &Vector,
-    ) -> (Vec<usize>, Vec<usize>)
+        direction: Option<&Vector>,
+    ) -> (Vec<(usize, BoundStatus)>, Vec<usize>)
     {
-        let mut active_set = Vec::<usize>::with_capacity(self.num_variables);
+        let mut active_set = Vec::<(usize, BoundStatus)>::with_capacity(self.num_variables);
 
         let mut inactive_set = Vec::<usize>::with_capacity(self.num_variables);
         for variable_index in 0..self.num_variables
@@ -209,35 +209,60 @@ impl BoundsConstraints
             }
         }
 
-        let mut x_clamped = location.clone();
-        self.clamp(&mut x_clamped);
-
-        for (variable_index, (opt_low_bound, opt_high_bound)) in self.bounds.iter()
+        if let Some(direction) = direction
         {
-            if let Some(low_bound) = opt_low_bound
-            {
-                let gi = direction[*variable_index];
-                let xi = x_clamped[*variable_index];
-                if gi < 0.0 && xi == *low_bound
-                {
-                    active_set.push(*variable_index);
-                    continue;
-                }
-            }
-            if let Some(high_bound) = opt_high_bound
-            {
-                let gi = direction[*variable_index];
-                let xi = x_clamped[*variable_index];
-                if gi > 0.0 && xi == *high_bound
-                {
-                    active_set.push(*variable_index);
-                    continue;
-                }
-            }
+            assert_eq!(direction.len(), self.dimension_domain());
 
-            inactive_set.push(*variable_index)
+            let mut x_clamped = location.clone();
+            self.clamp(&mut x_clamped);
+
+            for (variable_index, (opt_low_bound, opt_high_bound)) in self.bounds.iter()
+            {
+                if let Some(low_bound) = opt_low_bound
+                {
+                    let gi = direction[*variable_index];
+                    let xi = x_clamped[*variable_index];
+                    if gi < 0.0 && xi == *low_bound
+                    {
+                        active_set.push((*variable_index, AtLower));
+                        continue;
+                    }
+                }
+                if let Some(high_bound) = opt_high_bound
+                {
+                    let gi = direction[*variable_index];
+                    let xi = x_clamped[*variable_index];
+                    if gi > 0.0 && xi == *high_bound
+                    {
+                        active_set.push((*variable_index, AtUpper));
+                        continue;
+                    }
+                }
+
+                inactive_set.push(*variable_index)
+            }
         }
-        active_set.sort();
+        else
+        {
+            for (variable_index, (opt_low_bound, opt_high_bound)) in self.bounds.iter()
+            {
+                let xi = location[*variable_index];
+                if opt_low_bound.is_some_and(|low_bound| xi <= low_bound)
+                {
+                    active_set.push((*variable_index, AtLower));
+                    continue;
+                }
+                if opt_high_bound.is_some_and(|high_bound| xi >= high_bound)
+                {
+                    active_set.push((*variable_index, AtUpper));
+                    continue;
+                }
+
+                inactive_set.push(*variable_index)
+            }
+        }
+
+        active_set.sort_by_key(|(idx, _)| *idx);
         inactive_set.sort();
         (active_set, inactive_set)
     }

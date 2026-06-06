@@ -2,6 +2,7 @@
 #![allow(incomplete_features)]
 
 //{{{ crate imports
+use topohedral_optimize::constraints::BoundStatus::{AtLower, AtUpper};
 use topohedral_optimize::constraints::{BoundsConstraints, NoConstraints};
 use topohedral_optimize::{Matrix, RealVectorFn, Vector};
 //}}}
@@ -256,7 +257,7 @@ fn test_active_and_inactive_no_bounds_all_inactive()
     let x = colvec(&[1.0, 2.0, 3.0]);
     let d = colvec(&[-1.0, 0.0, 1.0]);
 
-    let (active, inactive) = constraints.active_and_inactive_sets(&x, &d);
+    let (active, inactive) = constraints.active_and_inactive_sets(&x, Some(&d));
 
     assert!(active.is_empty());
     assert_eq!(inactive, vec![0, 1, 2]);
@@ -272,7 +273,7 @@ fn test_active_and_inactive_lower_bound_negative_direction_interior_is_inactive(
     let x = colvec(&[0.5]);
     let d = colvec(&[-1.0]);
 
-    let (active, inactive) = constraints.active_and_inactive_sets(&x, &d);
+    let (active, inactive) = constraints.active_and_inactive_sets(&x, Some(&d));
 
     assert!(active.is_empty());
     assert_eq!(inactive, vec![0]);
@@ -288,9 +289,9 @@ fn test_active_and_inactive_lower_bound_negative_direction_at_bound_is_active()
     let x = colvec(&[0.0]);
     let d = colvec(&[-1.0]);
 
-    let (active, inactive) = constraints.active_and_inactive_sets(&x, &d);
+    let (active, inactive) = constraints.active_and_inactive_sets(&x, Some(&d));
 
-    assert_eq!(active, vec![0]);
+    assert_eq!(active, vec![(0, AtLower)]);
     assert!(inactive.is_empty());
 }
 //}}}
@@ -304,7 +305,7 @@ fn test_active_and_inactive_lower_bound_positive_direction_is_inactive()
     let x = colvec(&[0.5]);
     let d = colvec(&[1.0]);
 
-    let (active, inactive) = constraints.active_and_inactive_sets(&x, &d);
+    let (active, inactive) = constraints.active_and_inactive_sets(&x, Some(&d));
 
     assert!(active.is_empty());
     assert_eq!(inactive, vec![0]);
@@ -320,7 +321,7 @@ fn test_active_and_inactive_upper_bound_positive_direction_interior_is_inactive(
     let x = colvec(&[0.5]);
     let d = colvec(&[1.0]);
 
-    let (active, inactive) = constraints.active_and_inactive_sets(&x, &d);
+    let (active, inactive) = constraints.active_and_inactive_sets(&x, Some(&d));
 
     assert!(active.is_empty());
     assert_eq!(inactive, vec![0]);
@@ -336,9 +337,9 @@ fn test_active_and_inactive_upper_bound_positive_direction_at_bound_is_active()
     let x = colvec(&[1.0]);
     let d = colvec(&[1.0]);
 
-    let (active, inactive) = constraints.active_and_inactive_sets(&x, &d);
+    let (active, inactive) = constraints.active_and_inactive_sets(&x, Some(&d));
 
-    assert_eq!(active, vec![0]);
+    assert_eq!(active, vec![(0, AtUpper)]);
     assert!(inactive.is_empty());
 }
 //}}}
@@ -353,9 +354,9 @@ fn test_active_and_inactive_infeasible_start_uses_clamped_boundary()
     let x = colvec(&[-0.5, 1.5]);
     let d = colvec(&[-1.0, 1.0]);
 
-    let (active, inactive) = constraints.active_and_inactive_sets(&x, &d);
+    let (active, inactive) = constraints.active_and_inactive_sets(&x, Some(&d));
 
-    assert_eq!(active, vec![0, 1]);
+    assert_eq!(active, vec![(0, AtLower), (1, AtUpper)]);
     assert!(inactive.is_empty());
 }
 //}}}
@@ -369,7 +370,7 @@ fn test_active_and_inactive_upper_bound_negative_direction_is_inactive()
     let x = colvec(&[0.5]);
     let d = colvec(&[-1.0]);
 
-    let (active, inactive) = constraints.active_and_inactive_sets(&x, &d);
+    let (active, inactive) = constraints.active_and_inactive_sets(&x, Some(&d));
 
     assert!(active.is_empty());
     assert_eq!(inactive, vec![0]);
@@ -385,7 +386,7 @@ fn test_active_and_inactive_zero_direction_is_inactive()
     let x = colvec(&[0.5]);
     let d = colvec(&[0.0]);
 
-    let (active, inactive) = constraints.active_and_inactive_sets(&x, &d);
+    let (active, inactive) = constraints.active_and_inactive_sets(&x, Some(&d));
 
     assert!(active.is_empty());
     assert_eq!(inactive, vec![0]);
@@ -407,10 +408,47 @@ fn test_active_and_inactive_mixed_variables()
     let x = colvec(&[5.0, 0.0, 2.0, 1.0]);
     let d = colvec(&[3.0, -1.0, 1.0, 0.0]);
 
-    let (active, inactive) = constraints.active_and_inactive_sets(&x, &d);
+    let (active, inactive) = constraints.active_and_inactive_sets(&x, Some(&d));
 
-    assert_eq!(active, vec![1, 2]);
+    assert_eq!(active, vec![(1, AtLower), (2, AtUpper)]);
     assert_eq!(inactive, vec![0, 3]);
+}
+//}}}
+//{{{ test: active_and_inactive — omitted direction uses position only
+#[test]
+fn test_active_and_inactive_no_direction_uses_position_only()
+{
+    // var 0: no bounds                         → inactive
+    // var 1: lower bound [0.0, _], x[1] = 0.0 → active at lower
+    // var 2: upper bound [_, 2.0], x[2] = 2.5 → active at upper
+    // var 3: both bounds [0.0, 2.0], interior → inactive
+    let mut constraints = BoundsConstraints::new(4);
+    constraints.add_bounds(1, Some(0.0), None);
+    constraints.add_bounds(2, None, Some(2.0));
+    constraints.add_bounds(3, Some(0.0), Some(2.0));
+
+    let x = colvec(&[5.0, 0.0, 2.5, 1.0]);
+
+    let (active, inactive) = constraints.active_and_inactive_sets(&x, None);
+
+    assert_eq!(active, vec![(1, AtLower), (2, AtUpper)]);
+    assert_eq!(inactive, vec![0, 3]);
+}
+//}}}
+//{{{ test: active_and_inactive — omitted direction does not use clamped direction
+#[test]
+fn test_active_and_inactive_no_direction_marks_infeasible_position_active()
+{
+    let mut constraints = BoundsConstraints::new(2);
+    constraints.add_bounds(0, Some(0.0), Some(1.0));
+    constraints.add_bounds(1, Some(0.0), Some(1.0));
+
+    let x = colvec(&[-0.5, 1.5]);
+
+    let (active, inactive) = constraints.active_and_inactive_sets(&x, None);
+
+    assert_eq!(active, vec![(0, AtLower), (1, AtUpper)]);
+    assert!(inactive.is_empty());
 }
 //}}}
 //{{{ fun: project_at

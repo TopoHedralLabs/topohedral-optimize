@@ -424,7 +424,8 @@ impl<F: RealFn> BoundConstrainedMinimizer for ActiveSetAlgorithm<F>
                         norm_grad_fx,
                     } = &iter_k;
 
-                    let (_, inactive_set) = self.bounds.active_and_inactive_sets(&x, &grad_fx);
+                    let (_, inactive_set) =
+                        self.bounds.active_and_inactive_sets(&x, Some(&grad_fx));
 
                     let mut restricted_fcn =
                         RestrictedFunction::new(self.fcn.clone(), inactive_set);
