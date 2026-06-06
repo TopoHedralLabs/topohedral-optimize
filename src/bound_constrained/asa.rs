@@ -65,6 +65,8 @@ pub struct Options
 struct RestrictedFunction<F: RealFn>
 {
     fcn: F,
+    bounds: BoundsConstraints,
+    active_indices: Vec<(usize, BoundStatus)>,
     inactive_indices: Vec<usize>,
 }
 //}}}
@@ -74,11 +76,15 @@ impl<F: RealFn> RestrictedFunction<F>
     //{{{ fn: new
     fn new(
         fcn: F,
-        inactive_indices: Vec<usize>,
+        x: &Vector,
+        bounds: BoundsConstraints,
     ) -> Self
     {
+        let (active_indices, inactive_indices) = bounds.active_and_inactive_sets(x, None);
         RestrictedFunction {
             fcn,
+            bounds,
+            active_indices,
             inactive_indices,
         }
     }
@@ -91,9 +97,29 @@ impl<F: RealFn> RestrictedFunction<F>
     {
         let n_full = self.fcn.dimension();
         let mut x_full = Vector::zeros_vec(n_full, VecType::Col);
+
         for (loc_idx, glob_idx) in self.inactive_indices.iter().enumerate()
         {
             x_full[*glob_idx] = x[loc_idx];
+        }
+
+        for (glob_idx, bound) in self.active_indices.iter()
+        {
+            match bound
+            {
+                BoundStatus::AtLower =>
+                {
+                    x_full[*glob_idx] = self.bounds.get_lower(*glob_idx).unwrap()
+                }
+                BoundStatus::AtUpper =>
+                {
+                    x_full[*glob_idx] = self.bounds.get_upper(*glob_idx).unwrap()
+                }
+                _ =>
+                {
+                    panic!()
+                }
+            }
         }
         x_full
     }
@@ -104,9 +130,10 @@ impl<F: RealFn> RestrictedFunction<F>
         x: &Vector,
     ) -> Vector
     {
-        let n_restricted = self.inactive_indices.len();
+        let (_, inactive_indices) = self.bounds.active_and_inactive_sets(x, None);
+        let n_restricted = inactive_indices.len();
         let mut x_restricted = Vector::zeros_vec(n_restricted, VecType::Col);
-        for (loc_idx, glob_idx) in self.inactive_indices.iter().enumerate()
+        for (loc_idx, glob_idx) in inactive_indices.iter().enumerate()
         {
             x_restricted[loc_idx] = x[*glob_idx];
         }
@@ -424,17 +451,17 @@ impl<F: RealFn> BoundConstrainedMinimizer for ActiveSetAlgorithm<F>
                         norm_grad_fx,
                     } = &iter_k;
 
-                    let (_, inactive_set) =
-                        self.bounds.active_and_inactive_sets(&x, Some(&grad_fx));
-
                     let mut restricted_fcn =
-                        RestrictedFunction::new(self.fcn.clone(), inactive_set);
+                        RestrictedFunction::new(self.fcn.clone(), x, self.bounds.clone());
+
                     let x0 = restricted_fcn.restrict(x);
+
                     let res = minimize(
                         restricted_fcn.clone(),
                         x0,
                         self.opts.unconstrained_method.clone(),
                     )?;
+
                     iter_k.x.copy_from(restricted_fcn.lift(&res.xmin));
                     iter_k.fx = res.fmin;
                     iter_k.grad_fx.copy_from(self.fcn.grad(&iter_k.x));

@@ -99,6 +99,34 @@ impl BoundsConstraints
             .insert(variable_index, (lower_bound, upper_bound));
     }
     //}}}
+    //{{{ fn: get_lower
+    pub fn get_lower(
+        &self,
+        idx: usize,
+    ) -> Option<f64>
+    {
+        let op_bounds_i = self.bounds.get(&idx);
+        if let Some(bounds_i) = op_bounds_i
+        {
+            return bounds_i.0;
+        }
+        None
+    }
+    //}}}
+    //{{{ fn: get_higher
+    pub fn get_upper(
+        &self,
+        idx: usize,
+    ) -> Option<f64>
+    {
+        let op_bounds_i = self.bounds.get(&idx);
+        if let Some(bounds_i) = op_bounds_i
+        {
+            return bounds_i.1;
+        }
+        None
+    }
+    //}}}
     //{{{ fn: num_ieq_constraints
     pub fn num_ieq_constraints(&self) -> usize
     {
