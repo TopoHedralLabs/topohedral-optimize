@@ -326,6 +326,21 @@ fn asa_minimizes_ten_dimensional_rosenbrock_inside_box()
     assert_relative_eq!(ret.fmin, 0.0, epsilon = 1e-8);
     assert!(kkt_residual(fcn, &ret.xmin, &[Some(-2.0); 10], &[Some(2.0); 10]) <= 1e-6);
 }
+#[test]
+fn asa_minimizes_ten_dimensional_rosenbrock_outside_box()
+{
+    let n = 10;
+    let fcn = Rosenbrock { n };
+    let x0 = DVector::<f64>::from_value_vec(-1.2, n, VecType::Col);
+    let bounds = add_uniform_bounds(n, Some(-2.0), Some(0.99));
+
+    let ret = solve_asa(fcn.clone(), x0, bounds, 2000);
+    let expected_x = DVector::<f64>::from_value_vec(0.99, n, VecType::Col);
+
+    assert_vector_close(&ret.xmin, &expected_x, 1e-4);
+    assert_relative_eq!(ret.fmin, 0.0, epsilon = 1e-8);
+    assert!(kkt_residual(fcn, &ret.xmin, &[Some(-2.0); 10], &[Some(2.0); 10]) <= 1e-6);
+}
 //}}}
 //{{{ test: nnls style diagonal spd quadratic
 #[test]

@@ -15,7 +15,7 @@ use crate::{bound_constrained::common::BoundConstrainedMinimizer, constraints::B
 use crate::{IterData, RealFn};
 //}}}
 //{{{ dep imports
-use topohedral_linalg::{ReduceOps, VecType, VectorOps};
+use topohedral_linalg::{max, MatrixOps, ReduceOps, VecType, VectorOps};
 use topohedral_tracing::*;
 //}}}
 //--------------------------------------------------------------------------------------------------
@@ -261,6 +261,9 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
         iter_k: &IterData,
     ) -> Option<ConvergedReason>
     {
+        //{{{ trace
+        trace!(target: "bc", "Checking convergence");
+        //}}}
         let projected_grad =
             self.bounds
                 .projected_direction(&iter_k.x, &(-iter_k.grad_fx.clone()), 1.0);
@@ -268,8 +271,18 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
         let rtol_reached =
             projected_grad_norm < self.opts.bound_opts.grad_rtol * self.norm_grad_fx_init;
 
+        //{{{ trace
+        trace!(target: "bc",
+            "||∇f_proj|| / |∇f_proj_0|| = {}",
+            projected_grad_norm / self.norm_grad_fx_init
+        );
+        //}}}
+
         if rtol_reached
         {
+            //{{{ trace
+            trace!(target: "bc", "Rtol reached");
+            //}}}
             return Some(ConvergedReason::Rtol);
         }
 
@@ -277,6 +290,9 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
 
         if atol_reached
         {
+            //{{{ trace
+            trace!(target: "bc", "Atol reached");
+            //}}}
             return Some(ConvergedReason::Atol);
         }
 
@@ -297,6 +313,9 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
             return fallback;
         }
         let a = s.dot(s) / s_dot_y;
+        //{{{ trace
+        trace!(target: "bc", "a = {a:1.4e}");
+        //}}}
         a.clamp(self.opts.alpha_min, self.opts.alpha_max)
     }
 
@@ -320,6 +339,9 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
 
         if d.abs_max().unwrap() < SMALL
         {
+            //{{{ trace
+            trace!(target: "bc", "Projected grad is small");
+            //}}}
             return None;
         }
 
@@ -330,8 +352,19 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
         let mut f_trial = self.fcn.eval(&x_trial);
         let gradfk_dot_d = grad_fx.dot(&d);
 
-        while f_trial > f_max + delta * alpha * gradfk_dot_d && alpha > SMALL
+        //{{{ trace
+        trace!(target: "bc", "Running backtracking armijo");
+        //}}}
+        let max_iterations = 25;
+        for i in 0..max_iterations
         {
+            if f_trial < f_max + delta * alpha * gradfk_dot_d || alpha < SMALL
+            {
+                //{{{ trace
+                trace!("Found step i = {i} alpha = {alpha:1.4e} f_trial = {f_trial:1.4e}");
+                //}}}
+                break;
+            }
             alpha *= self.opts.eta;
             x_trial = (x + alpha * &d).into();
             f_trial = self.fcn.eval(&x_trial)
@@ -389,6 +422,18 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
         }
         return all_equal;
     }
+
+    fn print_status(
+        &self,
+        k: u64,
+        iter_k: &IterData,
+    )
+    {
+        info!(target: "bc", ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> k = {k}");
+        trace!(target: "bc", "x: {}", iter_k.x.clone().transpose());
+        trace!(target: "bc", "∇f: {}", iter_k.grad_fx.clone().transpose());
+        trace!(target: "bc", "∇f_proj: {}", self.bounds.projected_direction(&iter_k.x, -&iter_k.grad_fx, 1.0).transpose());
+    }
 }
 //}}}
 //{{{ impl: BoundConstrainedMinimizer for ActiveSetAlgorithm
@@ -409,15 +454,16 @@ impl<F: RealFn> BoundConstrainedMinimizer for ActiveSetAlgorithm<F>
         self.active_signature_history
             .append(self.bounds.active_signature(&iter_k.x));
 
-        for i in 0..self.opts.bound_opts.max_iter
+        for k in 0..self.opts.bound_opts.max_iter
         {
+            self.print_status(k, &iter_k);
             if let Some(reason) = self.is_converged(&iter_k)
             {
                 return Ok(crate::Returns {
                     xmin: iter_k.x,
                     fmin: iter_k.fx,
                     reason: reason,
-                    num_iterations: i as usize,
+                    num_iterations: k as usize,
                     num_fun_evals,
                     num_grad_evals,
                 });
@@ -427,6 +473,9 @@ impl<F: RealFn> BoundConstrainedMinimizer for ActiveSetAlgorithm<F>
             {
                 Phase::NGPA =>
                 {
+                    //{{{ trace
+                    trace!(target: "bc", "Entering NGPA Phase");
+                    //}}}
                     iter_k_prev.copy_from(&iter_k);
 
                     let IterData {
@@ -459,7 +508,9 @@ impl<F: RealFn> BoundConstrainedMinimizer for ActiveSetAlgorithm<F>
                     let s = (x - x_prev).into();
                     let y = (grad_fx - grad_fx_prev).into();
                     alpha_bb = self.bb_step(&s, &y, alpha_bb);
-
+                    //{{{ trace
+                    trace!(target: "bc", "alpha_bb = {alpha_bb:1.4e}");
+                    //}}}
                     num_fun_evals += 1;
                     num_grad_evals += 1;
 
@@ -490,6 +541,9 @@ impl<F: RealFn> BoundConstrainedMinimizer for ActiveSetAlgorithm<F>
                 }
                 Phase::UA =>
                 {
+                    //{{{ trace
+                    trace!(target: "bc", "Entering AU Phase");
+                    //}}}
                     iter_k_prev.copy_from(&iter_k);
 
                     let IterData {
@@ -550,6 +604,10 @@ impl<F: RealFn> BoundConstrainedMinimizer for ActiveSetAlgorithm<F>
 
                     if inactive_grad_norm_new < mu * projected_grad_norm_new
                     {
+                        //{{{ trace
+                        trace!(target: "bc", "||∇f_inactive|| < mu ||∇f_proj||");
+                        trace!(target: "bc", "Switching to NPGP");
+                        //}}}
                         phase = Phase::NGPA;
                     }
                     else if active_count_after > active_count_before
@@ -560,10 +618,18 @@ impl<F: RealFn> BoundConstrainedMinimizer for ActiveSetAlgorithm<F>
                             projected_grad_norm_new,
                         )
                     {
+                        //{{{ trace
+                        trace!(target: "bc", "No. of active bounds has increased");
+                        trace!(target: "bc", "Switching to NPGA");
+                        //}}}
                         phase = Phase::NGPA;
                     }
                     else
                     {
+                        //{{{ trace
+                        trace!(target: "bc", "No. of active bounds has decreased");
+                        trace!(target: "bc", "Sticking to UA");
+                        //}}}
                         phase = Phase::UA;
                     }
                 }
