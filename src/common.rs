@@ -117,7 +117,6 @@ impl IterData
 //{{{ impl: Display for IterData
 impl Display for IterData
 {
-    #[trace_fn]
     fn fmt(
         &self,
         f: &mut Formatter<'_>,

@@ -11,7 +11,6 @@ use crate::Returns;
 //{{{ dep imports
 use std::fmt;
 use thiserror::Error;
-use topohedral_tracing::*;
 //}}}
 //{{{ std imports
 use std::fmt::Display;
@@ -34,7 +33,6 @@ pub struct Options
 //{{{ impl Display for Options
 impl Display for Options
 {
-    #[trace_fn]
     fn fmt(
         &self,
         f: &mut Formatter<'_>,

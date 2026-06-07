@@ -854,7 +854,6 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
     }
     //}}}
     //{{{ fn: print_status
-    #[trace_fn]
     fn print_status(
         &self,
         k: u64,
