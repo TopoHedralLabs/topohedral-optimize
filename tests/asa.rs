@@ -17,9 +17,18 @@ use topohedral_optimize::{RealFn, Returns, Vector};
 //}}}
 //{{{ dep imports
 use approx::assert_relative_eq;
+use ctor::ctor;
 use topohedral_linalg::{DVector, ReduceOps, VecType, VectorOps};
+use topohedral_tracing::*;
 //}}}
 
+//{{{ fun: init_logger
+#[ctor]
+fn init_logger()
+{
+    init().unwrap();
+}
+//}}}
 //{{{ fun: colvec
 fn colvec(values: &[f64]) -> Vector
 {
@@ -284,7 +293,6 @@ impl RealFn for DiagonalSpdQuadratic
 
 //{{{ test: simple quadratic with active upper bound
 #[test]
-// #[ignore = "ASA implementation is incomplete; enable when the solver is ready"]
 fn asa_minimizes_shifted_quadratic_with_active_upper_bound()
 {
     let n = 5;
@@ -304,7 +312,6 @@ fn asa_minimizes_shifted_quadratic_with_active_upper_bound()
 //}}}
 //{{{ test: ten dimensional rosenbrock
 #[test]
-#[ignore = "ASA implementation is incomplete; enable when the solver is ready"]
 fn asa_minimizes_ten_dimensional_rosenbrock_inside_box()
 {
     let n = 10;
@@ -322,7 +329,6 @@ fn asa_minimizes_ten_dimensional_rosenbrock_inside_box()
 //}}}
 //{{{ test: nnls style diagonal spd quadratic
 #[test]
-#[ignore = "ASA implementation is incomplete; enable when the solver is ready"]
 fn asa_minimizes_nnls_style_spd_quadratic_with_many_active_lower_bounds()
 {
     let n = 20;

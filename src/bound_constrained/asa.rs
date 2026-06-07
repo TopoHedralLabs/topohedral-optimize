@@ -5,27 +5,16 @@
 
 //{{{ crate imports
 use super::common::Options as BoundConstrainedOptions;
-use super::utils::{CircularBuffer, CircularBufferIter};
+use super::utils::CircularBuffer;
 use crate::bound_constrained::asa::Phase::UA;
-use crate::common::CountingRealFn;
 use crate::common::Vector;
 use crate::constraints::{BoundSignature, BoundStatus};
-use crate::unconstrained::{
-    minimize, UnconstrainedConvergedReason, UnconstrainedMethod, UnconstrainedReturns,
-    UnonstrainedOptions,
-};
+use crate::unconstrained::{minimize, UnconstrainedMethod};
 use crate::ConvergedReason;
-use crate::ConvergedReason::Rtol;
 use crate::{bound_constrained::common::BoundConstrainedMinimizer, constraints::BoundsConstraints};
 use crate::{IterData, RealFn};
-use std::collections::HashSet;
-//}}}
-//{{{ std imports
-use std::sync::{Arc, Mutex};
 //}}}
 //{{{ dep imports
-use approx::RelativeEq;
-use serde_json::map::Iter;
 use topohedral_linalg::{ReduceOps, VecType, VectorOps};
 use topohedral_tracing::*;
 //}}}
@@ -135,10 +124,9 @@ impl<F: RealFn> RestrictedFunction<F>
         x: &Vector,
     ) -> Vector
     {
-        let (_, inactive_indices) = self.bounds.active_and_inactive_sets(x, None);
-        let n_restricted = inactive_indices.len();
+        let n_restricted = self.inactive_indices.len();
         let mut x_restricted = Vector::zeros_vec(n_restricted, VecType::Col);
-        for (loc_idx, glob_idx) in inactive_indices.iter().enumerate()
+        for (loc_idx, glob_idx) in self.inactive_indices.iter().enumerate()
         {
             x_restricted[loc_idx] = x[*glob_idx];
         }
@@ -250,10 +238,10 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
     {
         bounds.clamp(&mut x0);
         let grad_0 = fcn.grad(&x0);
-        let projectd_grad_0 = bounds.projected_direction(&x0, &grad_0, 1.0);
+        let negative_grad_0 = -grad_0.clone();
+        let projectd_grad_0 = bounds.projected_direction(&x0, &negative_grad_0, 1.0);
 
         let n1 = opts.n1;
-        let n2 = opts.n2;
         let m = opts.memory;
 
         Self {
@@ -273,9 +261,9 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
         iter_k: &IterData,
     ) -> Option<ConvergedReason>
     {
-        let projected_grad = self
-            .bounds
-            .projected_direction(&iter_k.x, &iter_k.grad_fx, 1.0);
+        let projected_grad =
+            self.bounds
+                .projected_direction(&iter_k.x, &(-iter_k.grad_fx.clone()), 1.0);
         let projected_grad_norm = projected_grad.norm();
         let rtol_reached =
             projected_grad_norm < self.opts.bound_opts.grad_rtol * self.norm_grad_fx_init;
@@ -309,8 +297,7 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
             return fallback;
         }
         let a = s.dot(s) / s_dot_y;
-        a.clamp(self.opts.alpha_min, self.opts.alpha_max);
-        a
+        a.clamp(self.opts.alpha_min, self.opts.alpha_max)
     }
 
     #[trace_fn]
@@ -324,17 +311,19 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
             x,
             fx,
             grad_fx,
-            norm_grad_fx,
+            norm_grad_fx: _,
         } = iter_k;
 
-        let d = self.bounds.projected_direction(x, grad_fx, alpha_init);
+        let d = self
+            .bounds
+            .projected_direction(x, &(-grad_fx.clone()), alpha_init);
 
         if d.abs_max().unwrap() < SMALL
         {
             return None;
         }
 
-        let f_max = self.fn_history.max().unwrap();
+        let f_max = self.fn_history.max().unwrap_or(*fx);
         let delta = self.opts.delta;
         let mut alpha = 1.0;
         let mut x_trial: Vector = (x + &d).into();
@@ -343,9 +332,9 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
 
         while f_trial > f_max + delta * alpha * gradfk_dot_d && alpha > SMALL
         {
-            alpha *= delta;
+            alpha *= self.opts.eta;
             x_trial = (x + alpha * &d).into();
-            f_trial = self.fcn.eval(x)
+            f_trial = self.fcn.eval(&x_trial)
         }
 
         let grad_fx_new = self.fcn.grad(&x_trial);
@@ -379,10 +368,10 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
         {
             if gi.abs() >= thresh_g && *di > thresh_x
             {
-                return true;
+                return false;
             }
         }
-        false
+        true
     }
 
     #[trace_fn]
@@ -396,7 +385,7 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
         let most_recent_sig = self.active_signature_history.newest().unwrap().clone();
         for sig in self.active_signature_history.iter()
         {
-            all_equal = all_equal && (*sig != most_recent_sig);
+            all_equal = all_equal && (*sig == most_recent_sig);
         }
         return all_equal;
     }
@@ -408,12 +397,17 @@ impl<F: RealFn> BoundConstrainedMinimizer for ActiveSetAlgorithm<F>
     #[trace_fn]
     fn minimize(&mut self) -> Result<crate::Returns, super::common::Error>
     {
-        let n = self.fcn.dimension();
         let mut iter_k_prev = IterData::new(self.fcn.clone(), &self.x_init);
         let mut iter_k = IterData::new(self.fcn.clone(), &self.x_init);
         let mut phase = Phase::NGPA;
         let mut mu = self.opts.mu;
         let mut alpha_bb = 1.0;
+        let mut num_fun_evals = 1;
+        let mut num_grad_evals = 1;
+
+        self.fn_history.append(iter_k.fx);
+        self.active_signature_history
+            .append(self.bounds.active_signature(&iter_k.x));
 
         for i in 0..self.opts.bound_opts.max_iter
         {
@@ -423,9 +417,9 @@ impl<F: RealFn> BoundConstrainedMinimizer for ActiveSetAlgorithm<F>
                     xmin: iter_k.x,
                     fmin: iter_k.fx,
                     reason: reason,
-                    num_iterations: 0,
-                    num_fun_evals: 0,
-                    num_grad_evals: 0,
+                    num_iterations: i as usize,
+                    num_fun_evals,
+                    num_grad_evals,
                 });
             }
 
@@ -437,9 +431,9 @@ impl<F: RealFn> BoundConstrainedMinimizer for ActiveSetAlgorithm<F>
 
                     let IterData {
                         x: x_prev,
-                        fx: fx_prev,
+                        fx: _,
                         grad_fx: grad_fx_prev,
-                        norm_grad_fx: norm_grad_fx_prev,
+                        norm_grad_fx: _,
                     } = iter_k_prev.clone();
 
                     let npga_ok = self.ngpa_step(&iter_k, alpha_bb);
@@ -455,7 +449,7 @@ impl<F: RealFn> BoundConstrainedMinimizer for ActiveSetAlgorithm<F>
                         x,
                         fx,
                         grad_fx,
-                        norm_grad_fx,
+                        norm_grad_fx: _,
                     } = &iter_k;
 
                     self.fn_history.append(*fx);
@@ -466,7 +460,12 @@ impl<F: RealFn> BoundConstrainedMinimizer for ActiveSetAlgorithm<F>
                     let y = (grad_fx - grad_fx_prev).into();
                     alpha_bb = self.bb_step(&s, &y, alpha_bb);
 
-                    let projected_grad = self.bounds.projected_direction(&x, &grad_fx, 1.0);
+                    num_fun_evals += 1;
+                    num_grad_evals += 1;
+
+                    let projected_grad =
+                        self.bounds
+                            .projected_direction(&x, &(-grad_fx.clone()), 1.0);
                     let projected_grad_norm = projected_grad.norm();
                     let inactive_grad = self.bounds.masked_gradient(&x, &grad_fx);
                     let inactive_grad_norm = inactive_grad.norm();
@@ -495,29 +494,78 @@ impl<F: RealFn> BoundConstrainedMinimizer for ActiveSetAlgorithm<F>
 
                     let IterData {
                         x,
-                        fx,
-                        grad_fx,
-                        norm_grad_fx,
+                        fx: _,
+                        grad_fx: _,
+                        norm_grad_fx: _,
                     } = &iter_k;
 
-                    let mut restricted_fcn =
+                    let active_count_before = self.bounds.active_and_inactive_sets(x, None).0.len();
+                    let restricted_fcn =
                         RestrictedFunction::new(self.fcn.clone(), x, self.bounds.clone());
 
                     let x0 = restricted_fcn.restrict(x);
+                    if x0.is_empty()
+                    {
+                        phase = Phase::NGPA;
+                        continue;
+                    }
 
                     let res = minimize(
                         restricted_fcn.clone(),
                         x0,
                         self.opts.unconstrained_method.clone(),
-                    )?;
+                    );
+
+                    let Ok(res) = res
+                    else
+                    {
+                        phase = Phase::NGPA;
+                        continue;
+                    };
 
                     iter_k.x.copy_from(restricted_fcn.lift(&res.xmin));
+                    self.bounds.clamp(&mut iter_k.x);
                     iter_k.fx = res.fmin;
                     iter_k.grad_fx.copy_from(self.fcn.grad(&iter_k.x));
+                    iter_k.fx = self.fcn.eval(&iter_k.x);
+                    iter_k.norm_grad_fx = iter_k.grad_fx.norm();
+                    num_fun_evals += res.num_fun_evals + 1;
+                    num_grad_evals += res.num_grad_evals + 1;
 
                     let projected_grad_new =
                         self.bounds
-                            .projected_direction(&iter_k.x, &iter_k.grad_fx, 1.0);
+                            .projected_direction(&iter_k.x, &(-iter_k.grad_fx.clone()), 1.0);
+                    let projected_grad_norm_new = projected_grad_new.norm();
+                    let inactive_grad_new = self.bounds.masked_gradient(&iter_k.x, &iter_k.grad_fx);
+                    let inactive_grad_norm_new = inactive_grad_new.norm();
+                    let active_count_after = self
+                        .bounds
+                        .active_and_inactive_sets(&iter_k.x, None)
+                        .0
+                        .len();
+
+                    self.fn_history.append(iter_k.fx);
+                    self.active_signature_history
+                        .append(self.bounds.active_signature(&iter_k.x));
+
+                    if inactive_grad_norm_new < mu * projected_grad_norm_new
+                    {
+                        phase = Phase::NGPA;
+                    }
+                    else if active_count_after > active_count_before
+                        && active_count_after <= active_count_before + self.opts.n2
+                        && !self.undecided_set_is_empy(
+                            &iter_k.x,
+                            &inactive_grad_new,
+                            projected_grad_norm_new,
+                        )
+                    {
+                        phase = Phase::NGPA;
+                    }
+                    else
+                    {
+                        phase = Phase::UA;
+                    }
                 }
             }
         }
@@ -525,9 +573,9 @@ impl<F: RealFn> BoundConstrainedMinimizer for ActiveSetAlgorithm<F>
             xmin: iter_k.x,
             fmin: iter_k.fx,
             reason: ConvergedReason::Atol,
-            num_iterations: 0,
-            num_fun_evals: 0,
-            num_grad_evals: 0,
+            num_iterations: self.opts.bound_opts.max_iter as usize,
+            num_fun_evals,
+            num_grad_evals,
         })
     }
 }
