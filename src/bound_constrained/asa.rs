@@ -36,6 +36,7 @@ const BETA: f64 = 1.5;
 const SMALL: f64 = 1e-20;
 
 //{{{ struct: Options
+#[derive(Clone)]
 pub struct Options
 {
     bound_opts: BoundConstrainedOptions,
@@ -486,7 +487,14 @@ impl<F: RealFn> BoundConstrainedMinimizer for ActiveSetAlgorithm<F>
                 }
             }
         }
-        todo!()
+        Ok(crate::Returns {
+            xmin: iter_k.x,
+            fmin: iter_k.fx,
+            reason: ConvergedReason::Atol,
+            num_iterations: 0,
+            num_fun_evals: 0,
+            num_grad_evals: 0,
+        })
     }
 }
 //}}}
