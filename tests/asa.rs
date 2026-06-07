@@ -17,7 +17,7 @@ use topohedral_optimize::{RealFn, Returns, Vector};
 //}}}
 //{{{ dep imports
 use approx::assert_relative_eq;
-use topohedral_linalg::{DVector, VecType, VectorOps};
+use topohedral_linalg::{DVector, ReduceOps, VecType, VectorOps};
 //}}}
 
 //{{{ fun: colvec
@@ -284,7 +284,7 @@ impl RealFn for DiagonalSpdQuadratic
 
 //{{{ test: simple quadratic with active upper bound
 #[test]
-#[ignore = "ASA implementation is incomplete; enable when the solver is ready"]
+// #[ignore = "ASA implementation is incomplete; enable when the solver is ready"]
 fn asa_minimizes_shifted_quadratic_with_active_upper_bound()
 {
     let n = 5;
