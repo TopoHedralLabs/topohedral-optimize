@@ -203,6 +203,40 @@ enum Phase
     UA,
 }
 //}}}
+//{{{ impl: Options
+impl Options
+{
+    #[trace_fn]
+    pub fn new(
+        bound_opts: BoundConstrainedOptions,
+        unconstrained_method: UnconstrainedMethod,
+        mu: f64,
+        rho: f64,
+        n1: usize,
+        n2: usize,
+        memory: usize,
+        delta: f64,
+        eta: f64,
+        alpha_min: f64,
+        alpha_max: f64,
+    ) -> Self
+    {
+        Self {
+            bound_opts,
+            unconstrained_method,
+            mu,
+            rho,
+            n1,
+            n2,
+            memory,
+            delta,
+            eta,
+            alpha_min,
+            alpha_max,
+        }
+    }
+}
+//}}}
 //{{{ impl: ActiveSetAlgorithm
 impl<F: RealFn> ActiveSetAlgorithm<F>
 {
