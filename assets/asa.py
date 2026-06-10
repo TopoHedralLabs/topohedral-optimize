@@ -32,6 +32,7 @@ implementation detail):
 from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Callable, Optional
+import os
 import numpy as np
 
 
@@ -113,6 +114,37 @@ class ASA:
         # evaluation counters
         self._nfev = 0
         self._ngev = 0
+        self._proj_grad0_l2 = None
+
+    # ---- tracing ------------------------------------------------------------
+    def _trace(self, msg=""):
+        if self.verbose:
+            print(msg)
+
+    def _fmt_vec(self, x):
+        return np.array2string(np.asarray(x), precision=8, suppress_small=False)
+
+    def _projected_grad(self, x, g):
+        return d_alpha(x, g, 1.0, self.lo, self.hi)
+
+    def _print_status(self, k, phase, x, f, g, mu):
+        projected = self._projected_grad(x, g)
+        proj_inf = np.max(np.abs(projected))
+        proj_l2 = float(np.linalg.norm(projected))
+        rel = np.nan if not self._proj_grad0_l2 else proj_l2 / self._proj_grad0_l2
+
+        self._trace(f">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> k = {k}")
+        self._trace(f"phase: {phase}")
+        self._trace(f"f: {f:1.8e}")
+        self._trace(f"x: {self._fmt_vec(x)}")
+        self._trace(f"grad_f: {self._fmt_vec(g)}")
+        self._trace(f"grad_f_proj: {self._fmt_vec(projected)}")
+        self._trace(f"||grad_f_proj||_inf = {proj_inf:1.4e}")
+        self._trace(f"||grad_f_proj||_2 / ||grad_f_proj_0||_2 = {rel:1.4e}")
+        self._trace(
+            f"|A| = {int(self._active_mask(x).sum())} mu = {mu:1.4e} "
+            f"nfev = {self._nfev} ngev = {self._ngev}"
+        )
 
     # ---- evaluation wrappers ------------------------------------------------
     def _f(self, x):
@@ -172,8 +204,10 @@ class ASA:
         """alpha_BB = (s.s) / (s.y)  (eq. A.1), safeguarded."""
         sy = float(s @ y)
         if sy <= 0:
+            self._trace(f"BB fallback: s.y = {sy:1.4e}")
             return fallback
         a = float(s @ s) / sy
+        self._trace(f"a = {a:1.4e}")
         return float(np.clip(a, self.alpha_min, self.alpha_max))
 
     # ========================================================================
@@ -187,6 +221,7 @@ class ASA:
         # Step 1: search direction (Figure 2.1)
         d = d_alpha(x, g, alpha_bb, self.lo, self.hi)
         if np.all(d == 0.0):
+            self._trace("Projected grad is small")
             return x, fx, g, False
 
         # Reference value: simple GLL max-of-last-M  (eq. 2.3)
@@ -196,12 +231,20 @@ class ASA:
         gTd = float(g @ d)               # < 0 by Prop. 2.1 (P6)
         alpha = 1.0
         f_trial = self._f(x + d)
+        i = 0
+        self._trace("Running backtracking armijo")
+        self._trace(
+            f"NGPA trial: alpha_bb = {alpha_bb:1.4e} "
+            f"f_ref = {f_ref:1.4e} grad_dot_d = {gTd:1.4e}"
+        )
         # backtrack until  f(x + alpha*d) <= f_ref + delta * alpha * g.d
         while f_trial > f_ref + self.delta * alpha * gTd:
             alpha *= self.eta
             if alpha < 1e-30:            # safeguard against zero step
                 break
             f_trial = self._f(x + alpha * d)
+            i += 1
+        self._trace(f"Found step i = {i} alpha = {alpha:1.4e} f_trial = {f_trial:1.4e}")
 
         x_new = x + alpha * d
         g_new = self._g(x_new)
@@ -235,10 +278,15 @@ class ASA:
         """
         free = ~self._active_mask(x)
         if not np.any(free):
+            self._trace("UA skipped: no free variables")
             return x, fx, g, False
 
         free_idx = np.where(free)[0]
         n_free = free_idx.size
+        self._trace(
+            f"UA restricted problem: n_free = {n_free} "
+            f"free_idx = {self._fmt_vec(free_idx)}"
+        )
 
         # subspace coordinates
         z = x[free_idx].copy()
@@ -258,6 +306,10 @@ class ASA:
         S, Y, RHO = [], [], []
 
         for inner in range(self.ua_max_iter):
+            self._trace(
+                f"UA inner {inner}: f = {fz:1.8e} "
+                f"||grad_free||_inf = {np.max(np.abs(gz)):1.4e}"
+            )
             # ---- search direction via two-loop recursion ------------------
             q = gz.copy()
             alphas = []
@@ -277,6 +329,7 @@ class ASA:
 
             # safety: if curvature info gave a non-descent direction, reset
             if float(gz @ d) >= 0.0:
+                self._trace("UA reset to steepest descent direction")
                 d = -gz                    # plain steepest descent
 
             # ---- projected backtracking-Armijo line search ----------------
@@ -291,24 +344,32 @@ class ASA:
 
             alpha = 1.0
             gTd = float(gz @ d)
+            self._trace(f"UA line search: alpha_box = {alpha_box:1.4e} grad_dot_d = {gTd:1.4e}")
             # backtrack
-            for _ in range(60):
+            for ls_iter in range(60):
                 z_trial = z + alpha * d
                 # project (only matters when alpha > alpha_box)
                 z_trial = np.minimum(np.maximum(z_trial, lo_z), hi_z)
                 f_trial = self._f(lift(z_trial))
                 # Armijo: monotone here (paper's U1 requires monotone UA)
                 if f_trial <= fz + self.delta * alpha * gTd:
+                    self._trace(
+                        f"UA found step i = {ls_iter} alpha = {alpha:1.4e} "
+                        f"f_trial = {f_trial:1.4e}"
+                    )
                     break
                 alpha *= self.eta
             else:
                 # line search failed; bail out without updating
+                self._trace("UA line search failed")
                 break
 
             # Did this step actually hit a bound?  (alpha >= alpha_box means
             # the unprojected trial would have crossed at least one bound;
             # after projection one or more free vars are exactly at the bound.)
             hit_bound = alpha >= alpha_box - 1e-16
+            if hit_bound:
+                self._trace("UA step hit a bound")
             z = z_trial
 
             # update full-space iterate and recompute gradient
@@ -325,6 +386,8 @@ class ASA:
                 S.append(s_k); Y.append(y_k); RHO.append(1.0 / sy)
                 if len(S) > m:
                     S.pop(0); Y.pop(0); RHO.pop(0)
+            else:
+                self._trace(f"UA skipped L-BFGS update: s.y = {sy:1.4e}")
 
             gz = gz_new
 
@@ -338,6 +401,7 @@ class ASA:
             # Inner stopping: ||g on free vars|| small enough.  We let the
             # driver decide globally; here we just stop wasting work.
             if np.max(np.abs(gz)) <= self.tol * 0.1:
+                self._trace("UA inner gradient tolerance met")
                 return x_full, fz, g_full, False
 
         # exhausted inner iteration budget
@@ -351,6 +415,7 @@ class ASA:
         x = project(np.asarray(x0, dtype=float), self.lo, self.hi)
         f = self._f(x)
         g = self._g(x)
+        self._proj_grad0_l2 = float(np.linalg.norm(self._projected_grad(x, g)))
 
         mu = self.mu0
         phase = "N"                          # start in NGPA
@@ -365,11 +430,12 @@ class ASA:
             kkt = self._kkt(x, g)
             log.append(phase)
             if self.verbose:
-                print(f"[{k:4d}] phase={phase} f={f:.6e} kkt={kkt:.2e} "
-                      f"|A|={int(self._active_mask(x).sum())} mu={mu:.2e}")
+                self._print_status(k, phase, x, f, g, mu)
+                self._trace("Checking convergence")
 
             # Stopping test (Section 6: ||P(x - g) - x||_inf <= tol)
             if kkt <= self.tol:
+                self._trace("Atol reached")
                 return ASAResult(x=x, fun=f, grad=g, nit=k,
                                  nfev=self._nfev, ngev=self._ngev,
                                  converged=True, kkt=kkt,
@@ -377,6 +443,7 @@ class ASA:
 
             # ----------------- Phase 1: NGPA --------------------------------
             if phase == "N":
+                self._trace("Entering NGPA Phase")
                 x_prev_inner, g_prev_inner = x.copy(), g.copy()
                 x, f, g, ok = self._ngpa_step(x, f, g, alpha_bb, f_hist)
                 if not ok:
@@ -392,6 +459,7 @@ class ASA:
                 s = x - x_prev_inner
                 y = g - g_prev_inner
                 alpha_bb = self._bb_step(s, y, fallback=alpha_bb)
+                self._trace(f"alpha_bb = {alpha_bb:1.4e}")
 
                 # Track recent active-set signatures for the n1 test
                 active_sigs.append(self._active_signature(x))
@@ -401,10 +469,19 @@ class ASA:
                 # ---- Branching test 1a: undecided set empty? --------------
                 d1n = self._kkt(x, g)
                 gI_norm = np.linalg.norm(self._grad_I(x, g))
-                if self._undecided_empty(x, g, d1n):
+                undecided_empty = self._undecided_empty(x, g, d1n)
+                self._trace(
+                    f"NGPA branch tests: undecided_empty = {undecided_empty} "
+                    f"||grad_inactive|| = {gI_norm:1.4e} "
+                    f"mu * ||grad_proj|| = {mu * d1n:1.4e}"
+                )
+                if undecided_empty:
                     if gI_norm < mu * d1n:
+                        self._trace("||grad_inactive|| < mu ||grad_proj||")
                         mu *= self.rho     # shrink mu, stay in NGPA
+                        self._trace(f"mu = {mu:1.4e}")
                     else:
+                        self._trace("Switching to UA")
                         phase = "U"        # face looks identified -> UA
                         continue
 
@@ -413,11 +490,14 @@ class ASA:
                     recent = active_sigs[-(self.n1 + 1):]
                     if all(s_ == recent[0] for s_ in recent):
                         if gI_norm >= mu * d1n:
+                            self._trace("Active set stable")
+                            self._trace("Switching to UA")
                             phase = "U"
                             continue
 
             # ----------------- Phase 2: UA ----------------------------------
             else:  # phase == "U"
+                self._trace("Entering UA Phase")
                 size_A_before = int(self._active_mask(x).sum())
                 x_new, f_new, g_new, grew = self._ua_run(x, f, g)
 
@@ -425,6 +505,11 @@ class ASA:
                 d1n_new = self._kkt(x_new, g_new)
                 gI_norm_new = np.linalg.norm(self._grad_I(x_new, g_new))
                 subproblem_solved = gI_norm_new < mu * d1n_new
+                self._trace(
+                    f"UA branch tests: grew = {grew} "
+                    f"||grad_inactive|| = {gI_norm_new:1.4e} "
+                    f"mu * ||grad_proj|| = {mu * d1n_new:1.4e}"
+                )
 
                 x, f, g = x_new, f_new, g_new
                 f_hist.append(f)
@@ -433,6 +518,8 @@ class ASA:
                 active_sigs.append(self._active_signature(x))
 
                 if subproblem_solved:
+                    self._trace("||grad_inactive|| < mu ||grad_proj||")
+                    self._trace("Switching to NGPA")
                     phase = "N"            # restart NGPA (step 2a)
                     continue
 
@@ -441,9 +528,12 @@ class ASA:
                 if size_A_after > size_A_before:
                     if (not self._undecided_empty(x, g, d1n_new)
                             and size_A_after <= size_A_before + self.n2):
+                        self._trace("No. of active bounds has increased")
+                        self._trace("Switching to NGPA")
                         phase = "N"        # restart NGPA
                         continue
                     # else: restart UA at current x (just stay in U)
+                self._trace("Sticking to UA")
 
         # exhausted max_iter
         kkt = self._kkt(x, g)
@@ -478,11 +568,18 @@ def minimize_box(fun, x0, jac, bounds, **kwargs):
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
     np.set_printoptions(precision=4, suppress=True)
+    verbose = os.environ.get("ASA_VERBOSE", "").lower() in {"1", "true", "yes", "on"}
 
     def banner(title):
         print("\n" + "=" * 64)
         print(" " + title)
         print("=" * 64)
+
+    def box_kkt(jac, x, bounds):
+        lo = np.array([(-np.inf if b[0] is None else b[0]) for b in bounds])
+        hi = np.array([( np.inf if b[1] is None else b[1]) for b in bounds])
+        g = jac(x)
+        return np.max(np.abs(project(x - g, lo, hi) - x))
 
     # ---- 1. Simple quadratic with active bounds -----------------------------
     banner("Problem 1:  min sum (x_i - i)^2,  x in [0, 3]^5")
@@ -494,7 +591,7 @@ if __name__ == "__main__":
     def g1(x): return 2.0 * (x - target)
 
     res = minimize_box(f1, x0=np.full(n, 1.5),
-                       jac=g1, bounds=[(0.0, 3.0)] * n, verbose=False)
+                       jac=g1, bounds=[(0.0, 3.0)] * n, verbose=verbose)
     print(f"  converged = {res.converged}")
     print(f"  x*        = {res.x}      (expected [0 1 2 3 3])")
     print(f"  f(x*)     = {res.fun:.6e} (expected {1.0:.6e})")
@@ -517,12 +614,32 @@ if __name__ == "__main__":
         return g
 
     res = minimize_box(f2, x0=np.full(n, -1.2), jac=g2,
-                       bounds=[(-2.0, 2.0)] * n, max_iter=2000)
+                       bounds=[(-2.0, 2.0)] * n, max_iter=2000,
+                       verbose=verbose)
     print(f"  converged = {res.converged}")
     print(f"  x*        = {res.x}")
     print(f"  f(x*)     = {res.fun:.6e}   (expected ~0)")
     print(f"  KKT       = {res.kkt:.2e}")
     print(f"  iters     = {res.nit},  nfev={res.nfev}, ngev={res.ngev}")
+
+    # ---- 2b. Rosenbrock with constrained minimizer outside the box ----------
+    banner("Problem 2b:  10-D Rosenbrock,  x in [-2, 0.99]^10  (outside box)")
+    bounds_2b = [(-2.0, 0.99)] * n
+    expected_x = np.full(n, 0.99)
+    expected_f = f2(expected_x)
+
+    res = minimize_box(f2, x0=np.full(n, -1.2), jac=g2,
+                       bounds=bounds_2b, max_iter=2000,
+                       verbose=verbose)
+    print(f"  converged = {res.converged}")
+    print(f"  x*        = {res.x}      (Rust test expects all 0.99)")
+    print(f"  max |x*-expected| = {np.max(np.abs(res.x - expected_x)):.6e}")
+    print(f"  f(x*)     = {res.fun:.6e}")
+    print(f"  f(0.99)   = {expected_f:.6e}   (the selected Rust test expects 0)")
+    print(f"  KKT       = {res.kkt:.2e}      (for bounds [-2, 0.99])")
+    print(f"  KKT[-2,2] = {box_kkt(g2, res.x, [(-2.0, 2.0)] * n):.2e}")
+    print(f"  iters     = {res.nit},  nfev={res.nfev}, ngev={res.ngev}")
+    print(f"  phases    = {''.join(res.phase_log)}")
 
     # ---- 3. Quadratic where bounds matter, degenerate case ------------------
     banner("Problem 3:  min 0.5 x^T A x - b^T x,  x >= 0  (NNLS-ish)")
@@ -539,7 +656,8 @@ if __name__ == "__main__":
     def g3(x): return A @ x - b
 
     res = minimize_box(f3, x0=np.ones(n), jac=g3,
-                       bounds=[(0.0, np.inf)] * n, max_iter=500)
+                       bounds=[(0.0, np.inf)] * n, max_iter=500,
+                       verbose=verbose)
     print(f"  converged = {res.converged}")
     print(f"  f(x*)     = {res.fun:.6e}")
     print(f"  KKT       = {res.kkt:.2e}")
