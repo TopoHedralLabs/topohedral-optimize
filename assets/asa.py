@@ -568,6 +568,8 @@ def minimize_box(fun, x0, jac, bounds, **kwargs):
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
     np.set_printoptions(precision=4, suppress=True)
+    from scipy.optimize import minimize
+
     verbose = os.environ.get("ASA_VERBOSE", "").lower() in {"1", "true", "yes", "on"}
 
     def banner(title):
@@ -580,6 +582,21 @@ if __name__ == "__main__":
         hi = np.array([( np.inf if b[1] is None else b[1]) for b in bounds])
         g = jac(x)
         return np.max(np.abs(project(x - g, lo, hi) - x))
+
+    def scipy_lbfgsb_reference(title, fun, jac, x0, bounds, asa_res):
+        ref_bounds = [(None if b[0] == -np.inf else b[0],
+                       None if b[1] == np.inf else b[1]) for b in bounds]
+        ref = minimize(fun, x0, jac=jac, method="L-BFGS-B",
+                       bounds=ref_bounds,
+                       options=dict(ftol=1e-14, gtol=1e-9, maxiter=5000))
+        print(f"  L-BFGS-B {title}:")
+        print(f"    success   = {ref.success} ({ref.message})")
+        print(f"    f         = {ref.fun:.6e}   diff = {asa_res.fun - ref.fun:+.2e}")
+        print(f"    x         = {ref.x}")
+        print(f"    max |dx|  = {np.max(np.abs(asa_res.x - ref.x)):.6e}")
+        print(f"    KKT       = {box_kkt(jac, ref.x, bounds):.2e}")
+        print(f"    iters     = {ref.nit},  nfev={ref.nfev}, ngev={ref.njev}")
+        return ref
 
     # ---- 1. Simple quadratic with active bounds -----------------------------
     banner("Problem 1:  min sum (x_i - i)^2,  x in [0, 3]^5")
@@ -598,6 +615,8 @@ if __name__ == "__main__":
     print(f"  KKT       = {res.kkt:.2e}")
     print(f"  iters     = {res.nit},  nfev={res.nfev}, ngev={res.ngev}")
     print(f"  phases    = {''.join(res.phase_log)}")
+    scipy_lbfgsb_reference("reference", f1, g1, np.full(n, 1.5),
+                           [(0.0, 3.0)] * n, res)
 
     # ---- 2. Rosenbrock with box bounds --------------------------------------
     banner("Problem 2:  10-D Rosenbrock,  x in [-2, 2]^10  (unconstrained opt)")
@@ -621,6 +640,8 @@ if __name__ == "__main__":
     print(f"  f(x*)     = {res.fun:.6e}   (expected ~0)")
     print(f"  KKT       = {res.kkt:.2e}")
     print(f"  iters     = {res.nit},  nfev={res.nfev}, ngev={res.ngev}")
+    scipy_lbfgsb_reference("reference", f2, g2, np.full(n, -1.2),
+                           [(-2.0, 2.0)] * n, res)
 
     # ---- 2b. Rosenbrock with constrained minimizer outside the box ----------
     banner("Problem 2b:  10-D Rosenbrock,  x in [-2, 0.99]^10  (outside box)")
@@ -640,6 +661,8 @@ if __name__ == "__main__":
     print(f"  KKT[-2,2] = {box_kkt(g2, res.x, [(-2.0, 2.0)] * n):.2e}")
     print(f"  iters     = {res.nit},  nfev={res.nfev}, ngev={res.ngev}")
     print(f"  phases    = {''.join(res.phase_log)}")
+    scipy_lbfgsb_reference("reference", f2, g2, np.full(n, -1.2),
+                           bounds_2b, res)
 
     # ---- 3. Quadratic where bounds matter, degenerate case ------------------
     banner("Problem 3:  min 0.5 x^T A x - b^T x,  x >= 0  (NNLS-ish)")
@@ -664,9 +687,5 @@ if __name__ == "__main__":
     print(f"  iters     = {res.nit},  nfev={res.nfev}, ngev={res.ngev}")
     print(f"  active    = {int((res.x <= 0).sum())} / {n} components at bound")
     print(f"  phases    = {''.join(res.phase_log)}")
-
-    # Cross-check against scipy's L-BFGS-B
-    from scipy.optimize import minimize
-    ref = minimize(f3, np.ones(n), jac=g3, method="L-BFGS-B",
-                   bounds=[(0.0, None)] * n, options=dict(ftol=1e-14, gtol=1e-9))
-    print(f"  L-BFGS-B reference f = {ref.fun:.6e}   diff = {res.fun - ref.fun:+.2e}")
+    scipy_lbfgsb_reference("reference", f3, g3, np.ones(n),
+                           [(0.0, np.inf)] * n, res)

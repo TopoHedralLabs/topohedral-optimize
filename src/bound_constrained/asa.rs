@@ -432,7 +432,7 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
         info!(target: "bc", ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> k = {k}");
         trace!(target: "bc", "x: {}", iter_k.x.clone().transpose());
         trace!(target: "bc", "∇f: {}", iter_k.grad_fx.clone().transpose());
-        trace!(target: "bc", "∇f_proj: {}", self.bounds.projected_direction(&iter_k.x, -&iter_k.grad_fx, 1.0).transpose());
+        trace!(target: "bc", "∇f_proj: {}", self.bounds.projected_direction(&iter_k.x, &(-iter_k.grad_fx.clone()), 1.0).transpose());
     }
 }
 //}}}
