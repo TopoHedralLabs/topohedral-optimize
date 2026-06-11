@@ -567,7 +567,7 @@ def minimize_box(fun, x0, jac, bounds, **kwargs):
 # Self-test / demo:  three classic box-constrained problems
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
-    np.set_printoptions(precision=4, suppress=True)
+    np.set_printoptions(precision=8, suppress=False)
     from scipy.optimize import minimize
 
     verbose = os.environ.get("ASA_VERBOSE", "").lower() in {"1", "true", "yes", "on"}
@@ -588,11 +588,12 @@ if __name__ == "__main__":
                        None if b[1] == np.inf else b[1]) for b in bounds]
         ref = minimize(fun, x0, jac=jac, method="L-BFGS-B",
                        bounds=ref_bounds,
-                       options=dict(ftol=1e-14, gtol=1e-9, maxiter=5000))
+                       options=dict(ftol=1e-12, gtol=1e-9, maxiter=5000))
         print(f"  L-BFGS-B {title}:")
         print(f"    success   = {ref.success} ({ref.message})")
         print(f"    f         = {ref.fun:.6e}   diff = {asa_res.fun - ref.fun:+.2e}")
-        print(f"    x         = {ref.x}")
+        x_s = np.array2string(ref.x, formatter={"float_kind": lambda v: f"{v:.5e}"})
+        print(f"    x         = {x_s}")
         print(f"    max |dx|  = {np.max(np.abs(asa_res.x - ref.x)):.6e}")
         print(f"    KKT       = {box_kkt(jac, ref.x, bounds):.2e}")
         print(f"    iters     = {ref.nit},  nfev={ref.nfev}, ngev={ref.njev}")
@@ -653,7 +654,8 @@ if __name__ == "__main__":
                        bounds=bounds_2b, max_iter=2000,
                        verbose=verbose)
     print(f"  converged = {res.converged}")
-    print(f"  x*        = {res.x}      (Rust test expects all 0.99)")
+    x_s = np.array2string(res.x, formatter={"float_kind": lambda v: f"{v:.5e}"})
+    print(f"  x*        = {x_s}      (Rust test expects all 0.99)")
     print(f"  max |x*-expected| = {np.max(np.abs(res.x - expected_x)):.6e}")
     print(f"  f(x*)     = {res.fun:.6e}")
     print(f"  f(0.99)   = {expected_f:.6e}   (the selected Rust test expects 0)")
