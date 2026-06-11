@@ -24,8 +24,8 @@ pub enum Method
 
 #[trace_fn]
 pub fn create<'a, F: RealFn + 'a>(
-    mut fcn: F,
-    mut x0: Vector,
+    fcn: F,
+    x0: Vector,
     bounds: BoundsConstraints,
     method: Method,
 ) -> Box<dyn BoundConstrainedMinimizer + 'a>

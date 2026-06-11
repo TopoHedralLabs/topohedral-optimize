@@ -15,7 +15,7 @@ use crate::{bound_constrained::common::BoundConstrainedMinimizer, constraints::B
 use crate::{IterData, RealFn};
 //}}}
 //{{{ dep imports
-use topohedral_linalg::{max, MatrixOps, ReduceOps, VecType, VectorOps};
+use topohedral_linalg::{MatrixOps, ReduceOps, VecType, VectorOps};
 use topohedral_tracing::*;
 //}}}
 //--------------------------------------------------------------------------------------------------
@@ -165,8 +165,7 @@ impl<F: RealFn> RealFn for RestrictedFunction<F>
     {
         let x_full = self.lift(x);
         let grad_f_full = self.fcn.grad(&x_full);
-        let grad_f_restricted = self.restrict(&grad_f_full);
-        grad_f_restricted
+        self.restrict(&grad_f_full)
     }
     //}}}
 }
@@ -187,6 +186,7 @@ pub struct ActiveSetAlgorithm<F: RealFn>
 //{{{ enum: Phase
 enum Phase
 {
+    #[allow(clippy::upper_case_acronyms)]
     NGPA,
     UA,
 }
@@ -194,6 +194,7 @@ enum Phase
 //{{{ impl: Options
 impl Options
 {
+    #[allow(clippy::too_many_arguments)]
     #[trace_fn]
     pub fn new(
         bound_opts: BoundConstrainedOptions,
@@ -245,10 +246,10 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
         let m = opts.memory;
 
         Self {
-            fcn: fcn,
+            fcn,
             x_init: x0,
             norm_grad_fx_init: projectd_grad_0.abs_max().unwrap(),
-            bounds: bounds,
+            bounds,
             opts,
             fn_history: CircularBuffer::new(m),
             active_signature_history: CircularBuffer::new(n1),
@@ -462,7 +463,7 @@ impl<F: RealFn> BoundConstrainedMinimizer for ActiveSetAlgorithm<F>
                 return Ok(crate::Returns {
                     xmin: iter_k.x,
                     fmin: iter_k.fx,
-                    reason: reason,
+                    reason,
                     num_iterations: k as usize,
                     num_fun_evals,
                     num_grad_evals,
@@ -515,13 +516,12 @@ impl<F: RealFn> BoundConstrainedMinimizer for ActiveSetAlgorithm<F>
                     num_grad_evals += 1;
 
                     let projected_grad =
-                        self.bounds
-                            .projected_direction(&x, &(-grad_fx.clone()), 1.0);
+                        self.bounds.projected_direction(x, &(-grad_fx.clone()), 1.0);
                     let projected_grad_norm = projected_grad.norm();
-                    let inactive_grad = self.bounds.masked_gradient(&x, &grad_fx);
+                    let inactive_grad = self.bounds.masked_gradient(x, grad_fx);
                     let inactive_grad_norm = inactive_grad.norm();
 
-                    if self.undecided_set_is_empy(&x, &inactive_grad, projected_grad_norm)
+                    if self.undecided_set_is_empy(x, &inactive_grad, projected_grad_norm)
                     {
                         if inactive_grad_norm < mu * projected_grad_norm
                         {

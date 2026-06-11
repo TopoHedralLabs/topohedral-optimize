@@ -11,7 +11,6 @@ use crate::{
 //}}}
 //{{{ std imports
 use std::collections::HashMap;
-use std::ops::IndexMut;
 //}}}
 //{{{ dep imports
 use topohedral_linalg::{Shape, TransformOps, VecType, VectorOps};
@@ -348,11 +347,7 @@ impl BoundsConstraints
         {
             let xi = x[idx];
 
-            if lower.is_some_and(|lower| xi <= lower)
-            {
-                (*grad_f)[idx] = 0.0;
-            }
-            else if upper.is_some_and(|upper| xi >= upper)
+            if lower.is_some_and(|lower| xi <= lower) || upper.is_some_and(|upper| xi >= upper)
             {
                 (*grad_f)[idx] = 0.0;
             }
