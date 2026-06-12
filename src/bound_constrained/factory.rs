@@ -5,9 +5,9 @@
 
 //{{{ crate imports
 use super::asa::{ActiveSetAlgorithm, Options as AsaOptions};
-use super::common::BoundConstrainedMinimizer;
+use super::common::Error;
 use crate::constraints::BoundsConstraints;
-use crate::{RealFn, Vector};
+use crate::{Minimizer, RealFn, Vector};
 //}}}
 //{{{ std imports
 //}}}
@@ -28,7 +28,7 @@ pub fn create<'a, F: RealFn + 'a>(
     x0: Vector,
     bounds: BoundsConstraints,
     method: Method,
-) -> Box<dyn BoundConstrainedMinimizer + 'a>
+) -> Box<dyn Minimizer<Error = Error> + 'a>
 {
     match method
     {

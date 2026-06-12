@@ -4,10 +4,10 @@
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
+use super::common::Error;
 use super::common::Options as UnonstrainedOptions;
-use super::common::{Error, UnconstrainedMinimizer};
 use crate::line_search as ls;
-use crate::{ConvergedReason, IterData, RealFn, Returns, Vector};
+use crate::{ConvergedReason, IterData, Minimizer, RealFn, Returns, Vector};
 //}}}
 //{{{ std imports
 //}}}
@@ -173,11 +173,13 @@ impl<F: RealFn> ConjugateGradient<F>
     }
 }
 //}}}
-//{{{ impl: UnconstrainedMinimizer for ConjugateGradient
-impl<F: RealFn> UnconstrainedMinimizer for ConjugateGradient<F>
+//{{{ impl: Minimizer for ConjugateGradient
+impl<F: RealFn> Minimizer for ConjugateGradient<F>
 {
+    type Error = Error;
+
     #[trace_fn]
-    fn minimize(&mut self) -> Result<Returns, Error>
+    fn minimize(&mut self) -> Result<Returns, Self::Error>
     {
         let mut iter_k = IterData::new(self.fcn.clone(), &self.x_init);
 

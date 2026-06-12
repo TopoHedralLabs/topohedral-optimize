@@ -6,9 +6,9 @@
 //{{{ crate imports
 use crate::{
     common::{arc_real_fn, ConvergedReason, CountingRealFn, IterData, Returns},
-    constrained::{ConstrainedError, ConstrainedMinimizer, ConstriainedOptions},
+    constrained::{ConstrainedError, ConstriainedOptions},
     unconstrained::{minimize, UnconstrainedMethod, UnconstrainedReturns},
-    Matrix, RealFn, RealVectorFn, Vector,
+    Matrix, Minimizer, RealFn, RealVectorFn, Vector,
 };
 use core::f64;
 //}}}
@@ -964,12 +964,13 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
     }
 }
 //}}}
-//{{{ impl: ConstrainedMinimizer for AugmentedLagrangian
-impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> ConstrainedMinimizer
-    for AugmentedLagrangian<F1, F2, F3>
+//{{{ impl: Minimizer for AugmentedLagrangian
+impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> Minimizer for AugmentedLagrangian<F1, F2, F3>
 {
+    type Error = ConstrainedError;
+
     #[trace_fn]
-    fn minimize(&mut self) -> Result<Returns, ConstrainedError>
+    fn minimize(&mut self) -> Result<Returns, Self::Error>
     {
         let alpha = self.opts.constraint_improvement_factor;
         let beta = self.opts.penalty_growth_factor;

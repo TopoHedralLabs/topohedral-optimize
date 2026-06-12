@@ -6,7 +6,6 @@
 //{{{ crate imports
 use crate::line_search::LineSearchError;
 use crate::line_search::LineSearchMethod;
-use crate::Returns;
 //}}}
 //{{{ dep imports
 use std::fmt;
@@ -54,11 +53,5 @@ pub enum Error
     LineSearch(#[from] LineSearchError),
     #[error("Maximum iterations of {0} reached")]
     MaxIterations(usize),
-}
-//}}}
-//{{{ trait: UnconstrainedMinimizer
-pub trait UnconstrainedMinimizer
-{
-    fn minimize(&mut self) -> Result<Returns, Error>;
 }
 //}}}

@@ -6,12 +6,12 @@
 use topohedral_tracing::trace_fn;
 
 //{{{ crate imports
-use super::common::{Options, UnconstrainedMinimizer};
+use super::common::{Error, Options};
 use super::conjugate_gradient::ConjugateGradient;
 use super::conjugate_gradient::Options as ConjugateGradientOptions;
 use super::quasi_newton::Options as QuasiNewtonOptions;
 use super::quasi_newton::QuasiNewton;
-use crate::{RealFn, Vector};
+use crate::{Minimizer, RealFn, Vector};
 //}}}
 //{{{ std imports
 //}}}
@@ -57,7 +57,7 @@ pub fn create<'a, F: RealFn + 'a>(
     fcn: F,
     x0: Vector,
     method: Method,
-) -> Box<dyn UnconstrainedMinimizer + 'a>
+) -> Box<dyn Minimizer<Error = Error> + 'a>
 {
     match method
     {

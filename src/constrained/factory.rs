@@ -6,11 +6,11 @@
 //{{{ crate imports
 use crate::{
     constrained::{
-        augmented_lagrangian::AugmentedLagrangian, common::ConstrainedMinimizer,
-        AugmentedLagrangianOptions, ConstriainedOptions,
+        augmented_lagrangian::AugmentedLagrangian, common::Error, AugmentedLagrangianOptions,
+        ConstriainedOptions,
     },
     unconstrained::UnconstrainedMethod,
-    RealFn, RealVectorFn, Vector,
+    Minimizer, RealFn, RealVectorFn, Vector,
 };
 //}}}
 //{{{ std imports
@@ -75,7 +75,7 @@ pub fn create<'a, F1: RealFn + 'a, F2: RealVectorFn + 'a, F3: RealVectorFn + 'a>
     ieq_constraints: Option<F3>,
     x0: Vector,
     method: Method,
-) -> Box<dyn ConstrainedMinimizer + 'a>
+) -> Box<dyn Minimizer<Error = Error> + 'a>
 {
     match method
     {
