@@ -315,7 +315,7 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
         }
         let a = s.dot(s) / s_dot_y;
         //{{{ trace
-        trace!(target: "bc", "a = {a:1.4e}");
+        trace!(target: "bc", "a = {a:.4e}");
         //}}}
         a.clamp(self.opts.alpha_min, self.opts.alpha_max)
     }
@@ -362,7 +362,7 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
             if f_trial < f_max + delta * alpha * gradfk_dot_d || alpha < SMALL
             {
                 //{{{ trace
-                trace!("Found step i = {i} alpha = {alpha:1.4e} f_trial = {f_trial:1.4e}");
+                trace!("Found step i = {i} alpha = {alpha:.4e} f_trial = {f_trial:.4e}");
                 //}}}
                 break;
             }
@@ -510,7 +510,7 @@ impl<F: RealFn> BoundConstrainedMinimizer for ActiveSetAlgorithm<F>
                     let y = (grad_fx - grad_fx_prev).into();
                     alpha_bb = self.bb_step(&s, &y, alpha_bb);
                     //{{{ trace
-                    trace!(target: "bc", "alpha_bb = {alpha_bb:1.4e}");
+                    trace!(target: "bc", "alpha_bb = {alpha_bb:.4e}");
                     //}}}
                     num_fun_evals += 1;
                     num_grad_evals += 1;

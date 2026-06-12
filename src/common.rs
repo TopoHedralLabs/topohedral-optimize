@@ -124,7 +124,7 @@ impl Display for IterData
     {
         let fx = self.fx;
         let norm_grad_fx = self.norm_grad_fx;
-        let out = format!("fx={fx:1.4e}, norm_grad_fx={norm_grad_fx:1.4e}");
+        let out = format!("fx={fx:.4e}, norm_grad_fx={norm_grad_fx:.4e}");
         f.pad(&out)
     }
 }

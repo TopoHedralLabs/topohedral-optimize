@@ -190,7 +190,7 @@ impl<F: RealFn> QuasiNewton<F>
         info!(target: "qn", "Current values: {current_iter}");
         info!(target: "qn","Convergence measures:");
         let _grad_ratio = current_iter.norm_grad_fx / self.norm_grad_fx_init;
-        info!(target: "qn", "||∇f(k)|| / ||∇f(0)|| = {_grad_ratio:1.4e}");
+        info!(target: "qn", "||∇f(k)|| / ||∇f(0)|| = {_grad_ratio:.4e}");
         //}}}
     }
 }
@@ -244,9 +244,9 @@ impl<F: RealFn> UnconstrainedMinimizer for QuasiNewton<F>
                 info!(target: "qn", "Converging with reason {reason:?}");
                 info!(target: "qn","Convergence measures:");
                 let _grad_ratio = iter_k.norm_grad_fx / self.norm_grad_fx_init;
-                info!(target: "qn", "||∇f(k)|| / ||∇f(0)|| = {_grad_ratio:1.4e}");
-                info!(target: "qn", "||∇f(k)|| = {:1.4e}", iter_k.norm_grad_fx);
-                trace!(target: "qn", "fx = {:1.4e} x = {}", iter_k.fx, iter_k.x.clone().transpose());
+                info!(target: "qn", "||∇f(k)|| / ||∇f(0)|| = {_grad_ratio:.4e}");
+                info!(target: "qn", "||∇f(k)|| = {:.4e}", iter_k.norm_grad_fx);
+                trace!(target: "qn", "fx = {:.4e} x = {}", iter_k.fx, iter_k.x.clone().transpose());
                 info!(target: "qn", "=============================================");
                 //}}}
                 return Ok(Returns {

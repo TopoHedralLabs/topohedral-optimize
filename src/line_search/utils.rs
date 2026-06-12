@@ -34,14 +34,14 @@ pub fn quadmin(
 ) -> Option<f64>
 {
     //{{{ trace
-    trace!(target: "ls", "Entering with phi_a = {:1.4e}, phi_b = {:1.4e}, dphi_a = {:1.4e}, b = {:1.4e}", phi_a, phi_b, dphi_a, b);
+    trace!(target: "ls", "Entering with phi_a = {:.4e}, phi_b = {:.4e}, dphi_a = {:.4e}, b = {:.4e}", phi_a, phi_b, dphi_a, b);
     //}}}
     let delta = phi_a;
     let gamma = dphi_a;
     let db = b - a;
 
     //{{{ trace
-    trace!(target: "ls", "db = {:1.4e}", db);
+    trace!(target: "ls", "db = {:.4e}", db);
     //}}}
 
     if db * db < SMALL
@@ -54,7 +54,7 @@ pub fn quadmin(
 
     let beta = (phi_b - delta - gamma * db) / (db * db);
     //{{{ trace
-    trace!(target: "ls", "beta = {:1.4e}", beta);
+    trace!(target: "ls", "beta = {:.4e}", beta);
     //}}}
 
     if (2.0 * beta).abs() < SMALL
@@ -67,7 +67,7 @@ pub fn quadmin(
 
     let alpha_min = a - gamma / (2.0 * beta);
     //{{{ trace
-    error!(target: "ls", "Returning alpha_min = {:1.4e}", alpha_min);
+    error!(target: "ls", "Returning alpha_min = {:.4e}", alpha_min);
     //}}}
     Some(alpha_min)
 }
@@ -85,9 +85,9 @@ pub fn cubicmin2(
 ) -> Option<f64>
 {
     //{{{ trace
-    trace!(target: "ls", "Entering with a = {:1.4e}, b = {:1.4e}", a, b);
-    trace!(target: "ls", "phi_a = {:1.4e}, phi_b = {:1.4e}", phi_a, phi_b);
-    trace!(target: "ls", "dphi_a = {:1.4e}, dphi_b = {:1.4e}", dphi_a, dphi_b);
+    trace!(target: "ls", "Entering with a = {:.4e}, b = {:.4e}", a, b);
+    trace!(target: "ls", "phi_a = {:.4e}, phi_b = {:.4e}", phi_a, phi_b);
+    trace!(target: "ls", "dphi_a = {:.4e}, dphi_b = {:.4e}", dphi_a, dphi_b);
     //}}}
 
     let d = b - a;
@@ -100,7 +100,7 @@ pub fn cubicmin2(
     let cube_coeff = (d * dphi_a + d * dphi_b + 2.0 * phi_a - 2.0 * phi_b) / (d * d * d);
 
     //{{{ trace
-    trace!(target: "ls", "quad_coeff = {:1.4e} cub_coeff = {:1.4e}", quad_coeff, cube_coeff);
+    trace!(target: "ls", "quad_coeff = {:.4e} cub_coeff = {:.4e}", quad_coeff, cube_coeff);
     //}}}
 
     // Solve 3B t^2 + 2A t + ga = 0
@@ -159,14 +159,14 @@ pub fn cubicmin3(
 ) -> Option<f64>
 {
     //{{{ trace
-    trace!(target: "ls", "Enterin with a = {:1.4e}, b = {:1.4e}, c = {:1.4e}", a, b, c);
-    trace!(target: "ls", "phi_a = {:1.4e}, phi_b = {:1.4e}, phi_c = {:1.4e}", phi_a, phi_b, phi_c);
+    trace!(target: "ls", "Enterin with a = {:.4e}, b = {:.4e}, c = {:.4e}", a, b, c);
+    trace!(target: "ls", "phi_a = {:.4e}, phi_b = {:.4e}, phi_c = {:.4e}", phi_a, phi_b, phi_c);
     //}}}
     let db = b - a;
     let dc = c - a;
     let denom = (db * dc).powi(2) * (db - dc);
     //{{{ trace
-    trace!(target: "ls", "db = {:1.4e}, dc = {:1.4e}, denom = {:1.4e}", db, dc, denom);
+    trace!(target: "ls", "db = {:.4e}, dc = {:.4e}, denom = {:.4e}", db, dc, denom);
     //}}}
 
     if denom.abs() < SMALL
@@ -201,7 +201,7 @@ pub fn cubicmin3(
 
     let alpha_min = a + (-gamma + radical) / (3.0 * beta);
     //{{{ trace
-    error!(target: "ls", "Returning alpha_min = {:1.4e}", alpha_min);
+    error!(target: "ls", "Returning alpha_min = {:.4e}", alpha_min);
     //}}}
     if alpha_min.is_nan()
     {
@@ -254,7 +254,7 @@ pub fn quadcubmin<F: RealFn1>(
 
     let (alpha_min, fmin) = opt_min_value.unwrap();
     //{{{ trace
-    trace!(target: "ls", "returning alpha ={alpha_min:1.4e}");
+    trace!(target: "ls", "returning alpha ={alpha_min:.4e}");
     //}}}
     Some((alpha_min, fmin))
 }
@@ -270,7 +270,7 @@ pub fn satisfies_armijo(
 ) -> bool
 {
     //{{{ trace
-    trace!(target: "ls", "armijo: left = {:1.4e} right = {:1.4e}", phi1, phi0 + c1 * alpha * dphi0);
+    trace!(target: "ls", "armijo: left = {:.4e} right = {:.4e}", phi1, phi0 + c1 * alpha * dphi0);
     trace!(target: "ls", "Satisfies Armijo {}", phi1 <= phi0 + c1 * alpha * dphi0);
     //}}}
     phi1 <= phi0 + c1 * alpha * dphi0
@@ -285,7 +285,7 @@ pub fn satisfies_curvature(
 ) -> bool
 {
     //{{{ trace
-    trace!(target: "ls", "curvature: left = {:1.4e} right = {:1.4e}", dphi1, c2 * dphi0);
+    trace!(target: "ls", "curvature: left = {:.4e} right = {:.4e}", dphi1, c2 * dphi0);
     trace!(target: "ls", "Satisfies curvature {}", dphi1 >= c2 * dphi0);
     //}}}
     dphi1 >= c2 * dphi0
@@ -304,7 +304,7 @@ pub fn satisfies_wolfe(
 ) -> Result<(), Error>
 {
     //{{{ trace
-    trace!(target: "ls", "phi0 = {:1.4e} dphi0 = {:1.4e} phi1 = {:1.4e} dphi1 = {:1.4e} alpha = {:1.4e}", phi0, dphi0, phi1, dphi1, alpha);
+    trace!(target: "ls", "phi0 = {:.4e} dphi0 = {:.4e} phi1 = {:.4e} dphi1 = {:.4e} alpha = {:.4e}", phi0, dphi0, phi1, dphi1, alpha);
     //}}}
     if !satisfies_armijo(c1, alpha, phi0, dphi0, phi1)
     {
@@ -326,13 +326,13 @@ pub fn initial_step(
 ) -> f64
 {
     //{{{ trace
-    trace!(target: "ls", "phi1 = {phi1:1.4e}, phi0 = {phi0:1.4e} dphi1 = {dphi1:1.4e}");
+    trace!(target: "ls", "phi1 = {phi1:.4e}, phi0 = {phi0:.4e} dphi1 = {dphi1:.4e}");
     //}}}
     let stp1: f64 = 1.0;
     let stp2: f64 = 2.02 * (phi1 - phi0) / dphi1;
     //{{{ trace
-    trace!(target: "ls", "stp1 = {stp1:1.4e} stp2 = {stp2:1.4e}");
-    trace!(target: "ls", "returning {:1.4e}", stp1.min(stp2));
+    trace!(target: "ls", "stp1 = {stp1:.4e} stp2 = {stp2:.4e}");
+    trace!(target: "ls", "returning {:.4e}", stp1.min(stp2));
     //}}}
     stp1.min(stp2)
 }

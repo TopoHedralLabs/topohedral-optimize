@@ -228,7 +228,7 @@ fn assert_answer(
 {
     let xmin_err = vec_reldiff(&ret.xmin, exp_xmin, xmin_tol, xmin_tol);
     let fmin_err = reldiff(ret.fmin, exp_fmin, fmin_tol, fmin_tol);
-    println!("xmin_err = {xmin_err:1.4e} fmin_err = {fmin_err:1.4e}");
+    println!("xmin_err = {xmin_err:.4e} fmin_err = {fmin_err:.4e}");
     assert!(xmin_err <= 1.0);
     assert!(fmin_err <= 1.0);
 }
