@@ -71,6 +71,14 @@ pub struct Returns
     pub num_grad_evals: usize,
 }
 //}}}
+//{{{ trait: Minimizer
+pub trait Minimizer
+{
+    type Error;
+
+    fn minimize(&mut self) -> Result<Returns, Self::Error>;
+}
+//}}}
 //{{{ struct: IterData
 #[derive(Debug, Clone)]
 pub struct IterData

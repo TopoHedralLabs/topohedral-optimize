@@ -4,11 +4,11 @@
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
+use super::common::Error;
 use super::common::Options as UnonstrainedOptions;
-use super::common::{Error, UnconstrainedMinimizer};
 use crate::common::{Matrix, Vector};
 use crate::line_search as ls;
-use crate::{ConvergedReason, IterData, RealFn, Returns};
+use crate::{ConvergedReason, IterData, Minimizer, RealFn, Returns};
 //}}}
 //{{{ std imports
 use topohedral_linalg::{MatMul, MatrixOps, VecType, VectorOps};
@@ -195,11 +195,13 @@ impl<F: RealFn> QuasiNewton<F>
     }
 }
 //}}}
-//{{{ impl: UnconstrainedMinimizer for QuasiNewton
-impl<F: RealFn> UnconstrainedMinimizer for QuasiNewton<F>
+//{{{ impl: Minimizer for QuasiNewton
+impl<F: RealFn> Minimizer for QuasiNewton<F>
 {
+    type Error = Error;
+
     #[trace_fn]
-    fn minimize(&mut self) -> Result<Returns, Error>
+    fn minimize(&mut self) -> Result<Returns, Self::Error>
     {
         let mut iter_k = IterData::new(self.fcn.clone(), &self.x_init);
         let mut iter_prev_k = iter_k.clone();

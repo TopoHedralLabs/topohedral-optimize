@@ -21,9 +21,10 @@ mod factory;
 
 //{{{ pub use: common exports
 pub use crate::common::{
-    ConvergedReason as ConstrainedConvergedReason, Returns as ConstrainedReturns,
+    ConvergedReason as ConstrainedConvergedReason, Minimizer as ConstrainedMinimizer,
+    Returns as ConstrainedReturns,
 };
-pub use common::{ConstrainedMinimizer, Error as ConstrainedError, Options as ConstriainedOptions};
+pub use common::{Error as ConstrainedError, Options as ConstriainedOptions};
 //}}}
 //{{{ pub use: augmented_lagrangian exports
 pub use augmented_lagrangian::{

@@ -33,10 +33,3 @@ pub enum Error
     MaxIterations(usize),
 }
 //}}}
-
-//{{{ trait: ConstrainedMinimizer
-pub trait ConstrainedMinimizer
-{
-    fn minimize(&mut self) -> Result<crate::Returns, Error>;
-}
-//}}}

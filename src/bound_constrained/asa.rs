@@ -7,11 +7,11 @@
 use super::common::Options as BoundConstrainedOptions;
 use super::utils::CircularBuffer;
 use crate::bound_constrained::asa::Phase::UA;
-use crate::common::Vector;
+use crate::common::{Minimizer, Vector};
+use crate::constraints::BoundsConstraints;
 use crate::constraints::{BoundSignature, BoundStatus};
 use crate::unconstrained::{minimize, UnconstrainedMethod};
 use crate::ConvergedReason;
-use crate::{bound_constrained::common::BoundConstrainedMinimizer, constraints::BoundsConstraints};
 use crate::{IterData, RealFn};
 //}}}
 //{{{ dep imports
@@ -437,11 +437,13 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
     }
 }
 //}}}
-//{{{ impl: BoundConstrainedMinimizer for ActiveSetAlgorithm
-impl<F: RealFn> BoundConstrainedMinimizer for ActiveSetAlgorithm<F>
+//{{{ impl: Minimizer for ActiveSetAlgorithm
+impl<F: RealFn> Minimizer for ActiveSetAlgorithm<F>
 {
+    type Error = super::common::Error;
+
     #[trace_fn]
-    fn minimize(&mut self) -> Result<crate::Returns, super::common::Error>
+    fn minimize(&mut self) -> Result<crate::Returns, Self::Error>
     {
         let mut iter_k_prev = IterData::new(self.fcn.clone(), &self.x_init);
         let mut iter_k = IterData::new(self.fcn.clone(), &self.x_init);
