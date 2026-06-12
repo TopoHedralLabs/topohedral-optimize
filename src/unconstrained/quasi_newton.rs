@@ -6,14 +6,14 @@
 //{{{ crate imports
 use super::common::Options as UnonstrainedOptions;
 use super::common::{Error, UnconstrainedMinimizer};
+use crate::common::{Matrix, Vector};
 use crate::line_search as ls;
-use crate::{ConvergedReason, IterData, RealFn, Returns, Vector};
+use crate::{ConvergedReason, IterData, RealFn, Returns};
 //}}}
 //{{{ std imports
-use topohedral_linalg::MatrixOps;
+use topohedral_linalg::{MatMul, MatrixOps, VecType, VectorOps};
 //}}}
 //{{{ dep imports
-use topohedral_linalg::{dmatrix::DMatrix, dvector::DVector, dvector::VecType, MatMul, VectorOps};
 use topohedral_tracing::*;
 //}}}
 //--------------------------------------------------------------------------------------------------
@@ -38,10 +38,10 @@ pub struct Options
 //{{{ struct: Data
 struct Data
 {
-    identity: DMatrix<f64>,
-    mat1: DMatrix<f64>,
-    mat2: DMatrix<f64>,
-    mat3: DMatrix<f64>,
+    identity: Matrix,
+    mat1: Matrix,
+    mat2: Matrix,
+    mat3: Matrix,
     sk: Vector,
     yk: Vector,
 }
@@ -74,16 +74,17 @@ impl<F: RealFn> QuasiNewton<F>
             norm_grad_fx_init: norm_grad_0,
             opts,
             data: Data {
-                identity: DMatrix::<f64>::identity(x0.len(), x0.len()),
-                mat1: DMatrix::<f64>::zeros(x0.len(), x0.len()),
-                mat2: DMatrix::<f64>::zeros(x0.len(), x0.len()),
-                mat3: DMatrix::<f64>::zeros(x0.len(), x0.len()),
-                sk: DVector::zeros_cvec(x0.len(), VecType::Col),
-                yk: DVector::zeros_cvec(x0.len(), VecType::Col),
+                identity: Matrix::identity(x0.len(), x0.len()),
+                mat1: Matrix::zeros(x0.len(), x0.len()),
+                mat2: Matrix::zeros(x0.len(), x0.len()),
+                mat3: Matrix::zeros(x0.len(), x0.len()),
+                sk: Vector::zeros_vec(x0.len(), VecType::Col),
+                yk: Vector::zeros_vec(x0.len(), VecType::Col),
             },
         }
     }
 
+    #[trace_fn]
     fn apply_restart(
         &self,
         k: u64,
@@ -126,7 +127,7 @@ impl<F: RealFn> QuasiNewton<F>
         xk: &Vector,
         grad_fk_prev: &Vector,
         grad_fk: &Vector,
-        hess_k: &mut DMatrix<f64>,
+        hess_k: &mut Matrix,
     )
     {
         match self.opts.method
@@ -170,7 +171,7 @@ impl<F: RealFn> QuasiNewton<F>
         xk: &Vector,
         grad_fk_prev: &Vector,
         grad_fk: &Vector,
-        hess_k: &mut DMatrix<f64>,
+        hess_k: &mut Matrix,
     ) -> Vector
     {
         self.update_hessian(xk_prev, xk, grad_fk_prev, grad_fk, hess_k);
@@ -189,7 +190,7 @@ impl<F: RealFn> QuasiNewton<F>
         info!(target: "qn", "Current values: {current_iter}");
         info!(target: "qn","Convergence measures:");
         let _grad_ratio = current_iter.norm_grad_fx / self.norm_grad_fx_init;
-        info!(target: "qn", "||∇f(k)|| / ||∇f(0)|| = {_grad_ratio:1.4e}");
+        info!(target: "qn", "||∇f(k)|| / ||∇f(0)|| = {_grad_ratio:.4e}");
         //}}}
     }
 }
@@ -208,7 +209,7 @@ impl<F: RealFn> UnconstrainedMinimizer for QuasiNewton<F>
         let max_iter = self.opts.uncon_opts.max_iter;
 
         let n = iter_k.x.len();
-        let mut hess_k = DMatrix::<f64>::identity(n, n);
+        let mut hess_k = Matrix::identity(n, n);
 
         for k in 1..max_iter
         {
@@ -243,9 +244,9 @@ impl<F: RealFn> UnconstrainedMinimizer for QuasiNewton<F>
                 info!(target: "qn", "Converging with reason {reason:?}");
                 info!(target: "qn","Convergence measures:");
                 let _grad_ratio = iter_k.norm_grad_fx / self.norm_grad_fx_init;
-                info!(target: "qn", "||∇f(k)|| / ||∇f(0)|| = {_grad_ratio:1.4e}");
-                info!(target: "qn", "||∇f(k)|| = {:1.4e}", iter_k.norm_grad_fx);
-                trace!(target: "qn", "fx = {:1.4e} x = {}", iter_k.fx, iter_k.x.clone().transpose());
+                info!(target: "qn", "||∇f(k)|| / ||∇f(0)|| = {_grad_ratio:.4e}");
+                info!(target: "qn", "||∇f(k)|| = {:.4e}", iter_k.norm_grad_fx);
+                trace!(target: "qn", "fx = {:.4e} x = {}", iter_k.fx, iter_k.x.clone().transpose());
                 info!(target: "qn", "=============================================");
                 //}}}
                 return Ok(Returns {

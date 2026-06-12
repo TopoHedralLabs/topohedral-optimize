@@ -96,7 +96,7 @@ impl<F: RealFn> ConjugateGradient<F>
     ) -> Vector
     {
         //{{{ trace
-        trace!(target: "cg", "norm_grad_fk1 = {norm_grad_fk_prev:1.4e} norm_grad_fk = {norm_grad_fk:1.4e}");
+        trace!(target: "cg", "norm_grad_fk1 = {norm_grad_fk_prev:.4e} norm_grad_fk = {norm_grad_fk:.4e}");
         //}}}
 
         // direction updates
@@ -131,7 +131,7 @@ impl<F: RealFn> ConjugateGradient<F>
 
         let new_dir_k = beta * dir_k.clone() - grad_fk.clone();
         //{{{ trace
-        debug!(target: "cg", "beta = {:1.4e}", beta);
+        debug!(target: "cg", "beta = {:.4e}", beta);
         //}}}
         new_dir_k
     }
@@ -168,7 +168,7 @@ impl<F: RealFn> ConjugateGradient<F>
         info!(target: "cg", "Current values: {current_iter}");
         info!(target: "cg","Convergence measures:");
         let _grad_ratio = current_iter.norm_grad_fx / self.norm_grad_fx_init;
-        info!(target: "cg", "||∇f(k)|| / ||∇f(0)|| = {_grad_ratio:1.4e}");
+        info!(target: "cg", "||∇f(k)|| / ||∇f(0)|| = {_grad_ratio:.4e}");
         //}}}
     }
 }
@@ -221,9 +221,9 @@ impl<F: RealFn> UnconstrainedMinimizer for ConjugateGradient<F>
                 info!(target: "cg", "Converging with reason {reason:?}");
                 info!(target: "cg","Convergence measures:");
                 let _grad_ratio = iter_k.norm_grad_fx / self.norm_grad_fx_init;
-                info!(target: "cg", "||∇f(k)|| / ||∇f(0)|| = {_grad_ratio:1.4e}");
-                info!(target: "cg", "||∇f(k)|| = {:1.4e}", iter_k.norm_grad_fx);
-                trace!(target: "cg", "fx = {:1.4e} x = {}", iter_k.fx, iter_k.x.clone().transpose());
+                info!(target: "cg", "||∇f(k)|| / ||∇f(0)|| = {_grad_ratio:.4e}");
+                info!(target: "cg", "||∇f(k)|| = {:.4e}", iter_k.norm_grad_fx);
+                trace!(target: "cg", "fx = {:.4e} x = {}", iter_k.fx, iter_k.x.clone().transpose());
                 info!(target: "cg", "=============================================");
                 //}}}
                 return Ok(Returns {

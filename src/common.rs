@@ -12,8 +12,8 @@ use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 //}}}
 //{{{ dep imports
-use topohedral_linalg::dmatrix::DMatrix;
-use topohedral_linalg::dvector::DVector;
+use topohedral_linalg::DMatrix;
+use topohedral_linalg::DVector;
 use topohedral_linalg::VectorOps;
 use topohedral_tracing::trace_fn;
 //}}}
@@ -101,6 +101,7 @@ impl IterData
         }
     }
 
+    #[trace_fn]
     pub fn copy_from(
         &mut self,
         iter_data: &Self,
@@ -123,7 +124,7 @@ impl Display for IterData
     {
         let fx = self.fx;
         let norm_grad_fx = self.norm_grad_fx;
-        let out = format!("fx={fx:1.4e}, norm_grad_fx={norm_grad_fx:1.4e}");
+        let out = format!("fx={fx:.4e}, norm_grad_fx={norm_grad_fx:.4e}");
         f.pad(&out)
     }
 }
@@ -133,11 +134,13 @@ impl<F> RealFn for Rc<RefCell<F>>
 where
     F: RealFn,
 {
+    #[trace_fn]
     fn dimension(&self) -> usize
     {
         self.borrow().dimension()
     }
 
+    #[trace_fn]
     fn eval(
         &mut self,
         x: &Vector,
@@ -146,6 +149,7 @@ where
         self.borrow_mut().eval(x)
     }
 
+    #[trace_fn]
     fn grad(
         &mut self,
         x: &Vector,
@@ -160,11 +164,13 @@ impl<F> RealFn for Arc<Mutex<F>>
 where
     F: RealFn,
 {
+    #[trace_fn]
     fn dimension(&self) -> usize
     {
         self.lock().unwrap().dimension()
     }
 
+    #[trace_fn]
     fn eval(
         &mut self,
         x: &Vector,
@@ -173,6 +179,7 @@ where
         self.lock().unwrap().eval(x)
     }
 
+    #[trace_fn]
     fn grad(
         &mut self,
         x: &Vector,
@@ -194,11 +201,13 @@ pub(crate) struct CountingRealFn<F: RealFn>
 //{{{ impl: RealFn for CountingRealFn
 impl<F: RealFn> RealFn for CountingRealFn<F>
 {
+    #[trace_fn]
     fn dimension(&self) -> usize
     {
         self.fcn.dimension()
     }
 
+    #[trace_fn]
     fn eval(
         &mut self,
         x: &Vector,
@@ -208,6 +217,7 @@ impl<F: RealFn> RealFn for CountingRealFn<F>
         self.fcn.eval(x)
     }
 
+    #[trace_fn]
     fn grad(
         &mut self,
         x: &Vector,
@@ -221,6 +231,7 @@ impl<F: RealFn> RealFn for CountingRealFn<F>
 //{{{ impl: CountingRealFn
 impl<F: RealFn> CountingRealFn<F>
 {
+    #[trace_fn]
     pub fn new(fcn: F) -> Self
     {
         Self {
@@ -230,11 +241,13 @@ impl<F: RealFn> CountingRealFn<F>
         }
     }
 
+    #[trace_fn]
     pub(crate) fn inner_mut(&mut self) -> &mut F
     {
         &mut self.fcn
     }
 
+    #[trace_fn]
     pub(crate) fn with_inner_mut<R>(
         &mut self,
         f: impl FnOnce(&mut F) -> R,
@@ -252,6 +265,7 @@ pub type ArcRealFn<F> = Arc<Mutex<F>>;
 //}}}
 //{{{ fun: rc_real_fn
 /// Creates a new reference-counted function using Rc<RefCell>
+#[trace_fn]
 pub fn rc_real_fn<F: RealFn>(fcn: F) -> RcRealFn<F>
 {
     Rc::new(RefCell::new(fcn))
@@ -259,6 +273,7 @@ pub fn rc_real_fn<F: RealFn>(fcn: F) -> RcRealFn<F>
 //}}}
 //{{{ fun: arc_real_fn
 /// Creates a new thread-safe reference-counted function using Arc<Mutex>
+#[trace_fn]
 pub fn arc_real_fn<F: RealFn>(fcn: F) -> ArcRealFn<F>
 {
     Arc::new(Mutex::new(fcn))
@@ -287,16 +302,19 @@ impl<T> RealVectorFn for Rc<RefCell<T>>
 where
     T: RealVectorFn,
 {
+    #[trace_fn]
     fn dimension_domain(&self) -> usize
     {
         self.borrow().dimension_domain()
     }
 
+    #[trace_fn]
     fn dimension_range(&self) -> usize
     {
         self.borrow().dimension_range()
     }
 
+    #[trace_fn]
     fn eval(
         &mut self,
         x: &Vector,
@@ -306,6 +324,7 @@ where
         self.borrow_mut().eval(x, val)
     }
 
+    #[trace_fn]
     fn grad(
         &mut self,
         x: &Vector,
@@ -321,16 +340,19 @@ impl<T> RealVectorFn for Arc<Mutex<T>>
 where
     T: RealVectorFn,
 {
+    #[trace_fn]
     fn dimension_domain(&self) -> usize
     {
         self.lock().unwrap().dimension_domain()
     }
 
+    #[trace_fn]
     fn dimension_range(&self) -> usize
     {
         self.lock().unwrap().dimension_range()
     }
 
+    #[trace_fn]
     fn eval(
         &mut self,
         x: &Vector,
@@ -340,6 +362,7 @@ where
         self.lock().unwrap().eval(x, val)
     }
 
+    #[trace_fn]
     fn grad(
         &mut self,
         x: &Vector,
@@ -358,6 +381,7 @@ pub type ArcRealVectorFn<F> = Arc<Mutex<F>>;
 //}}}
 //{{{ fun: rc_real_vector_fn
 /// Creates a new reference-counted vector-valued function using Rc<RefCell>
+#[trace_fn]
 pub fn rc_real_vector_fn<F: RealVectorFn>(fcn: F) -> RcRealVectorFn<F>
 {
     Rc::new(RefCell::new(fcn))
@@ -365,6 +389,7 @@ pub fn rc_real_vector_fn<F: RealVectorFn>(fcn: F) -> RcRealVectorFn<F>
 //}}}
 //{{{ fun: arc_real_vector_fn
 /// Creates a new thread-safe reference-counted vector-valued function using Arc<Mutex>
+#[trace_fn]
 pub fn arc_real_vector_fn<F: RealVectorFn>(fcn: F) -> ArcRealVectorFn<F>
 {
     Arc::new(Mutex::new(fcn))

@@ -11,6 +11,7 @@ use crate::common::{RealFn, Vector};
 //{{{ std imports
 //}}}
 //{{{ dep imports
+use topohedral_tracing::*;
 //}}}
 //--------------------------------------------------------------------------------------------------
 
@@ -36,6 +37,7 @@ pub use quasi_newton::{Options as QuasiNewtonOptions, UpdateMethod};
 pub use factory::Method as UnconstrainedMethod;
 //}}}
 //{{{ fn: minimize
+#[trace_fn]
 pub fn minimize<F: RealFn>(
     fcn: F,
     x0: Vector,

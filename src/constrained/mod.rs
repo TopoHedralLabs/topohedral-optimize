@@ -9,13 +9,13 @@ use crate::unconstrained;
 //{{{ std imports
 //}}}
 //{{{ dep imports
+use topohedral_tracing::*;
 //}}}
 //--------------------------------------------------------------------------------------------------
 
 //{{{ mod: submodules
 mod augmented_lagrangian;
 mod common;
-mod constraints;
 mod factory;
 //}}}
 
@@ -30,14 +30,12 @@ pub use augmented_lagrangian::{
     AugmentedLagrangian, AugmentedLagrangianFcn, Options as AugmentedLagrangianOptions,
 };
 //}}}
-//{{{ pub use: constraints
-pub use constraints::{BoundsConstraints, NoConstraints};
-//}}}
 //{{{ pub use: factory export
 pub use factory::Method as ConstrainedMethod;
 //}}}
 
 //{{{ fn: minimize
+#[trace_fn]
 pub fn minimize<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn>(
     fcn: F1,
     eq_constraints: Option<F2>,

@@ -57,7 +57,7 @@ impl<F: RealFn1> LineSearch for Nocedal<F>
     ) -> Result<Returns, Error>
     {
         //{{{ trace
-        trace!(target: "ls", "Entering with phi0 = {:1.4e} dphi0 = {:1.4e}", phi0, dphi0);
+        trace!(target: "ls", "Entering with phi0 = {:.4e} dphi0 = {:.4e}", phi0, dphi0);
         //}}}
 
         if dphi0 > 0.0
@@ -78,9 +78,9 @@ impl<F: RealFn1> LineSearch for Nocedal<F>
         {
             //{{{ trace
             trace!(target: "ls", "--------------------------------------- nocedal it = {}", i);
-            trace!(target: "ls", "alpha0 = {:1.4e} alpha1 = {:1.4e}", alpha0, alpha1);
-            trace!(target: "ls", "phi_a0 = {:1.4e} phi1 {:1.4e}", phi_a0, phi_a1);
-            trace!(target: "ls", "dphi_aa0 = {:1.4e} dphi1 {:1.4e}", dphi_a0, dphi_a1);
+            trace!(target: "ls", "alpha0 = {:.4e} alpha1 = {:.4e}", alpha0, alpha1);
+            trace!(target: "ls", "phi_a0 = {:.4e} phi1 {:.4e}", phi_a0, phi_a1);
+            trace!(target: "ls", "dphi_aa0 = {:.4e} dphi1 {:.4e}", dphi_a0, dphi_a1);
             //}}}
 
             if alpha1 < f64::EPSILON * 100.0
@@ -129,7 +129,7 @@ impl<F: RealFn1> LineSearch for Nocedal<F>
                 };
 
                 //{{{ trace
-                error!(target: "ls", "Leaving with {:1.4e} {:1.4e} {:1.4e}", alpha_tmp, phi_tmp, _dphi_tmp);
+                error!(target: "ls", "Leaving with {:.4e} {:.4e} {:.4e}", alpha_tmp, phi_tmp, _dphi_tmp);
                 //}}}
                 return Ok(Returns {
                     alpha: alpha_tmp,
@@ -140,13 +140,13 @@ impl<F: RealFn1> LineSearch for Nocedal<F>
             // current step is armijo-acceptable, so check if curvature-accepttable
             dphi_a1 = self.f.diff(alpha1);
             //{{{ trace
-            trace!(target: "ls", "dphi_a1 = {dphi_a1:1.4e}");
+            trace!(target: "ls", "dphi_a1 = {dphi_a1:.4e}");
             //}}}
             if dphi_a1.abs() <= -c2 * dphi0
             {
                 //{{{ trace
                 trace!(target: "ls", "Satisfies curvature");
-                trace!(target: "ls","Returning alpha = {:1.4e} falpha = {:1.4e}", alpha1, phi_a1);
+                trace!(target: "ls","Returning alpha = {:.4e} falpha = {:.4e}", alpha1, phi_a1);
                 //}}}
                 return Ok(Returns {
                     alpha: alpha1,
@@ -157,7 +157,7 @@ impl<F: RealFn1> LineSearch for Nocedal<F>
             if dphi_a1 >= 0.0
             {
                 //{{{ trace
-                trace!(target: "ls", "Curvature is positive {:1.4e}", dphi_a1);
+                trace!(target: "ls", "Curvature is positive {:.4e}", dphi_a1);
                 //}}}
                 let zoom_result = zoom(
                     alpha1,
@@ -184,14 +184,14 @@ impl<F: RealFn1> LineSearch for Nocedal<F>
                     Some(result) =>
                     {
                         //{{{ trace
-                        trace!(target: "ls","Zoom succeeded with result {:1.4e} {:1.4e} {:1.4e}",
+                        trace!(target: "ls","Zoom succeeded with result {:.4e} {:.4e} {:.4e}",
                                   result.0, result.1, result.2);
                         //}}}
                         result
                     }
                 };
                 //{{{ trace
-                error!(target: "ls", "Returning alpha = {:1.4e} falpha = {:1.4e}", alpha_tmp, phi_tmp);
+                error!(target: "ls", "Returning alpha = {:.4e} falpha = {:.4e}", alpha_tmp, phi_tmp);
                 //}}}
                 return Ok(Returns {
                     alpha: alpha_tmp,
@@ -200,7 +200,7 @@ impl<F: RealFn1> LineSearch for Nocedal<F>
             }
 
             //{{{ trace
-            trace!(target: "ls", "Doubling alpha for next iteration to {:1.4e}", 2.0 * alpha1);
+            trace!(target: "ls", "Doubling alpha for next iteration to {:.4e}", 2.0 * alpha1);
             //}}}
             let alpha2 = 2.0 * alpha1;
             alpha0 = alpha1;
@@ -239,8 +239,8 @@ fn zoom<F: RealFn1>(
 where
 {
     //{{{ trace
-    trace!(target: "ls", "Entering with a_lo = {:1.4e} a_hi = {:1.4e} phi_lo = {:1.4e} phi_hi = {:1.4e}", a_lo, a_hi, phi_lo, phi_hi);
-    trace!(target: "ls", "phi0 = {:1.4e} dphi0 = {:1.4e} c1 = {:1.4e} c2 = {:1.4e}", phi0, dphi0, c1, c2);
+    trace!(target: "ls", "Entering with a_lo = {:.4e} a_hi = {:.4e} phi_lo = {:.4e} phi_hi = {:.4e}", a_lo, a_hi, phi_lo, phi_hi);
+    trace!(target: "ls", "phi0 = {:.4e} dphi0 = {:.4e} c1 = {:.4e} c2 = {:.4e}", phi0, dphi0, c1, c2);
     //}}}
     let mut iter = 0;
     let delta1 = 0.2;
@@ -254,7 +254,7 @@ where
     {
         //{{{ trace
         debug!(target: "ls", "...............zoom iter = {}", iter);
-        trace!(target: "ls", "cchk = {:1.4e}  qchk = {:1.4e}", cchk, qchk);
+        trace!(target: "ls", "cchk = {:.4e}  qchk = {:.4e}", cchk, qchk);
         //}}}
 
         let dalpha = a_hi - a_lo;
@@ -269,7 +269,7 @@ where
         };
 
         //{{{ trace
-        trace!(target: "ls", "dalpha = {:1.4e} a_lo = {:1.4e} a_hi = {:1.4e}", dalpha, a_lo, a_hi);
+        trace!(target: "ls", "dalpha = {:.4e} a_lo = {:.4e} a_hi = {:.4e}", dalpha, a_lo, a_hi);
         //}}}
 
         let mut opt_a_j: Option<f64> = None;
@@ -308,7 +308,7 @@ where
 
         let a_j = opt_a_j.unwrap();
         //{{{ trace
-        trace!(target: "ls", "New value of a_j = {:1.4e}", a_j);
+        trace!(target: "ls", "New value of a_j = {:.4e}", a_j);
         //}}}
         // try new value of alpha
         let phi_aj = phi_fcn.eval(a_j);
@@ -336,7 +336,7 @@ where
             {
                 //{{{ trace
                 trace!(target: "ls","Passed curvature condition");
-                error!(target: "ls", "Returning a_j = {:1.4e} phi_aj = {:1.4e} dphi_aj = {:1.4e}",
+                error!(target: "ls", "Returning a_j = {:.4e} phi_aj = {:.4e} dphi_aj = {:.4e}",
                       a_j, phi_aj, dphi_aj);
                 //}}}
                 return Some((a_j, phi_aj, dphi_aj));

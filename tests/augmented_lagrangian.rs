@@ -4,9 +4,10 @@
 
 //{{{ crate imports
 use topohedral_optimize::constrained::{
-    minimize as constrained_minimize, AugmentedLagrangianOptions, BoundsConstraints,
-    ConstrainedMethod, ConstrainedReturns, ConstriainedOptions, NoConstraints,
+    minimize as constrained_minimize, AugmentedLagrangianOptions, ConstrainedMethod,
+    ConstrainedReturns, ConstriainedOptions,
 };
+use topohedral_optimize::constraints::{BoundsConstraints, NoConstraints};
 use topohedral_optimize::line_search::{
     LineSearchMethod, LineSearchOptions, NocedalOptions, ThuenteOptions,
 };
@@ -21,8 +22,8 @@ use topohedral_optimize::{RealFn, Vector};
 //{{{ dep imports
 use ctor::ctor;
 use rstest::rstest;
-use topohedral_linalg::dvector::{DVector, VecType};
 use topohedral_linalg::VectorOps;
+use topohedral_linalg::{DVector, VecType};
 use topohedral_tracing::*;
 //}}}
 
@@ -74,7 +75,7 @@ impl RealFn for Quadratic
     ) -> Vector
     {
         let tmp = x_in.clone() - self.xmin.clone();
-        let mut out = DVector::<f64>::zeros_cvec(5, VecType::Col);
+        let mut out = DVector::<f64>::zeros_vec(5, VecType::Col);
         for i in 0..5
         {
             out[i] = 2.0 * tmp[i];
@@ -118,7 +119,7 @@ impl RealFn for Quartic
     ) -> Vector
     {
         let tmp = x_in.clone() - self.xmin.clone();
-        let mut out = DVector::<f64>::zeros_cvec(5, VecType::Col);
+        let mut out = DVector::<f64>::zeros_vec(5, VecType::Col);
         for i in 0..5
         {
             out[i] = 4.0 * tmp[i].powi(3);
@@ -171,7 +172,7 @@ impl RealFn for Rosenbrock
         let b = self.b;
         let x = xvec[0];
         let y = xvec[1];
-        let mut out = DVector::<f64>::zeros_cvec(2, VecType::Col);
+        let mut out = DVector::<f64>::zeros_vec(2, VecType::Col);
         out[0] = -2.0 * (a - x) - 4.0 * b * x * (y - x.powi(2));
         out[1] = 2.0 * b * (y - x.powi(2));
         out
@@ -227,7 +228,7 @@ fn assert_answer(
 {
     let xmin_err = vec_reldiff(&ret.xmin, exp_xmin, xmin_tol, xmin_tol);
     let fmin_err = reldiff(ret.fmin, exp_fmin, fmin_tol, fmin_tol);
-    println!("xmin_err = {xmin_err:1.4e} fmin_err = {fmin_err:1.4e}");
+    println!("xmin_err = {xmin_err:.4e} fmin_err = {fmin_err:.4e}");
     assert!(xmin_err <= 1.0);
     assert!(fmin_err <= 1.0);
 }

@@ -2,14 +2,15 @@
 #![allow(incomplete_features)]
 
 //{{{ crate imports
-use topohedral_optimize::constrained::{BoundsConstraints, NoConstraints};
+use topohedral_optimize::constraints::BoundStatus::{AtLower, AtUpper};
+use topohedral_optimize::constraints::{BoundsConstraints, NoConstraints};
 use topohedral_optimize::{Matrix, RealVectorFn, Vector};
 //}}}
 //{{{ std imports
 //}}}
 //{{{ dep imports
 use approx::assert_relative_eq;
-use topohedral_linalg::dvector::{DVector, VecType};
+use topohedral_linalg::{DVector, VecType};
 use topohedral_linalg::{Shape, TransformOps, VectorOps};
 //}}}
 
@@ -96,7 +97,7 @@ fn test_no_constraints_is_empty_and_noop()
     assert_eq!(constraints.dimension_range(), 0);
 
     let x = colvec(&[]);
-    let mut values = DVector::<f64>::zeros_cvec(0, VecType::Col);
+    let mut values = DVector::<f64>::zeros_vec(0, VecType::Col);
     let mut gradient = Matrix::zeros(0, 0);
 
     constraints.eval(&x, &mut values);
@@ -120,7 +121,7 @@ fn test_bounds_constraints_mixed_bounds_eval_and_grad_match_public_contract()
     assert_eq!(constraints.dimension_range(), 4);
 
     let x = colvec(&[1.5, -3.0, -0.25, 5.0]);
-    let mut values = DVector::<f64>::zeros_cvec(constraints.dimension_range(), VecType::Col);
+    let mut values = DVector::<f64>::zeros_vec(constraints.dimension_range(), VecType::Col);
     let mut gradient = Matrix::zeros(
         constraints.dimension_domain(),
         constraints.dimension_range(),
@@ -137,6 +138,411 @@ fn test_bounds_constraints_mixed_bounds_eval_and_grad_match_public_contract()
         &[Some(-1.0), None, Some(0.5), None],
         &[Some(2.0), None, None, Some(4.5)],
     );
+}
+//}}}
+//{{{ test: cauchy path upper bound
+#[test]
+fn test_cauchy_path_single_upper_bound_hit()
+{
+    let mut constraints = BoundsConstraints::new(1);
+    constraints.add_bounds(0, Some(0.0), Some(1.0));
+
+    let x = colvec(&[0.5]);
+    let d = colvec(&[1.0]);
+    let path = constraints.cauchy_path(&x, &d);
+
+    assert_eq!(path.len(), 1);
+    assert_eq!(path[0].1, 0);
+    assert_relative_eq!(path[0].0, 0.5, epsilon = 1e-12);
+}
+//}}}
+//{{{ test: cauchy path lower bound
+#[test]
+fn test_cauchy_path_single_lower_bound_hit()
+{
+    let mut constraints = BoundsConstraints::new(1);
+    constraints.add_bounds(0, Some(0.0), Some(1.0));
+
+    let x = colvec(&[0.5]);
+    let d = colvec(&[-1.0]);
+    let path = constraints.cauchy_path(&x, &d);
+
+    assert_eq!(path.len(), 1);
+    assert_eq!(path[0].1, 0);
+    assert_relative_eq!(path[0].0, 0.5, epsilon = 1e-12);
+}
+//}}}
+//{{{ test: cauchy path no hit
+#[test]
+fn test_cauchy_path_direction_away_from_only_bound_returns_empty()
+{
+    // Only a lower bound; direction is positive (moving away from it).
+    let mut constraints = BoundsConstraints::new(1);
+    constraints.add_bounds(0, Some(0.0), None);
+
+    let x = colvec(&[0.5]);
+    let d = colvec(&[1.0]);
+    let path = constraints.cauchy_path(&x, &d);
+
+    assert!(path.is_empty());
+}
+//}}}
+//{{{ test: cauchy path multiple variables sorted
+#[test]
+fn test_cauchy_path_multiple_variables_sorted_by_t()
+{
+    // Three variables all with bounds [0, 2], direction [1, 1, 1].
+    // var 0: hits upper at t = (2 - 0.5) / 1 = 1.5
+    // var 1: hits upper at t = (2 - 0.0) / 1 = 2.0
+    // var 2: hits upper at t = (2 - 1.5) / 1 = 0.5
+    // Sorted: [(0.5, 2), (1.5, 0), (2.0, 1)]
+    let mut constraints = BoundsConstraints::new(3);
+    constraints.add_bounds(0, Some(0.0), Some(2.0));
+    constraints.add_bounds(1, Some(0.0), Some(2.0));
+    constraints.add_bounds(2, Some(0.0), Some(2.0));
+
+    let x = colvec(&[0.5, 0.0, 1.5]);
+    let d = colvec(&[1.0, 1.0, 1.0]);
+    let path = constraints.cauchy_path(&x, &d);
+
+    assert_eq!(path.len(), 3);
+    assert_relative_eq!(path[0].0, 0.5, epsilon = 1e-12);
+    assert_eq!(path[0].1, 2);
+    assert_relative_eq!(path[1].0, 1.5, epsilon = 1e-12);
+    assert_eq!(path[1].1, 0);
+    assert_relative_eq!(path[2].0, 2.0, epsilon = 1e-12);
+    assert_eq!(path[2].1, 1);
+}
+//}}}
+//{{{ test: cauchy path infeasible start clamped
+#[test]
+fn test_cauchy_path_infeasible_start_uses_clamped_location()
+{
+    // x = [1.5] is outside upper bound 1.0; clamped to [1.0].
+    // d = [-1.0], lower = 0.0 → t = (0.0 - 1.0) / (-1.0) = 1.0
+    let mut constraints = BoundsConstraints::new(1);
+    constraints.add_bounds(0, Some(0.0), Some(1.0));
+
+    let x = colvec(&[1.5]);
+    let d = colvec(&[-1.0]);
+    let path = constraints.cauchy_path(&x, &d);
+
+    assert_eq!(path.len(), 1);
+    assert_eq!(path[0].1, 0);
+    assert_relative_eq!(path[0].0, 1.0, epsilon = 1e-12);
+}
+//}}}
+//{{{ test: cauchy path already at bound
+#[test]
+fn test_cauchy_path_at_lower_bound_direction_into_bound_returns_t_zero()
+{
+    // x is at the lower bound; d pushes into it → t = 0.
+    let mut constraints = BoundsConstraints::new(1);
+    constraints.add_bounds(0, Some(0.0), Some(1.0));
+
+    let x = colvec(&[0.0]);
+    let d = colvec(&[-1.0]);
+    let path = constraints.cauchy_path(&x, &d);
+
+    assert_eq!(path.len(), 1);
+    assert_eq!(path[0].1, 0);
+    assert_relative_eq!(path[0].0, 0.0, epsilon = 1e-12);
+}
+//}}}
+//{{{ test: active_and_inactive — no bounded variables → all inactive
+#[test]
+fn test_active_and_inactive_no_bounds_all_inactive()
+{
+    let constraints = BoundsConstraints::new(3);
+    let x = colvec(&[1.0, 2.0, 3.0]);
+    let d = colvec(&[-1.0, 0.0, 1.0]);
+
+    let (active, inactive) = constraints.active_and_inactive_sets(&x, Some(&d));
+
+    assert!(active.is_empty());
+    assert_eq!(inactive, vec![0, 1, 2]);
+}
+//}}}
+//{{{ test: active_and_inactive — interior lower-bounded variable remains inactive
+#[test]
+fn test_active_and_inactive_lower_bound_negative_direction_interior_is_inactive()
+{
+    let mut constraints = BoundsConstraints::new(1);
+    constraints.add_bounds(0, Some(0.0), None);
+
+    let x = colvec(&[0.5]);
+    let d = colvec(&[-1.0]);
+
+    let (active, inactive) = constraints.active_and_inactive_sets(&x, Some(&d));
+
+    assert!(active.is_empty());
+    assert_eq!(inactive, vec![0]);
+}
+//}}}
+//{{{ test: active_and_inactive — lower-bounded variable active at lower bound
+#[test]
+fn test_active_and_inactive_lower_bound_negative_direction_at_bound_is_active()
+{
+    let mut constraints = BoundsConstraints::new(1);
+    constraints.add_bounds(0, Some(0.0), None);
+
+    let x = colvec(&[0.0]);
+    let d = colvec(&[-1.0]);
+
+    let (active, inactive) = constraints.active_and_inactive_sets(&x, Some(&d));
+
+    assert_eq!(active, vec![(0, AtLower)]);
+    assert!(inactive.is_empty());
+}
+//}}}
+//{{{ test: active_and_inactive — lower bound with positive direction → inactive
+#[test]
+fn test_active_and_inactive_lower_bound_positive_direction_is_inactive()
+{
+    let mut constraints = BoundsConstraints::new(1);
+    constraints.add_bounds(0, Some(0.0), None);
+
+    let x = colvec(&[0.5]);
+    let d = colvec(&[1.0]);
+
+    let (active, inactive) = constraints.active_and_inactive_sets(&x, Some(&d));
+
+    assert!(active.is_empty());
+    assert_eq!(inactive, vec![0]);
+}
+//}}}
+//{{{ test: active_and_inactive — interior upper-bounded variable remains inactive
+#[test]
+fn test_active_and_inactive_upper_bound_positive_direction_interior_is_inactive()
+{
+    let mut constraints = BoundsConstraints::new(1);
+    constraints.add_bounds(0, None, Some(1.0));
+
+    let x = colvec(&[0.5]);
+    let d = colvec(&[1.0]);
+
+    let (active, inactive) = constraints.active_and_inactive_sets(&x, Some(&d));
+
+    assert!(active.is_empty());
+    assert_eq!(inactive, vec![0]);
+}
+//}}}
+//{{{ test: active_and_inactive — upper-bounded variable active at upper bound
+#[test]
+fn test_active_and_inactive_upper_bound_positive_direction_at_bound_is_active()
+{
+    let mut constraints = BoundsConstraints::new(1);
+    constraints.add_bounds(0, None, Some(1.0));
+
+    let x = colvec(&[1.0]);
+    let d = colvec(&[1.0]);
+
+    let (active, inactive) = constraints.active_and_inactive_sets(&x, Some(&d));
+
+    assert_eq!(active, vec![(0, AtUpper)]);
+    assert!(inactive.is_empty());
+}
+//}}}
+//{{{ test: active_and_inactive — infeasible start uses clamped boundary
+#[test]
+fn test_active_and_inactive_infeasible_start_uses_clamped_boundary()
+{
+    let mut constraints = BoundsConstraints::new(2);
+    constraints.add_bounds(0, Some(0.0), None);
+    constraints.add_bounds(1, None, Some(1.0));
+
+    let x = colvec(&[-0.5, 1.5]);
+    let d = colvec(&[-1.0, 1.0]);
+
+    let (active, inactive) = constraints.active_and_inactive_sets(&x, Some(&d));
+
+    assert_eq!(active, vec![(0, AtLower), (1, AtUpper)]);
+    assert!(inactive.is_empty());
+}
+//}}}
+//{{{ test: active_and_inactive — upper bound with negative direction → inactive
+#[test]
+fn test_active_and_inactive_upper_bound_negative_direction_is_inactive()
+{
+    let mut constraints = BoundsConstraints::new(1);
+    constraints.add_bounds(0, None, Some(1.0));
+
+    let x = colvec(&[0.5]);
+    let d = colvec(&[-1.0]);
+
+    let (active, inactive) = constraints.active_and_inactive_sets(&x, Some(&d));
+
+    assert!(active.is_empty());
+    assert_eq!(inactive, vec![0]);
+}
+//}}}
+//{{{ test: active_and_inactive — zero direction → inactive regardless of bounds
+#[test]
+fn test_active_and_inactive_zero_direction_is_inactive()
+{
+    let mut constraints = BoundsConstraints::new(1);
+    constraints.add_bounds(0, Some(0.0), Some(1.0));
+
+    let x = colvec(&[0.5]);
+    let d = colvec(&[0.0]);
+
+    let (active, inactive) = constraints.active_and_inactive_sets(&x, Some(&d));
+
+    assert!(active.is_empty());
+    assert_eq!(inactive, vec![0]);
+}
+//}}}
+//{{{ test: active_and_inactive — mixed variables
+#[test]
+fn test_active_and_inactive_mixed_variables()
+{
+    // var 0: no bounds                           → always inactive
+    // var 1: lower bound [0.0, _], x[1] = 0.0   → active (at lower, pushing lower)
+    // var 2: upper bound [_, 2.0], x[2] = 2.0   → active (at upper, pushing upper)
+    // var 3: both bounds [0.0, 2.0], d[3] = 0.0 → inactive (zero direction)
+    let mut constraints = BoundsConstraints::new(4);
+    constraints.add_bounds(1, Some(0.0), None);
+    constraints.add_bounds(2, None, Some(2.0));
+    constraints.add_bounds(3, Some(0.0), Some(2.0));
+
+    let x = colvec(&[5.0, 0.0, 2.0, 1.0]);
+    let d = colvec(&[3.0, -1.0, 1.0, 0.0]);
+
+    let (active, inactive) = constraints.active_and_inactive_sets(&x, Some(&d));
+
+    assert_eq!(active, vec![(1, AtLower), (2, AtUpper)]);
+    assert_eq!(inactive, vec![0, 3]);
+}
+//}}}
+//{{{ test: active_and_inactive — omitted direction uses position only
+#[test]
+fn test_active_and_inactive_no_direction_uses_position_only()
+{
+    // var 0: no bounds                         → inactive
+    // var 1: lower bound [0.0, _], x[1] = 0.0 → active at lower
+    // var 2: upper bound [_, 2.0], x[2] = 2.5 → active at upper
+    // var 3: both bounds [0.0, 2.0], interior → inactive
+    let mut constraints = BoundsConstraints::new(4);
+    constraints.add_bounds(1, Some(0.0), None);
+    constraints.add_bounds(2, None, Some(2.0));
+    constraints.add_bounds(3, Some(0.0), Some(2.0));
+
+    let x = colvec(&[5.0, 0.0, 2.5, 1.0]);
+
+    let (active, inactive) = constraints.active_and_inactive_sets(&x, None);
+
+    assert_eq!(active, vec![(1, AtLower), (2, AtUpper)]);
+    assert_eq!(inactive, vec![0, 3]);
+}
+//}}}
+//{{{ test: active_and_inactive — omitted direction does not use clamped direction
+#[test]
+fn test_active_and_inactive_no_direction_marks_infeasible_position_active()
+{
+    let mut constraints = BoundsConstraints::new(2);
+    constraints.add_bounds(0, Some(0.0), Some(1.0));
+    constraints.add_bounds(1, Some(0.0), Some(1.0));
+
+    let x = colvec(&[-0.5, 1.5]);
+
+    let (active, inactive) = constraints.active_and_inactive_sets(&x, None);
+
+    assert_eq!(active, vec![(0, AtLower), (1, AtUpper)]);
+    assert!(inactive.is_empty());
+}
+//}}}
+//{{{ fun: project_at
+fn project_at(
+    constraints: &BoundsConstraints,
+    x: &Vector,
+    d: &Vector,
+    t: f64,
+) -> Vector
+{
+    let vals: Vec<f64> = (0..x.len()).map(|i| x[i] + t * d[i]).collect();
+    let mut p = colvec(&vals);
+    constraints.clamp(&mut p);
+    p
+}
+//}}}
+//{{{ test: cauchy path geometric kinks
+#[test]
+fn test_cauchy_path_geometric_projected_path_kinks_at_breakpoints()
+{
+    // 3 variables, all bounded [0, 2].
+    // x = [0.5, 0.0, 1.5], d = [1, 1, 1].
+    //
+    // Breakpoints from cauchy_path:
+    //   t = 0.5  → var 2 hits upper bound (2.0)
+    //   t = 1.5  → var 0 hits upper bound (2.0)
+    //   t = 2.0  → var 1 hits upper bound (2.0)
+    //
+    // Between breakpoints the path is linear in each free variable; at each
+    // breakpoint one component "kinks" onto its bound and stays there.
+    let mut constraints = BoundsConstraints::new(3);
+    constraints.add_bounds(0, Some(0.0), Some(2.0));
+    constraints.add_bounds(1, Some(0.0), Some(2.0));
+    constraints.add_bounds(2, Some(0.0), Some(2.0));
+
+    let x = colvec(&[0.5, 0.0, 1.5]);
+    let d = colvec(&[1.0, 1.0, 1.0]);
+
+    // Verify the breakpoint sequence first.
+    let path = constraints.cauchy_path(&x, &d);
+    assert_eq!(path.len(), 3);
+    assert_relative_eq!(path[0].0, 0.5, epsilon = 1e-12);
+    assert_eq!(path[0].1, 2);
+    assert_relative_eq!(path[1].0, 1.5, epsilon = 1e-12);
+    assert_eq!(path[1].1, 0);
+    assert_relative_eq!(path[2].0, 2.0, epsilon = 1e-12);
+    assert_eq!(path[2].1, 1);
+
+    // Segment 0: t in [0, 0.5) — all three components move freely.
+    let p = project_at(&constraints, &x, &d, 0.0);
+    assert_relative_eq!(p[0], 0.5, epsilon = 1e-12);
+    assert_relative_eq!(p[1], 0.0, epsilon = 1e-12);
+    assert_relative_eq!(p[2], 1.5, epsilon = 1e-12);
+
+    let p = project_at(&constraints, &x, &d, 0.25);
+    assert_relative_eq!(p[0], 0.75, epsilon = 1e-12);
+    assert_relative_eq!(p[1], 0.25, epsilon = 1e-12);
+    assert_relative_eq!(p[2], 1.75, epsilon = 1e-12);
+
+    // At t = 0.5: var 2 exactly on upper bound (kink point).
+    let p = project_at(&constraints, &x, &d, 0.5);
+    assert_relative_eq!(p[0], 1.0, epsilon = 1e-12);
+    assert_relative_eq!(p[1], 0.5, epsilon = 1e-12);
+    assert_relative_eq!(p[2], 2.0, epsilon = 1e-12);
+
+    // Segment 1: t in (0.5, 1.5) — var 2 pinned at 2.0, vars 0 and 1 still free.
+    let p = project_at(&constraints, &x, &d, 1.0);
+    assert_relative_eq!(p[0], 1.5, epsilon = 1e-12);
+    assert_relative_eq!(p[1], 1.0, epsilon = 1e-12);
+    assert_relative_eq!(p[2], 2.0, epsilon = 1e-12); // pinned
+
+    // At t = 1.5: var 0 exactly on upper bound (kink point), var 2 still pinned.
+    let p = project_at(&constraints, &x, &d, 1.5);
+    assert_relative_eq!(p[0], 2.0, epsilon = 1e-12);
+    assert_relative_eq!(p[1], 1.5, epsilon = 1e-12);
+    assert_relative_eq!(p[2], 2.0, epsilon = 1e-12); // pinned
+
+    // Segment 2: t in (1.5, 2.0) — vars 0 and 2 pinned, only var 1 moves.
+    let p = project_at(&constraints, &x, &d, 1.75);
+    assert_relative_eq!(p[0], 2.0, epsilon = 1e-12); // pinned
+    assert_relative_eq!(p[1], 1.75, epsilon = 1e-12);
+    assert_relative_eq!(p[2], 2.0, epsilon = 1e-12); // pinned
+
+    // At t = 2.0: all variables pinned at their upper bounds.
+    let p = project_at(&constraints, &x, &d, 2.0);
+    assert_relative_eq!(p[0], 2.0, epsilon = 1e-12);
+    assert_relative_eq!(p[1], 2.0, epsilon = 1e-12);
+    assert_relative_eq!(p[2], 2.0, epsilon = 1e-12);
+
+    // Beyond last breakpoint: path stays constant.
+    let p = project_at(&constraints, &x, &d, 3.0);
+    assert_relative_eq!(p[0], 2.0, epsilon = 1e-12);
+    assert_relative_eq!(p[1], 2.0, epsilon = 1e-12);
+    assert_relative_eq!(p[2], 2.0, epsilon = 1e-12);
 }
 //}}}
 //{{{ test: zero stale matrix entries

@@ -20,7 +20,7 @@ use std::{
 //}}}
 //{{{ dep imports
 use topohedral_linalg::{
-    dvector::VecType::Col, FloatTransformOps, MatMul, MatrixOps, ReduceOps, TransformOps, VectorOps,
+    FloatTransformOps, MatMul, MatrixOps, ReduceOps, TransformOps, VecType::Col, VectorOps,
 };
 use topohedral_tracing::*;
 //}}}
@@ -49,6 +49,7 @@ pub struct Options
 //{{{ impl: Options
 impl Options
 {
+    #[trace_fn]
     pub fn new(
         constrained_opts: ConstriainedOptions,
         uncon_method: UnconstrainedMethod,
@@ -66,11 +67,13 @@ impl Options
         }
     }
 
+    #[trace_fn]
     pub(crate) fn uncon_method_mut(&mut self) -> &mut UnconstrainedMethod
     {
         &mut self.uncon_method
     }
 
+    #[trace_fn]
     pub(crate) fn uncon_method(&self) -> &UnconstrainedMethod
     {
         &self.uncon_method
@@ -94,6 +97,7 @@ struct LagrangianPenaltyData<F: RealVectorFn>
 impl<F: RealVectorFn> LagrangianPenaltyData<F>
 {
     //{{{ fn: new
+    #[trace_fn]
     pub fn new(
         fcn: F,
         initial_penalty: f64,
@@ -106,7 +110,7 @@ impl<F: RealVectorFn> LagrangianPenaltyData<F>
         //}}}
 
         let initial_penalties = Vector::from_value_vec(initial_penalty, num_constraints, Col);
-        let zero_vector = Vector::zeros_cvec(num_constraints, Col);
+        let zero_vector = Vector::zeros_vec(num_constraints, Col);
         let zero_matrix = Matrix::zeros(dimension, num_constraints);
 
         Self {
@@ -120,6 +124,7 @@ impl<F: RealVectorFn> LagrangianPenaltyData<F>
     }
     //}}}
     //{{{ fn: update_values
+    #[trace_fn]
     fn update_values(
         &mut self,
         x: &Vector,
@@ -129,6 +134,7 @@ impl<F: RealVectorFn> LagrangianPenaltyData<F>
     }
     //}}}
     //{{{ fn: update_gradients
+    #[trace_fn]
     fn update_gradients(
         &mut self,
         x: &Vector,
@@ -174,13 +180,14 @@ impl<F: RealVectorFn> LagrangianPenaltyData<F>
                 *max_violation = constraint_value_i.abs()
             }
             //{{{ trace
-            info!(target: "aug", "i = {} was_violated = {} max_violation = {:1.4e}",
+            info!(target: "aug", "i = {} was_violated = {} max_violation = {:.4e}",
                i, was_violated, max_violation);
             //}}}
         }
     }
     //}}}
     //{{{ fn: compute_lagrange_multiplier_estimates
+    #[trace_fn]
     fn compute_lagrange_multiplier_estimates(&self) -> Vector
     {
         (&self.penalties * &self.shifts).into()
@@ -245,6 +252,7 @@ impl<F: RealVectorFn> EqPenalty<F>
 impl<F: RealVectorFn> RealFn for EqPenalty<F>
 {
     //{{{ fn: dimension
+    #[trace_fn]
     fn dimension(&self) -> usize
     {
         self.data.function.dimension_domain()
@@ -280,7 +288,7 @@ impl<F: RealVectorFn> RealFn for EqPenalty<F>
             }
         };
         //{{{ trace
-        trace!(target: "aug", "Evaluated equality constraint value: {constraint_value:1.4e}");
+        trace!(target: "aug", "Evaluated equality constraint value: {constraint_value:.4e}");
         //}}}
         constraint_value
     }
@@ -362,7 +370,7 @@ impl<F: RealVectorFn> IeqPenalty<F>
                 self.data.shifts[i] = f64::max(0.0, old_shift + gi);
 
                 //{{{ trace
-                debug!(target: "aug", "i = {i} Constraint improved, updating shifts: old_shift = {old_shift:1.4e} new_shift = {:1.4e}",
+                debug!(target: "aug", "i = {i} Constraint improved, updating shifts: old_shift = {old_shift:.4e} new_shift = {:.4e}",
                             self.data.shifts[i]);
                 //}}}
             }
@@ -375,12 +383,14 @@ impl<F: RealVectorFn> IeqPenalty<F>
 impl<F: RealVectorFn> RealFn for IeqPenalty<F>
 {
     //{{{ fn: dimension
+    #[trace_fn]
     fn dimension(&self) -> usize
     {
         self.data.function.dimension_domain()
     }
     //}}}
     //{{{ fn: eval
+    #[trace_fn]
     fn eval(
         &mut self,
         x: &Vector,
@@ -404,6 +414,7 @@ impl<F: RealVectorFn> RealFn for IeqPenalty<F>
     }
     //}}}
     //{{{ fn: grad
+    #[trace_fn]
     fn grad(
         &mut self,
         x: &Vector,
@@ -449,7 +460,7 @@ impl CachedValues
     #[trace_fn]
     fn new(n: usize) -> Self
     {
-        let zero_vector = Vector::zeros_cvec(n, Col);
+        let zero_vector = Vector::zeros_vec(n, Col);
         Self {
             fcn_value: 0.0,
             fcn_grad: zero_vector.clone(),
@@ -566,24 +577,28 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangianFcn<F1, 
     }
     //}}}
     //{{{ fn: has_eq_penalty
+    #[trace_fn]
     fn has_eq_penalty(&self) -> bool
     {
         self.eq_penalty.is_some()
     }
     //}}}
     //{{{ fn: has_ieq_penalty
+    #[trace_fn]
     fn has_ieq_penalty(&self) -> bool
     {
         self.ieq_penalty.is_some()
     }
     //}}}
     //{{{ fn: get_cached_values
+    #[trace_fn]
     fn get_cached_values(&self) -> &CachedValues
     {
         self.cached_values.get(&self.lagrangian_type).unwrap()
     }
     //}}}
     //{{{ fn: get_cached_values_mut
+    #[trace_fn]
     fn get_cached_values_mut(&mut self) -> &mut CachedValues
     {
         self.cached_values.get_mut(&self.lagrangian_type).unwrap()
@@ -596,6 +611,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangianFcn<F1, 
 impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> RealFn for AugmentedLagrangianFcn<F1, F2, F3>
 {
     //{{{ fn: dimension
+    #[trace_fn]
     fn dimension(&self) -> usize
     {
         self.fcn.dimension()
@@ -611,14 +627,14 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> RealFn for AugmentedLagrang
         let fcn_value = self.fcn.eval(x);
 
         //{{{ trace
-        info!(target: "aug", "Evaluated objective: {fcn_value:1.4e}");
+        info!(target: "aug", "Evaluated objective: {fcn_value:.4e}");
         //}}}
 
         let eq_value = if let Some(eq_penalty) = &mut self.eq_penalty
         {
             let eq_value = eq_penalty.eval(x);
             //{{{ trace
-            debug!(target: "aug", "Evaluated EQ penalty: {eq_value:1.4e}");
+            debug!(target: "aug", "Evaluated EQ penalty: {eq_value:.4e}");
             //}}}
             eq_value
         }
@@ -631,7 +647,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> RealFn for AugmentedLagrang
         {
             let ieq_value = ieq_penalty.eval(x);
             //{{{ trace
-            debug!(target: "aug", "Evaluated IEQ penalty: {ieq_value:1.4e}");
+            debug!(target: "aug", "Evaluated IEQ penalty: {ieq_value:.4e}");
             //}}}
             ieq_value
         }
@@ -652,7 +668,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> RealFn for AugmentedLagrang
         }
 
         //{{{ trace
-        debug!(target: "aug", "Augmented Lagrangian value: {auglag_value:1.4e}");
+        debug!(target: "aug", "Augmented Lagrangian value: {auglag_value:.4e}");
         //}}}
         auglag_value
     }
@@ -684,7 +700,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> RealFn for AugmentedLagrang
         }
         else
         {
-            Vector::zeros_cvec(n, Col)
+            Vector::zeros_vec(n, Col)
         };
 
         let ieq_penalty_grad = if let Some(ieq_constraint_data) = &mut self.ieq_penalty
@@ -698,7 +714,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> RealFn for AugmentedLagrang
         }
         else
         {
-            Vector::zeros_cvec(n, Col)
+            Vector::zeros_vec(n, Col)
         };
 
         let grad_aug_lag: Vector = (&fcn_grad + &eq_penalty_grad + &ieq_penalty_grad).into();
@@ -811,9 +827,9 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
             let residual_stationarity_scaled = norm_grad_auglag / 1.0f64.max(norm_grad_f).max(norm_grad_penalty);
             let residual_primal = norm_eq.max(norm_ieq);
             //{{{ trace
-            info!(target: "aug", "||∇P|| = {norm_grad_penalty:1.4e} ||∇F|| = {norm_grad_f:1.4} ||h|| = {norm_eq:1.4e} ||g|| = {norm_ieq:1.4e}");
-            info!(target: "aug", "||∇L|| = {norm_grad_auglag:1.4e})");
-            info!(target: "aug", "||∇L|| / max(1, ||∇F||, ||∇P||) = {residual_stationarity_scaled:1.4e}");
+            info!(target: "aug", "||∇P|| = {norm_grad_penalty:.4e} ||∇F|| = {norm_grad_f:.4} ||h|| = {norm_eq:.4e} ||g|| = {norm_ieq:.4e}");
+            info!(target: "aug", "||∇L|| = {norm_grad_auglag:.4e})");
+            info!(target: "aug", "||∇L|| / max(1, ||∇F||, ||∇P||) = {residual_stationarity_scaled:.4e}");
             //}}}
             let ctol = self.opts.constrained_opts.constraint_tol;
             let rtol = self.opts.constrained_opts.grad_rtol;
@@ -913,7 +929,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
             {
                 (
                     eq_penalty.data.values.abs_max().unwrap(),
-                    eq_penalty.data.penalties.max().unwrap(),
+                    eq_penalty.data.penalties.allmax().unwrap(),
                 )
             }
             else
@@ -924,7 +940,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
             {
                 (
                     ieq_penalty.data.values.posed().abs_max().unwrap(),
-                    ieq_penalty.data.penalties.max().unwrap(),
+                    ieq_penalty.data.penalties.allmax().unwrap(),
                 )
             }
             else
@@ -939,7 +955,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
             let atol = (0.1 * (residual_primal.max(1.0 / penalty_max)).powf(1.5))
                 .clamp(atol_min, atol_max);
             //{{{ trace
-            info!(target: "aug", "Setting innner atol to {atol:1.4e}");
+            info!(target: "aug", "Setting innner atol to {atol:.4e}");
             //}}}
             uncon_method.uncon_opts_mut().grad_atol = atol;
         });
@@ -974,7 +990,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> ConstrainedMinimizer
                 info!(target: "cg", "*********************************************");
                 info!(target: "cg", "Converging with reason {reason:?}");
                 info!(target: "cg","Convergence measures:");
-                info!(target: "cg", "||∇L(k)|| = {:1.4e}", iter_k.norm_grad_fx);
+                info!(target: "cg", "||∇L(k)|| = {:.4e}", iter_k.norm_grad_fx);
                 info!(target: "cg", "*********************************************");
                 //}}}
                 let fmin = self.fcn.lock().unwrap().inner_mut().fcn.eval(&iter_k.x);

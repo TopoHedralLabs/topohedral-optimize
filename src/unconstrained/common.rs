@@ -39,7 +39,7 @@ impl Display for Options
     ) -> fmt::Result
     {
         let out = format!(
-            "grad_rtol = {:1.4e} grad_atol = {:1.4e} max_iter = {}",
+            "grad_rtol = {:.4e} grad_atol = {:.4e} max_iter = {}",
             self.grad_rtol, self.grad_atol, self.max_iter
         );
         f.pad(&out)

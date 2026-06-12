@@ -13,8 +13,8 @@ use topohedral_optimize::{
 //}}}
 //{{{ dep imports
 use approx::assert_relative_eq;
-use topohedral_linalg::dmatrix::DMatrix;
-use topohedral_linalg::dvector::{DVector, VecType};
+use topohedral_linalg::DMatrix;
+use topohedral_linalg::{DVector, VecType};
 use topohedral_linalg::{MatMul, VectorOps};
 //}}}
 //--------------------------------------------------------------------------------------------------
@@ -83,7 +83,7 @@ impl RealFn for QuadraticDynamic
     ) -> Vector
     {
         let n = x.len();
-        let mut out = DVector::<f64>::zeros_cvec(n, VecType::Col);
+        let mut out = DVector::<f64>::zeros_vec(n, VecType::Col);
 
         for i in 0..n
         {
@@ -115,7 +115,7 @@ impl QuadraticDynamic
 {
     fn new1() -> Self
     {
-        let center = DVector::<f64>::zeros_cvec(3, VecType::Col);
+        let center = DVector::<f64>::zeros_vec(3, VecType::Col);
         let coeffs =
             DMatrix::<f64>::from_row_slice(&[5.0, 1.0, 2.0, 1.0, 5.0, 3.0, 2.0, 3.0, 5.0], 3, 3);
         Self { center, coeffs }
@@ -129,17 +129,17 @@ fn test_quadratic_dynamic_3d()
 {
     let mut f = QuadraticDynamic::new1();
 
-    let x1 = DVector::<f64>::zeros_cvec(3, VecType::Col);
+    let x1 = DVector::<f64>::zeros_vec(3, VecType::Col);
     let fx1 = f.eval(&x1);
     assert_relative_eq!(fx1, 0.0, epsilon = 1e-10);
     let grad_fx1 = f.grad(&x1);
-    let exp_grad_fx1 = DVector::<f64>::zeros_cvec(3, VecType::Col);
+    let exp_grad_fx1 = DVector::<f64>::zeros_vec(3, VecType::Col);
     for (actual, expected) in grad_fx1.iter().zip(exp_grad_fx1.iter())
     {
         assert_relative_eq!(*actual, *expected, epsilon = 1e-10);
     }
 
-    let x2 = DVector::<f64>::ones_cvec(3, VecType::Col);
+    let x2 = DVector::<f64>::ones_vec(3, VecType::Col);
     let fx2 = f.eval(&x2);
     assert_relative_eq!(fx2, 27.0);
     let grad_fx2 = f.grad(&x2);
@@ -229,7 +229,7 @@ impl LinearVectorDynamic
 fn run_linear_vector_checks<F: RealVectorFn>(mut f: F)
 {
     let x = colvec(&[2.0, -1.0, 3.0]);
-    let mut value = DVector::<f64>::zeros_cvec(2, VecType::Col);
+    let mut value = DVector::<f64>::zeros_vec(2, VecType::Col);
     let mut jac = DMatrix::<f64>::from_row_slice(&[0.0, 0.0, 0.0, 0.0, 0.0, 0.0], 2, 3);
     let exp_value = colvec(&[6.0, 6.0]);
     let exp_jac = DMatrix::<f64>::from_row_slice(&[1.0, -2.0, 0.5, -1.0, 3.0, 4.0], 2, 3);

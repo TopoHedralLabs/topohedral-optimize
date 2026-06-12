@@ -328,7 +328,7 @@ impl<F: RealFn1> LineSearch for Thuente<F>
     ) -> Result<Returns, Error>
     {
         //{{{ trace
-        info!(target: "ls", "phi0={phi0:1.3e} dphi0={dphi0:1.3e} alpha1 = {alpha1:1.3e}");
+        info!(target: "ls", "phi0={phi0:.3e} dphi0={dphi0:.3e} alpha1 = {alpha1:.3e}");
         //}}}
         self.initialize(phi0, dphi0, alpha1);
         let mut cur_step = Values {
