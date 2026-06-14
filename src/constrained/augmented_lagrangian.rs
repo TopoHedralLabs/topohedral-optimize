@@ -604,6 +604,13 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangianFcn<F1, 
         self.cached_values.get_mut(&self.lagrangian_type).unwrap()
     }
     //}}}
+    //{{{ fn: is_constrained
+    #[trace_fn]
+    fn is_constrained(&self) -> bool
+    {
+        self.has_eq_penalty() || self.has_ieq_penalty()
+    }
+    //}}}
 }
 
 //}}}
@@ -925,6 +932,15 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
         uncon_method.uncon_opts_mut().grad_rtol = 0.0;
 
         self.fcn.lock().unwrap().with_inner_mut(|fcn| {
+            if !fcn.is_constrained()
+            {
+                uncon_method.uncon_opts_mut().grad_rtol =
+                    self.opts.constrained_opts.base_opts.grad_rtol;
+                uncon_method.uncon_opts_mut().grad_atol =
+                    self.opts.constrained_opts.base_opts.grad_atol;
+                return;
+            }
+
             let (norm_eq, max_penalty_eq) = if let Some(eq_penalty) = &fcn.eq_penalty
             {
                 (
