@@ -99,7 +99,7 @@ fn asa_options(max_iter: u64) -> AsaOptions
                 grad_rtol: 1e-8,
                 grad_atol: 1e-8,
                 max_iter,
-                make_counting: false,
+                make_counting: true,
             },
             constraint_tol: 1e-8,
         },

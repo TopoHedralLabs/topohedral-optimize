@@ -417,8 +417,6 @@ impl<F: RealFn> Minimizer for ActiveSetAlgorithm<F>
         let mut phase = Phase::NGPA;
         let mut mu = self.opts.mu;
         let mut alpha_bb = 1.0;
-        let mut num_fun_evals = 1;
-        let mut num_grad_evals = 1;
 
         self.fn_history.append(iter_k.fx);
         self.active_signature_history
@@ -434,8 +432,8 @@ impl<F: RealFn> Minimizer for ActiveSetAlgorithm<F>
                     fmin: iter_k.fx,
                     reason,
                     num_iterations: k as usize,
-                    num_fun_evals,
-                    num_grad_evals,
+                    num_fun_evals: 0,
+                    num_grad_evals: 0,
                 });
             }
 
@@ -481,8 +479,6 @@ impl<F: RealFn> Minimizer for ActiveSetAlgorithm<F>
                     //{{{ trace
                     trace!(target: "bc", "alpha_bb = {alpha_bb:.4e}");
                     //}}}
-                    num_fun_evals += 1;
-                    num_grad_evals += 1;
 
                     let projected_grad =
                         self.bounds.projected_direction(x, &(-grad_fx.clone()), 1.0);
@@ -552,8 +548,6 @@ impl<F: RealFn> Minimizer for ActiveSetAlgorithm<F>
                     iter_k.grad_fx.copy_from(self.fcn.grad(&iter_k.x));
                     iter_k.fx = self.fcn.eval(&iter_k.x);
                     iter_k.norm_grad_fx = iter_k.grad_fx.norm();
-                    num_fun_evals += res.num_fun_evals + 1;
-                    num_grad_evals += res.num_grad_evals + 1;
 
                     let projected_grad_new =
                         self.bounds
@@ -609,8 +603,8 @@ impl<F: RealFn> Minimizer for ActiveSetAlgorithm<F>
             fmin: iter_k.fx,
             reason: ConvergedReason::Atol,
             num_iterations: self.opts.bound_opts.base_opts.max_iter as usize,
-            num_fun_evals,
-            num_grad_evals,
+            num_fun_evals: 0,
+            num_grad_evals: 0,
         })
     }
 }
