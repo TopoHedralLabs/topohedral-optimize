@@ -18,6 +18,7 @@ use topohedral_tracing::*;
 
 //{{{ mod: submodules
 mod asa;
+mod bfgsb;
 mod common;
 mod factory;
 mod utils;
