@@ -832,8 +832,8 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
             info!(target: "aug", "||∇L|| / max(1, ||∇F||, ||∇P||) = {residual_stationarity_scaled:.4e}");
             //}}}
             let ctol = self.opts.constrained_opts.constraint_tol;
-            let rtol = self.opts.constrained_opts.grad_rtol;
-            let atol = self.opts.constrained_opts.grad_atol;
+            let rtol = self.opts.constrained_opts.base_opts.grad_rtol;
+            let atol = self.opts.constrained_opts.base_opts.grad_atol;
             let constraints_satsifed = residual_primal < ctol;
             let stationarity_rtol_satisfied = residual_stationarity_scaled < rtol;
             let stationarity_atol_satisfied = residual_stationarity< atol;
@@ -974,7 +974,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> Minimizer for AugmentedLagr
     {
         let alpha = self.opts.constraint_improvement_factor;
         let beta = self.opts.penalty_growth_factor;
-        let n_iter = self.opts.constrained_opts.max_iter;
+        let n_iter = self.opts.constrained_opts.base_opts.max_iter;
         let mut iter_k = IterData::new(self.fcn.clone(), &self.x_init);
         let mut iter_prev_k = iter_k.clone();
 

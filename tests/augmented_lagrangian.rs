@@ -251,11 +251,13 @@ fn auglag_method(mut unconstrained_method: UnconstrainedMethod) -> ConstrainedMe
 
     ConstrainedMethod::AugmentedLagrangian(AugmentedLagrangianOptions::new(
         ConstriainedOptions {
-            grad_rtol: 1e-6,
-            grad_atol: 1e-8,
+            base_opts: UnonstrainedOptions {
+                grad_rtol: 1e-6,
+                grad_atol: 1e-8,
+                max_iter: 1000,
+                make_counting: true,
+            },
             constraint_tol: 1e-6,
-            max_iter: 1000,
-            make_counting: true,
         },
         unconstrained_method,
         1.0,
@@ -271,16 +273,16 @@ const THUENTE_BFGS: QuasiNewtonOptions = QuasiNewtonOptions {
         grad_atol: 1e-8,
         max_iter: 100,
         make_counting: false,
-        ls_method: LineSearchMethod::Thuente(ThuenteOptions {
-            ls_opts: LineSearchOptions {
-                c1: 1.0e-4,
-                c2: 0.9,
-                step_min: 1e-8,
-                step_max: 1e5,
-            },
-            maxiter: 100,
-        }),
     },
+    ls_method: LineSearchMethod::Thuente(ThuenteOptions {
+        ls_opts: LineSearchOptions {
+            c1: 1.0e-4,
+            c2: 0.9,
+            step_min: 1e-8,
+            step_max: 1e5,
+        },
+        maxiter: 100,
+    }),
     method: UpdateMethod::BFGS,
     restart: 10,
 };
@@ -292,17 +294,17 @@ const NOCEDAL_BFGS: QuasiNewtonOptions = QuasiNewtonOptions {
         grad_atol: 1e-8,
         max_iter: 100,
         make_counting: false,
-        ls_method: LineSearchMethod::Nocedal(NocedalOptions {
-            ls_opts: LineSearchOptions {
-                c1: 1.0e-4,
-                c2: 0.4,
-                step_min: 1e-8,
-                step_max: 1e5,
-            },
-            maxiter: 20,
-            zoom_maxiter: 10,
-        }),
     },
+    ls_method: LineSearchMethod::Nocedal(NocedalOptions {
+        ls_opts: LineSearchOptions {
+            c1: 1.0e-4,
+            c2: 0.4,
+            step_min: 1e-8,
+            step_max: 1e5,
+        },
+        maxiter: 20,
+        zoom_maxiter: 10,
+    }),
     method: UpdateMethod::BFGS,
     restart: 10,
 };
@@ -314,16 +316,16 @@ const THUENTE_FR: ConjugateGradientOptions = ConjugateGradientOptions {
         grad_atol: 1e-8,
         max_iter: 100,
         make_counting: false,
-        ls_method: LineSearchMethod::Thuente(ThuenteOptions {
-            ls_opts: LineSearchOptions {
-                c1: 1.0e-4,
-                c2: 0.9,
-                step_min: 1e-8,
-                step_max: 1e5,
-            },
-            maxiter: 10,
-        }),
     },
+    ls_method: LineSearchMethod::Thuente(ThuenteOptions {
+        ls_opts: LineSearchOptions {
+            c1: 1.0e-4,
+            c2: 0.9,
+            step_min: 1e-8,
+            step_max: 1e5,
+        },
+        maxiter: 10,
+    }),
     direction: Direction::FletcherReeves,
     restart: 10,
 };
@@ -335,16 +337,16 @@ const THUENTE_PR: ConjugateGradientOptions = ConjugateGradientOptions {
         grad_atol: 1e-8,
         max_iter: 100,
         make_counting: false,
-        ls_method: LineSearchMethod::Thuente(ThuenteOptions {
-            ls_opts: LineSearchOptions {
-                c1: 1.0e-4,
-                c2: 0.9,
-                step_min: 1e-8,
-                step_max: 1e5,
-            },
-            maxiter: 10,
-        }),
     },
+    ls_method: LineSearchMethod::Thuente(ThuenteOptions {
+        ls_opts: LineSearchOptions {
+            c1: 1.0e-4,
+            c2: 0.9,
+            step_min: 1e-8,
+            step_max: 1e5,
+        },
+        maxiter: 10,
+    }),
     direction: Direction::PolakRibiere,
     restart: 10,
 };
@@ -356,17 +358,17 @@ const NOCEDAL_FR: ConjugateGradientOptions = ConjugateGradientOptions {
         grad_atol: 1e-8,
         max_iter: 100,
         make_counting: false,
-        ls_method: LineSearchMethod::Nocedal(NocedalOptions {
-            ls_opts: LineSearchOptions {
-                c1: 1.0e-4,
-                c2: 0.9,
-                step_min: 1e-8,
-                step_max: 1e5,
-            },
-            maxiter: 20,
-            zoom_maxiter: 20,
-        }),
     },
+    ls_method: LineSearchMethod::Nocedal(NocedalOptions {
+        ls_opts: LineSearchOptions {
+            c1: 1.0e-4,
+            c2: 0.9,
+            step_min: 1e-8,
+            step_max: 1e5,
+        },
+        maxiter: 20,
+        zoom_maxiter: 20,
+    }),
     direction: Direction::FletcherReeves,
     restart: 10,
 };
@@ -378,17 +380,17 @@ const NOCEDAL_PR: ConjugateGradientOptions = ConjugateGradientOptions {
         grad_atol: 1e-8,
         max_iter: 100,
         make_counting: false,
-        ls_method: LineSearchMethod::Nocedal(NocedalOptions {
-            ls_opts: LineSearchOptions {
-                c1: 1.0e-4,
-                c2: 0.9,
-                step_min: 1e-8,
-                step_max: 1e5,
-            },
-            maxiter: 20,
-            zoom_maxiter: 20,
-        }),
     },
+    ls_method: LineSearchMethod::Nocedal(NocedalOptions {
+        ls_opts: LineSearchOptions {
+            c1: 1.0e-4,
+            c2: 0.9,
+            step_min: 1e-8,
+            step_max: 1e5,
+        },
+        maxiter: 20,
+        zoom_maxiter: 20,
+    }),
     direction: Direction::PolakRibiere,
     restart: 10,
 };
@@ -544,7 +546,7 @@ fn test_quartic_with_bound_constraints_matches_reference(
 
     let mut method = auglag_method(unconstrained_method);
     method.con_opts_mut().constraint_tol = 1e-3;
-    method.con_opts_mut().grad_rtol = 1e-4;
+    method.con_opts_mut().base_opts.grad_rtol = 1e-4;
 
     let mut ieq_constraints = BoundsConstraints::new(5);
     ieq_constraints.add_bounds(0, Some(20.0), None);

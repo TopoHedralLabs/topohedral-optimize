@@ -3,8 +3,7 @@
 
 //{{{ crate imports
 use topohedral_optimize::bound_constrained::{
-    create as create_bound_constrained, AsaOptions, BoundConstrainedOptions,
-    Method as BoundConstrainedMethod,
+    create as create_bound_constrained, AsaOptions, BoundConstrainedMethod, BoundConstrainedOptions,
 };
 use topohedral_optimize::constraints::BoundsConstraints;
 use topohedral_optimize::line_search::{LineSearchMethod, LineSearchOptions, ThuenteOptions};
@@ -107,16 +106,16 @@ fn asa_options(max_iter: u64) -> AsaOptions
                 grad_atol: 1e-8,
                 max_iter: 100,
                 make_counting: false,
-                ls_method: LineSearchMethod::Thuente(ThuenteOptions {
-                    ls_opts: LineSearchOptions {
-                        c1: 1.0e-4,
-                        c2: 0.9,
-                        step_min: 1e-12,
-                        step_max: 1e5,
-                    },
-                    maxiter: 50,
-                }),
             },
+            ls_method: LineSearchMethod::Thuente(ThuenteOptions {
+                ls_opts: LineSearchOptions {
+                    c1: 1.0e-4,
+                    c2: 0.9,
+                    step_min: 1e-12,
+                    step_max: 1e5,
+                },
+                maxiter: 50,
+            }),
             method: UpdateMethod::BFGS,
             restart: 10,
         }),

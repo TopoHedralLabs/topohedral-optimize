@@ -48,7 +48,7 @@ pub fn minimize<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn>(
     let has_constraints = eq_constraints.is_some() || ieq_constraints.is_some();
     if has_constraints
     {
-        if method.con_opts().make_counting
+        if method.con_opts().base_opts.make_counting
         {
             let counting_fcn = arc_real_fn(CountingRealFn::new(fcn));
             let mut minimizer = factory::create(
@@ -72,10 +72,10 @@ pub fn minimize<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn>(
     }
     else
     {
-        let atol = method.con_opts().grad_atol;
-        let rtol = method.con_opts().grad_rtol;
-        let max_iter = method.con_opts().max_iter;
-        let make_counting = method.con_opts().make_counting;
+        let atol = method.con_opts().base_opts.grad_atol;
+        let rtol = method.con_opts().base_opts.grad_rtol;
+        let max_iter = method.con_opts().base_opts.max_iter;
+        let make_counting = method.con_opts().base_opts.make_counting;
         let mut uncon_method = method.uncon_method().clone();
         uncon_method.uncon_opts_mut().grad_atol = atol;
         uncon_method.uncon_opts_mut().grad_rtol = rtol;

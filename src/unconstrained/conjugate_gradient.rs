@@ -5,8 +5,8 @@
 
 //{{{ crate imports
 use super::common::Error;
-use super::common::Options as UnonstrainedOptions;
-use crate::line_search as ls;
+use crate::common::BaseOptions;
+use crate::line_search::{self as ls, LineSearchMethod};
 use crate::{ConvergedReason, IterData, Minimizer, RealFn, Returns, Vector};
 //}}}
 //{{{ std imports
@@ -30,7 +30,8 @@ pub enum Direction
 #[derive(Clone)]
 pub struct Options
 {
-    pub uncon_opts: UnonstrainedOptions,
+    pub uncon_opts: BaseOptions,
+    pub ls_method: LineSearchMethod,
     pub direction: Direction,
     pub restart: u64,
 }
@@ -204,7 +205,7 @@ impl<F: RealFn> Minimizer for ConjugateGradient<F>
                 &iter_k_prev,
                 &dir_k,
                 alpha_init,
-                self.opts.uncon_opts.ls_method.clone(),
+                self.opts.ls_method.clone(),
             )?;
 
             dir_k = self.update_direction(
