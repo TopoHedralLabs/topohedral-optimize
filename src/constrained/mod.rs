@@ -4,7 +4,6 @@
 
 //{{{ crate imports
 use crate::common::{arc_real_fn, CountingRealFn, RealFn, RealVectorFn, Vector};
-use crate::unconstrained;
 //}}}
 //{{{ std imports
 //}}}

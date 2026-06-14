@@ -5,7 +5,7 @@
 
 //{{{ crate imports
 use crate::common::{
-    arc_real_fn, CountingRealFn, RealFn, RealVectorFn, Returns as BoundConstrainedReturns, Vector,
+    arc_real_fn, CountingRealFn, RealFn, Returns as BoundConstrainedReturns, Vector,
 };
 use crate::constraints::BoundsConstraints;
 //}}}
