@@ -19,6 +19,8 @@ use std::{
 };
 //}}}
 //{{{ dep imports
+#[allow(unused_imports)]
+use topohedral_linalg::MatrixOps;
 use topohedral_linalg::{
     FloatTransformOps, MatMul, ReduceOps, TransformOps, VecType::Col, VectorOps,
 };
@@ -181,7 +183,7 @@ impl<F: RealVectorFn> LagrangianPenaltyData<F>
             }
             //{{{ trace
             info!(target: "aug", "i = {} was_violated = {} max_violation = {:.4e}",
-               i, was_violated, max_violation);
+               _i, was_violated, max_violation);
             //}}}
         }
     }
