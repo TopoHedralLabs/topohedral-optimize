@@ -20,7 +20,7 @@ use std::{
 //}}}
 //{{{ dep imports
 use topohedral_linalg::{
-    FloatTransformOps, MatMul, MatrixOps, ReduceOps, TransformOps, VecType::Col, VectorOps,
+    FloatTransformOps, MatMul, ReduceOps, TransformOps, VecType::Col, VectorOps,
 };
 use topohedral_tracing::*;
 //}}}
@@ -159,11 +159,11 @@ impl<F: RealVectorFn> LagrangianPenaltyData<F>
         trace!(target: "aug", "current_values= {}", current_values.clone().transpose());
         //}}}
 
-        for (i, max_violation, was_violated, constraint_value_i) in current_max_violations
+        for (_i, max_violation, was_violated, constraint_value_i) in current_max_violations
             .iter_mut()
             .zip(current_values.iter())
             .enumerate()
-            .map(|(i, ((max_violation, was_violated), hi))| (i, max_violation, was_violated, hi))
+            .map(|(_i, ((max_violation, was_violated), hi))| (_i, max_violation, was_violated, hi))
         {
             let max_violation_val = *max_violation;
             let constraint_val_tmp = if is_ineq
@@ -863,30 +863,30 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
     //{{{ fn: print_status
     fn print_status(
         &self,
-        k: u64,
-        iter_k: &IterData,
+        _k: u64,
+        _iter_k: &IterData,
     )
     {
         self.fcn.lock().unwrap().with_inner_mut(|fcn| {
 
-            info!(target: "aug", "******************************************************************************************** k = {k}");
-            trace!(target: "aug", "Current solution: {}", iter_k.x.clone().transpose());
-            trace!(target: "aug", "Current gradient: {}", iter_k.grad_fx.clone().transpose());
+            info!(target: "aug", "******************************************************************************************** k = {_k}");
+            trace!(target: "aug", "Current solution: {}", _iter_k.x.clone().transpose());
+            trace!(target: "aug", "Current gradient: {}", _iter_k.grad_fx.clone().transpose());
 
-            if let Some(eq_penalty) = &fcn.eq_penalty
+            if let Some(_eq_penalty) = &fcn.eq_penalty
             {
-                trace!(target: "aug", "Current EQ penalties: {}", eq_penalty.data.penalties.clone().transpose());
-                trace!(target: "aug", "Current EQ shifts: {}", eq_penalty.data.shifts.clone().transpose());
+                trace!(target: "aug", "Current EQ penalties: {}", _eq_penalty.data.penalties.clone().transpose());
+                trace!(target: "aug", "Current EQ shifts: {}", _eq_penalty.data.shifts.clone().transpose());
             }
 
-            if let Some(ieq_penalty) = &fcn.ieq_penalty
+            if let Some(_ieq_penalty) = &fcn.ieq_penalty
             {
-                trace!(target: "aug", "Current IEQ penalties: {}", ieq_penalty.data.penalties.clone().transpose());
-                trace!(target: "aug", "Current IEQ shifts: {}", ieq_penalty.data.shifts.clone().transpose());
+                trace!(target: "aug", "Current IEQ penalties: {}", _ieq_penalty.data.penalties.clone().transpose());
+                trace!(target: "aug", "Current IEQ shifts: {}", _ieq_penalty.data.shifts.clone().transpose());
             }
 
 
-            info!(target: "aug", "******************************************************************************************** k = {k}");
+            info!(target: "aug", "******************************************************************************************** k = {_k}");
         })
     }
     //}}}

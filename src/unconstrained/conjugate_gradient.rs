@@ -12,7 +12,7 @@ use crate::{ConvergedReason, IterData, Minimizer, RealFn, Returns, Vector};
 //{{{ std imports
 //}}}
 //{{{ dep imports
-use topohedral_linalg::{MatrixOps, VectorOps};
+use topohedral_linalg::VectorOps;
 use topohedral_tracing::*;
 //}}}
 //--------------------------------------------------------------------------------------------------

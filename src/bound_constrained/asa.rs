@@ -15,7 +15,7 @@ use crate::ConvergedReason;
 use crate::{IterData, RealFn};
 //}}}
 //{{{ dep imports
-use topohedral_linalg::{MatrixOps, ReduceOps, VecType, VectorOps};
+use topohedral_linalg::{ReduceOps, VecType, VectorOps};
 use topohedral_tracing::*;
 //}}}
 //--------------------------------------------------------------------------------------------------
@@ -322,12 +322,12 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
         trace!(target: "bc", "Running backtracking armijo");
         //}}}
         let max_iterations = 25;
-        for i in 0..max_iterations
+        for _i in 0..max_iterations
         {
             if f_trial < f_max + delta * alpha * gradfk_dot_d || alpha < SMALL
             {
                 //{{{ trace
-                trace!("Found step i = {i} alpha = {alpha:.4e} f_trial = {f_trial:.4e}");
+                trace!("Found step i = {_i} alpha = {alpha:.4e} f_trial = {f_trial:.4e}");
                 //}}}
                 break;
             }
@@ -391,14 +391,14 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
 
     fn print_status(
         &self,
-        k: u64,
-        iter_k: &IterData,
+        _k: u64,
+        _iter_k: &IterData,
     )
     {
-        info!(target: "bc", ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> k = {k}");
-        trace!(target: "bc", "x: {}", iter_k.x.clone().transpose());
-        trace!(target: "bc", "∇f: {}", iter_k.grad_fx.clone().transpose());
-        trace!(target: "bc", "∇f_proj: {}", self.bounds.projected_direction(&iter_k.x, &(-iter_k.grad_fx.clone()), 1.0).transpose());
+        info!(target: "bc", ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> k = {_k}");
+        trace!(target: "bc", "x: {}", _iter_k.x.clone().transpose());
+        trace!(target: "bc", "∇f: {}", _iter_k.grad_fx.clone().transpose());
+        trace!(target: "bc", "∇f_proj: {}", self.bounds.projected_direction(&_iter_k.x, &(-_iter_k.grad_fx.clone()), 1.0).transpose());
     }
 }
 //}}}
