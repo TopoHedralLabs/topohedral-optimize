@@ -3,8 +3,6 @@
 //! Longer description of module
 //--------------------------------------------------------------------------------------------------
 
-use topohedral_tracing::trace_fn;
-
 //{{{ crate imports
 use super::common::{Error, Options};
 use super::conjugate_gradient::ConjugateGradient;
@@ -16,6 +14,7 @@ use crate::{Minimizer, RealFn, Vector};
 //{{{ std imports
 //}}}
 //{{{ dep imports
+use topohedral_tracing::trace_fn;
 //}}}
 //--------------------------------------------------------------------------------------------------
 

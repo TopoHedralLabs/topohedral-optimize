@@ -59,6 +59,16 @@ pub enum ConvergedReason
     Atol,
 }
 //}}}
+//{{{ struct: Options
+#[derive(Copy, Clone)]
+pub struct BaseOptions
+{
+    pub grad_rtol: f64,
+    pub grad_atol: f64,
+    pub max_iter: u64,
+    pub make_counting: bool,
+}
+//}}}
 //{{{ struct: Returns
 #[derive(Clone, Debug)]
 pub struct Returns

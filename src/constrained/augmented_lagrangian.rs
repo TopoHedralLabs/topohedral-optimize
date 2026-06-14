@@ -19,8 +19,10 @@ use std::{
 };
 //}}}
 //{{{ dep imports
+#[allow(unused_imports)]
+use topohedral_linalg::MatrixOps;
 use topohedral_linalg::{
-    FloatTransformOps, MatMul, MatrixOps, ReduceOps, TransformOps, VecType::Col, VectorOps,
+    FloatTransformOps, MatMul, ReduceOps, TransformOps, VecType::Col, VectorOps,
 };
 use topohedral_tracing::*;
 //}}}
@@ -159,11 +161,11 @@ impl<F: RealVectorFn> LagrangianPenaltyData<F>
         trace!(target: "aug", "current_values= {}", current_values.clone().transpose());
         //}}}
 
-        for (i, max_violation, was_violated, constraint_value_i) in current_max_violations
+        for (_i, max_violation, was_violated, constraint_value_i) in current_max_violations
             .iter_mut()
             .zip(current_values.iter())
             .enumerate()
-            .map(|(i, ((max_violation, was_violated), hi))| (i, max_violation, was_violated, hi))
+            .map(|(_i, ((max_violation, was_violated), hi))| (_i, max_violation, was_violated, hi))
         {
             let max_violation_val = *max_violation;
             let constraint_val_tmp = if is_ineq
@@ -181,7 +183,7 @@ impl<F: RealVectorFn> LagrangianPenaltyData<F>
             }
             //{{{ trace
             info!(target: "aug", "i = {} was_violated = {} max_violation = {:.4e}",
-               i, was_violated, max_violation);
+               _i, was_violated, max_violation);
             //}}}
         }
     }
@@ -604,6 +606,13 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangianFcn<F1, 
         self.cached_values.get_mut(&self.lagrangian_type).unwrap()
     }
     //}}}
+    //{{{ fn: is_constrained
+    #[trace_fn]
+    fn is_constrained(&self) -> bool
+    {
+        self.has_eq_penalty() || self.has_ieq_penalty()
+    }
+    //}}}
 }
 
 //}}}
@@ -832,8 +841,8 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
             info!(target: "aug", "||∇L|| / max(1, ||∇F||, ||∇P||) = {residual_stationarity_scaled:.4e}");
             //}}}
             let ctol = self.opts.constrained_opts.constraint_tol;
-            let rtol = self.opts.constrained_opts.grad_rtol;
-            let atol = self.opts.constrained_opts.grad_atol;
+            let rtol = self.opts.constrained_opts.base_opts.grad_rtol;
+            let atol = self.opts.constrained_opts.base_opts.grad_atol;
             let constraints_satsifed = residual_primal < ctol;
             let stationarity_rtol_satisfied = residual_stationarity_scaled < rtol;
             let stationarity_atol_satisfied = residual_stationarity< atol;
@@ -856,30 +865,30 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
     //{{{ fn: print_status
     fn print_status(
         &self,
-        k: u64,
-        iter_k: &IterData,
+        _k: u64,
+        _iter_k: &IterData,
     )
     {
         self.fcn.lock().unwrap().with_inner_mut(|fcn| {
 
-            info!(target: "aug", "******************************************************************************************** k = {k}");
-            trace!(target: "aug", "Current solution: {}", iter_k.x.clone().transpose());
-            trace!(target: "aug", "Current gradient: {}", iter_k.grad_fx.clone().transpose());
+            info!(target: "aug", "******************************************************************************************** k = {_k}");
+            trace!(target: "aug", "Current solution: {}", _iter_k.x.clone().transpose());
+            trace!(target: "aug", "Current gradient: {}", _iter_k.grad_fx.clone().transpose());
 
-            if let Some(eq_penalty) = &fcn.eq_penalty
+            if let Some(_eq_penalty) = &fcn.eq_penalty
             {
-                trace!(target: "aug", "Current EQ penalties: {}", eq_penalty.data.penalties.clone().transpose());
-                trace!(target: "aug", "Current EQ shifts: {}", eq_penalty.data.shifts.clone().transpose());
+                trace!(target: "aug", "Current EQ penalties: {}", _eq_penalty.data.penalties.clone().transpose());
+                trace!(target: "aug", "Current EQ shifts: {}", _eq_penalty.data.shifts.clone().transpose());
             }
 
-            if let Some(ieq_penalty) = &fcn.ieq_penalty
+            if let Some(_ieq_penalty) = &fcn.ieq_penalty
             {
-                trace!(target: "aug", "Current IEQ penalties: {}", ieq_penalty.data.penalties.clone().transpose());
-                trace!(target: "aug", "Current IEQ shifts: {}", ieq_penalty.data.shifts.clone().transpose());
+                trace!(target: "aug", "Current IEQ penalties: {}", _ieq_penalty.data.penalties.clone().transpose());
+                trace!(target: "aug", "Current IEQ shifts: {}", _ieq_penalty.data.shifts.clone().transpose());
             }
 
 
-            info!(target: "aug", "******************************************************************************************** k = {k}");
+            info!(target: "aug", "******************************************************************************************** k = {_k}");
         })
     }
     //}}}
@@ -925,6 +934,15 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
         uncon_method.uncon_opts_mut().grad_rtol = 0.0;
 
         self.fcn.lock().unwrap().with_inner_mut(|fcn| {
+            if !fcn.is_constrained()
+            {
+                uncon_method.uncon_opts_mut().grad_rtol =
+                    self.opts.constrained_opts.base_opts.grad_rtol;
+                uncon_method.uncon_opts_mut().grad_atol =
+                    self.opts.constrained_opts.base_opts.grad_atol;
+                return;
+            }
+
             let (norm_eq, max_penalty_eq) = if let Some(eq_penalty) = &fcn.eq_penalty
             {
                 (
@@ -974,7 +992,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> Minimizer for AugmentedLagr
     {
         let alpha = self.opts.constraint_improvement_factor;
         let beta = self.opts.penalty_growth_factor;
-        let n_iter = self.opts.constrained_opts.max_iter;
+        let n_iter = self.opts.constrained_opts.base_opts.max_iter;
         let mut iter_k = IterData::new(self.fcn.clone(), &self.x_init);
         let mut iter_prev_k = iter_k.clone();
 

@@ -29,8 +29,9 @@ mod common;
 //}}}
 //{{{ pub use: common exports
 pub use common::{
-    arc_real_vector_fn, rc_real_fn, rc_real_vector_fn, ArcRealVectorFn, ConvergedReason, IterData,
-    Matrix, Minimizer, RcRealFn, RcRealVectorFn, RealFn, RealFn1, RealVectorFn, Returns, Vector,
+    arc_real_vector_fn, rc_real_fn, rc_real_vector_fn, ArcRealVectorFn, BaseOptions,
+    ConvergedReason, IterData, Matrix, Minimizer, RcRealFn, RcRealVectorFn, RealFn, RealFn1,
+    RealVectorFn, Returns, Vector,
 };
 //}}}
 //{{{ pub mod: public modules

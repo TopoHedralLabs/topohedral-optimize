@@ -3,15 +3,15 @@
 
 //{{{ crate imports
 use topohedral_optimize::bound_constrained::{
-    create as create_bound_constrained, AsaOptions, BoundConstrainedOptions,
-    Method as BoundConstrainedMethod,
+    minimize as bound_constrained_minimize, AsaOptions, BoundConstrainedMethod,
+    BoundConstrainedOptions,
 };
 use topohedral_optimize::constraints::BoundsConstraints;
 use topohedral_optimize::line_search::{LineSearchMethod, LineSearchOptions, ThuenteOptions};
 use topohedral_optimize::unconstrained::{
     QuasiNewtonOptions, UnconstrainedMethod, UnonstrainedOptions, UpdateMethod,
 };
-use topohedral_optimize::{RealFn, Returns, Vector};
+use topohedral_optimize::{BaseOptions, RealFn, Returns, Vector};
 //}}}
 //{{{ std imports
 //}}}
@@ -93,43 +93,45 @@ fn kkt_residual<F: RealFn>(
 //{{{ fun: asa_options
 fn asa_options(max_iter: u64) -> AsaOptions
 {
-    AsaOptions::new(
-        BoundConstrainedOptions {
-            grad_rtol: 1e-8,
-            grad_atol: 1e-8,
+    AsaOptions {
+        bound_opts: BoundConstrainedOptions {
+            base_opts: BaseOptions {
+                grad_rtol: 1e-8,
+                grad_atol: 1e-8,
+                max_iter,
+                make_counting: true,
+            },
             constraint_tol: 1e-8,
-            max_iter,
-            make_counting: true,
         },
-        UnconstrainedMethod::QuasiNewton(QuasiNewtonOptions {
+        unconstrained_method: UnconstrainedMethod::QuasiNewton(QuasiNewtonOptions {
             uncon_opts: UnonstrainedOptions {
                 grad_rtol: 1e-8,
                 grad_atol: 1e-8,
                 max_iter: 100,
                 make_counting: false,
-                ls_method: LineSearchMethod::Thuente(ThuenteOptions {
-                    ls_opts: LineSearchOptions {
-                        c1: 1.0e-4,
-                        c2: 0.9,
-                        step_min: 1e-12,
-                        step_max: 1e5,
-                    },
-                    maxiter: 50,
-                }),
             },
+            ls_method: LineSearchMethod::Thuente(ThuenteOptions {
+                ls_opts: LineSearchOptions {
+                    c1: 1.0e-4,
+                    c2: 0.9,
+                    step_min: 1e-12,
+                    step_max: 1e5,
+                },
+                maxiter: 50,
+            }),
             method: UpdateMethod::BFGS,
             restart: 10,
         }),
-        0.1,
-        0.5,
-        2,
-        1,
-        8,
-        1e-4,
-        0.5,
-        1e-20,
-        1e20,
-    )
+        mu: 0.1,
+        rho: 0.5,
+        n1: 2,
+        n2: 1,
+        memory: 8,
+        delta: 1e-4,
+        eta: 0.5,
+        alpha_min: 1e-20,
+        alpha_max: 1e20,
+    }
 }
 //}}}
 //{{{ fun: solve_asa
@@ -140,16 +142,13 @@ fn solve_asa<F: RealFn>(
     max_iter: u64,
 ) -> Returns
 {
-    let mut minimizer = create_bound_constrained(
+    bound_constrained_minimize(
         fcn,
-        x0,
         bounds,
+        x0,
         BoundConstrainedMethod::Asa(asa_options(max_iter)),
-    );
-
-    minimizer
-        .minimize()
-        .expect("ASA minimization should succeed")
+    )
+    .expect("ASA minimization should succeed")
 }
 //}}}
 

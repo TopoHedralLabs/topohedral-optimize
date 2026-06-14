@@ -4,10 +4,10 @@
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
-use super::common::Error;
-use super::common::Options as UnonstrainedOptions;
+use super::common::{Error, Options as UnconstrainedOptions};
 use crate::common::{Matrix, Vector};
 use crate::line_search as ls;
+use crate::line_search::LineSearchMethod;
 use crate::{ConvergedReason, IterData, Minimizer, RealFn, Returns};
 //}}}
 //{{{ std imports
@@ -30,7 +30,8 @@ pub enum UpdateMethod
 #[derive(Clone)]
 pub struct Options
 {
-    pub uncon_opts: UnonstrainedOptions,
+    pub uncon_opts: UnconstrainedOptions,
+    pub ls_method: LineSearchMethod,
     pub method: UpdateMethod,
     pub restart: u64,
 }
@@ -228,7 +229,7 @@ impl<F: RealFn> Minimizer for QuasiNewton<F>
                 &iter_prev_k,
                 &dir_k,
                 alpha_init,
-                self.opts.uncon_opts.ls_method.clone(),
+                self.opts.ls_method.clone(),
             )?;
 
             dir_k = self.update_direction(

@@ -15,7 +15,9 @@ use crate::ConvergedReason;
 use crate::{IterData, RealFn};
 //}}}
 //{{{ dep imports
-use topohedral_linalg::{MatrixOps, ReduceOps, VecType, VectorOps};
+#[allow(unused_imports)]
+use topohedral_linalg::MatrixOps;
+use topohedral_linalg::{ReduceOps, VecType, VectorOps};
 use topohedral_tracing::*;
 //}}}
 //--------------------------------------------------------------------------------------------------
@@ -28,27 +30,27 @@ const SMALL: f64 = 1e-20;
 #[derive(Clone)]
 pub struct Options
 {
-    bound_opts: BoundConstrainedOptions,
+    pub bound_opts: BoundConstrainedOptions,
     /// Settings for internal minimization
-    unconstrained_method: UnconstrainedMethod,
+    pub unconstrained_method: UnconstrainedMethod,
     /// Tolerance for ||g_I|| < mu * ||d^1|| means "face solved enough"
-    mu: f64,
+    pub mu: f64,
     /// Decay factor applied to mu when test triggers
-    rho: f64,
+    pub rho: f64,
     /// First counter controlling switch phase
-    n1: usize,
+    pub n1: usize,
     /// Second counter controlling switch phase
-    n2: usize,
+    pub n2: usize,
     /// No. of previous steps stored in memory
-    memory: usize,
+    pub memory: usize,
     /// Armijo descent constant
-    delta: f64,
+    pub delta: f64,
     /// Backtracking factor
-    eta: f64,
+    pub eta: f64,
     /// Minimum allowed step
-    alpha_min: f64,
+    pub alpha_min: f64,
     /// Maximum allowed step
-    alpha_max: f64,
+    pub alpha_max: f64,
 }
 //}}}
 //{{{ struct: BoundedFunction
@@ -174,9 +176,9 @@ impl<F: RealFn> RealFn for RestrictedFunction<F>
 pub struct ActiveSetAlgorithm<F: RealFn>
 {
     fcn: F,
+    bounds: BoundsConstraints,
     x_init: Vector,
     norm_grad_fx_init: f64,
-    bounds: BoundsConstraints,
     opts: Options,
 
     fn_history: CircularBuffer<f64>,
@@ -191,49 +193,14 @@ enum Phase
     UA,
 }
 //}}}
-//{{{ impl: Options
-impl Options
-{
-    #[allow(clippy::too_many_arguments)]
-    #[trace_fn]
-    pub fn new(
-        bound_opts: BoundConstrainedOptions,
-        unconstrained_method: UnconstrainedMethod,
-        mu: f64,
-        rho: f64,
-        n1: usize,
-        n2: usize,
-        memory: usize,
-        delta: f64,
-        eta: f64,
-        alpha_min: f64,
-        alpha_max: f64,
-    ) -> Self
-    {
-        Self {
-            bound_opts,
-            unconstrained_method,
-            mu,
-            rho,
-            n1,
-            n2,
-            memory,
-            delta,
-            eta,
-            alpha_min,
-            alpha_max,
-        }
-    }
-}
-//}}}
 //{{{ impl: ActiveSetAlgorithm
 impl<F: RealFn> ActiveSetAlgorithm<F>
 {
     #[trace_fn]
     pub fn new(
         mut fcn: F,
-        mut x0: Vector,
         bounds: BoundsConstraints,
+        mut x0: Vector,
         opts: Options,
     ) -> Self
     {
@@ -247,9 +214,9 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
 
         Self {
             fcn,
+            bounds,
             x_init: x0,
             norm_grad_fx_init: projectd_grad_0.abs_max().unwrap(),
-            bounds,
             opts,
             fn_history: CircularBuffer::new(m),
             active_signature_history: CircularBuffer::new(n1),
@@ -270,7 +237,7 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
                 .projected_direction(&iter_k.x, &(-iter_k.grad_fx.clone()), 1.0);
         let projected_grad_norm = projected_grad.norm();
         let rtol_reached =
-            projected_grad_norm < self.opts.bound_opts.grad_rtol * self.norm_grad_fx_init;
+            projected_grad_norm < self.opts.bound_opts.base_opts.grad_rtol * self.norm_grad_fx_init;
 
         //{{{ trace
         trace!(target: "bc",
@@ -287,7 +254,7 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
             return Some(ConvergedReason::Rtol);
         }
 
-        let atol_reached = projected_grad_norm < self.opts.bound_opts.grad_atol;
+        let atol_reached = projected_grad_norm < self.opts.bound_opts.base_opts.grad_atol;
 
         if atol_reached
         {
@@ -357,12 +324,12 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
         trace!(target: "bc", "Running backtracking armijo");
         //}}}
         let max_iterations = 25;
-        for i in 0..max_iterations
+        for _i in 0..max_iterations
         {
             if f_trial < f_max + delta * alpha * gradfk_dot_d || alpha < SMALL
             {
                 //{{{ trace
-                trace!("Found step i = {i} alpha = {alpha:.4e} f_trial = {f_trial:.4e}");
+                trace!("Found step i = {_i} alpha = {alpha:.4e} f_trial = {f_trial:.4e}");
                 //}}}
                 break;
             }
@@ -426,14 +393,14 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
 
     fn print_status(
         &self,
-        k: u64,
-        iter_k: &IterData,
+        _k: u64,
+        _iter_k: &IterData,
     )
     {
-        info!(target: "bc", ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> k = {k}");
-        trace!(target: "bc", "x: {}", iter_k.x.clone().transpose());
-        trace!(target: "bc", "∇f: {}", iter_k.grad_fx.clone().transpose());
-        trace!(target: "bc", "∇f_proj: {}", self.bounds.projected_direction(&iter_k.x, &(-iter_k.grad_fx.clone()), 1.0).transpose());
+        info!(target: "bc", ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> k = {_k}");
+        trace!(target: "bc", "x: {}", _iter_k.x.clone().transpose());
+        trace!(target: "bc", "∇f: {}", _iter_k.grad_fx.clone().transpose());
+        trace!(target: "bc", "∇f_proj: {}", self.bounds.projected_direction(&_iter_k.x, &(-_iter_k.grad_fx.clone()), 1.0).transpose());
     }
 }
 //}}}
@@ -450,14 +417,12 @@ impl<F: RealFn> Minimizer for ActiveSetAlgorithm<F>
         let mut phase = Phase::NGPA;
         let mut mu = self.opts.mu;
         let mut alpha_bb = 1.0;
-        let mut num_fun_evals = 1;
-        let mut num_grad_evals = 1;
 
         self.fn_history.append(iter_k.fx);
         self.active_signature_history
             .append(self.bounds.active_signature(&iter_k.x));
 
-        for k in 0..self.opts.bound_opts.max_iter
+        for k in 0..self.opts.bound_opts.base_opts.max_iter
         {
             self.print_status(k, &iter_k);
             if let Some(reason) = self.is_converged(&iter_k)
@@ -467,8 +432,8 @@ impl<F: RealFn> Minimizer for ActiveSetAlgorithm<F>
                     fmin: iter_k.fx,
                     reason,
                     num_iterations: k as usize,
-                    num_fun_evals,
-                    num_grad_evals,
+                    num_fun_evals: 0,
+                    num_grad_evals: 0,
                 });
             }
 
@@ -514,8 +479,6 @@ impl<F: RealFn> Minimizer for ActiveSetAlgorithm<F>
                     //{{{ trace
                     trace!(target: "bc", "alpha_bb = {alpha_bb:.4e}");
                     //}}}
-                    num_fun_evals += 1;
-                    num_grad_evals += 1;
 
                     let projected_grad =
                         self.bounds.projected_direction(x, &(-grad_fx.clone()), 1.0);
@@ -585,8 +548,6 @@ impl<F: RealFn> Minimizer for ActiveSetAlgorithm<F>
                     iter_k.grad_fx.copy_from(self.fcn.grad(&iter_k.x));
                     iter_k.fx = self.fcn.eval(&iter_k.x);
                     iter_k.norm_grad_fx = iter_k.grad_fx.norm();
-                    num_fun_evals += res.num_fun_evals + 1;
-                    num_grad_evals += res.num_grad_evals + 1;
 
                     let projected_grad_new =
                         self.bounds
@@ -641,9 +602,9 @@ impl<F: RealFn> Minimizer for ActiveSetAlgorithm<F>
             xmin: iter_k.x,
             fmin: iter_k.fx,
             reason: ConvergedReason::Atol,
-            num_iterations: self.opts.bound_opts.max_iter as usize,
-            num_fun_evals,
-            num_grad_evals,
+            num_iterations: self.opts.bound_opts.base_opts.max_iter as usize,
+            num_fun_evals: 0,
+            num_grad_evals: 0,
         })
     }
 }

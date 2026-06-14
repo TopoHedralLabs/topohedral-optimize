@@ -251,11 +251,13 @@ fn auglag_method(mut unconstrained_method: UnconstrainedMethod) -> ConstrainedMe
 
     ConstrainedMethod::AugmentedLagrangian(AugmentedLagrangianOptions::new(
         ConstriainedOptions {
-            grad_rtol: 1e-6,
-            grad_atol: 1e-8,
+            base_opts: UnonstrainedOptions {
+                grad_rtol: 1e-6,
+                grad_atol: 1e-8,
+                max_iter: 1000,
+                make_counting: true,
+            },
             constraint_tol: 1e-6,
-            max_iter: 1000,
-            make_counting: true,
         },
         unconstrained_method,
         1.0,
@@ -271,16 +273,16 @@ const THUENTE_BFGS: QuasiNewtonOptions = QuasiNewtonOptions {
         grad_atol: 1e-8,
         max_iter: 100,
         make_counting: false,
-        ls_method: LineSearchMethod::Thuente(ThuenteOptions {
-            ls_opts: LineSearchOptions {
-                c1: 1.0e-4,
-                c2: 0.9,
-                step_min: 1e-8,
-                step_max: 1e5,
-            },
-            maxiter: 100,
-        }),
     },
+    ls_method: LineSearchMethod::Thuente(ThuenteOptions {
+        ls_opts: LineSearchOptions {
+            c1: 1.0e-4,
+            c2: 0.9,
+            step_min: 1e-8,
+            step_max: 1e5,
+        },
+        maxiter: 100,
+    }),
     method: UpdateMethod::BFGS,
     restart: 10,
 };
@@ -292,17 +294,17 @@ const NOCEDAL_BFGS: QuasiNewtonOptions = QuasiNewtonOptions {
         grad_atol: 1e-8,
         max_iter: 100,
         make_counting: false,
-        ls_method: LineSearchMethod::Nocedal(NocedalOptions {
-            ls_opts: LineSearchOptions {
-                c1: 1.0e-4,
-                c2: 0.4,
-                step_min: 1e-8,
-                step_max: 1e5,
-            },
-            maxiter: 20,
-            zoom_maxiter: 10,
-        }),
     },
+    ls_method: LineSearchMethod::Nocedal(NocedalOptions {
+        ls_opts: LineSearchOptions {
+            c1: 1.0e-4,
+            c2: 0.4,
+            step_min: 1e-8,
+            step_max: 1e5,
+        },
+        maxiter: 20,
+        zoom_maxiter: 10,
+    }),
     method: UpdateMethod::BFGS,
     restart: 10,
 };
@@ -314,16 +316,16 @@ const THUENTE_FR: ConjugateGradientOptions = ConjugateGradientOptions {
         grad_atol: 1e-8,
         max_iter: 100,
         make_counting: false,
-        ls_method: LineSearchMethod::Thuente(ThuenteOptions {
-            ls_opts: LineSearchOptions {
-                c1: 1.0e-4,
-                c2: 0.9,
-                step_min: 1e-8,
-                step_max: 1e5,
-            },
-            maxiter: 10,
-        }),
     },
+    ls_method: LineSearchMethod::Thuente(ThuenteOptions {
+        ls_opts: LineSearchOptions {
+            c1: 1.0e-4,
+            c2: 0.9,
+            step_min: 1e-8,
+            step_max: 1e5,
+        },
+        maxiter: 10,
+    }),
     direction: Direction::FletcherReeves,
     restart: 10,
 };
@@ -335,16 +337,16 @@ const THUENTE_PR: ConjugateGradientOptions = ConjugateGradientOptions {
         grad_atol: 1e-8,
         max_iter: 100,
         make_counting: false,
-        ls_method: LineSearchMethod::Thuente(ThuenteOptions {
-            ls_opts: LineSearchOptions {
-                c1: 1.0e-4,
-                c2: 0.9,
-                step_min: 1e-8,
-                step_max: 1e5,
-            },
-            maxiter: 10,
-        }),
     },
+    ls_method: LineSearchMethod::Thuente(ThuenteOptions {
+        ls_opts: LineSearchOptions {
+            c1: 1.0e-4,
+            c2: 0.9,
+            step_min: 1e-8,
+            step_max: 1e5,
+        },
+        maxiter: 10,
+    }),
     direction: Direction::PolakRibiere,
     restart: 10,
 };
@@ -356,17 +358,17 @@ const NOCEDAL_FR: ConjugateGradientOptions = ConjugateGradientOptions {
         grad_atol: 1e-8,
         max_iter: 100,
         make_counting: false,
-        ls_method: LineSearchMethod::Nocedal(NocedalOptions {
-            ls_opts: LineSearchOptions {
-                c1: 1.0e-4,
-                c2: 0.9,
-                step_min: 1e-8,
-                step_max: 1e5,
-            },
-            maxiter: 20,
-            zoom_maxiter: 20,
-        }),
     },
+    ls_method: LineSearchMethod::Nocedal(NocedalOptions {
+        ls_opts: LineSearchOptions {
+            c1: 1.0e-4,
+            c2: 0.4,
+            step_min: 1e-8,
+            step_max: 1e5,
+        },
+        maxiter: 20,
+        zoom_maxiter: 20,
+    }),
     direction: Direction::FletcherReeves,
     restart: 10,
 };
@@ -378,17 +380,17 @@ const NOCEDAL_PR: ConjugateGradientOptions = ConjugateGradientOptions {
         grad_atol: 1e-8,
         max_iter: 100,
         make_counting: false,
-        ls_method: LineSearchMethod::Nocedal(NocedalOptions {
-            ls_opts: LineSearchOptions {
-                c1: 1.0e-4,
-                c2: 0.9,
-                step_min: 1e-8,
-                step_max: 1e5,
-            },
-            maxiter: 20,
-            zoom_maxiter: 20,
-        }),
     },
+    ls_method: LineSearchMethod::Nocedal(NocedalOptions {
+        ls_opts: LineSearchOptions {
+            c1: 1.0e-4,
+            c2: 0.4,
+            step_min: 1e-8,
+            step_max: 1e5,
+        },
+        maxiter: 20,
+        zoom_maxiter: 20,
+    }),
     direction: Direction::PolakRibiere,
     restart: 10,
 };
@@ -397,12 +399,12 @@ const NOCEDAL_PR: ConjugateGradientOptions = ConjugateGradientOptions {
 //{{{ collection: quadratic
 //{{{ test: unconstrained
 #[rstest]
-#[case::quadratic_thuente_bfgs(UnconstrainedMethod::QuasiNewton(THUENTE_BFGS), 7, 10)]
-#[case::quadratic_nocedal_bfgs(UnconstrainedMethod::QuasiNewton(NOCEDAL_BFGS), 13, 16)]
-#[case::quadratic_thuente_fr(UnconstrainedMethod::ConjugateGradient(THUENTE_FR), 14, 23)]
-#[case::quadratic_nocedal_fr(UnconstrainedMethod::ConjugateGradient(NOCEDAL_FR), 15, 21)]
-#[case::quadratic_thuente_pr(UnconstrainedMethod::ConjugateGradient(THUENTE_PR), 9, 13)]
-#[case::quadratic_nocedal_pr(UnconstrainedMethod::ConjugateGradient(NOCEDAL_PR), 13, 17)]
+#[case::quadratic_thuente_bfgs(UnconstrainedMethod::QuasiNewton(THUENTE_BFGS), 12, 14)]
+#[case::quadratic_nocedal_bfgs(UnconstrainedMethod::QuasiNewton(NOCEDAL_BFGS), 18, 20)]
+#[case::quadratic_thuente_fr(UnconstrainedMethod::ConjugateGradient(THUENTE_FR), 19, 27)]
+#[case::quadratic_nocedal_fr(UnconstrainedMethod::ConjugateGradient(NOCEDAL_FR), 19, 20)]
+#[case::quadratic_thuente_pr(UnconstrainedMethod::ConjugateGradient(THUENTE_PR), 14, 17)]
+#[case::quadratic_nocedal_pr(UnconstrainedMethod::ConjugateGradient(NOCEDAL_PR), 19, 20)]
 fn test_quadratic_without_constraints_matches_unconstrained_reference(
     #[case] unconstrained_method: UnconstrainedMethod,
     #[case] exp_num_fun_evals: usize,
@@ -441,9 +443,9 @@ fn test_quadratic_without_constraints_matches_unconstrained_reference(
 #[case::quadratic_thuente_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(THUENTE_BFGS),  1e-6, 1e-4,  115, 164)]
 #[case::quadratic_nocedal_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(NOCEDAL_BFGS),  1e-6, 1e-4,  121, 151)]
 #[case::quadratic_thuente_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_FR),  1e-6, 1e-4,  128, 183)]
-#[case::quadratic_nocedal_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_FR),  2e-6, 1e-4,  127, 156)]
+#[case::quadratic_nocedal_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_FR),  2e-6, 1e-4,  127, 151)]
 #[case::quadratic_thuente_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_PR),  1e-6, 1e-4,  122, 174)]
-#[case::quadratic_nocedal_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_PR),  1e-6, 1e-4,  123, 152)]
+#[case::quadratic_nocedal_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_PR),  1e-6, 1e-4,  123, 147)]
 fn test_quadratic_with_bound_constraints_matches_reference(
     #[case] x0: Vector,
     #[case] unconstrained_method: UnconstrainedMethod,
@@ -484,12 +486,12 @@ fn test_quadratic_with_bound_constraints_matches_reference(
 //{{{ collection: quartic
 //{{{ test: unconstrained
 #[rstest]
-#[case::quartic_thuente_bfgs(UnconstrainedMethod::QuasiNewton(THUENTE_BFGS), 19, 37)]
-#[case::quartic_nocedal_bfgs(UnconstrainedMethod::QuasiNewton(NOCEDAL_BFGS), 28, 39)]
-#[case::quartic_thuente_fr(UnconstrainedMethod::ConjugateGradient(THUENTE_FR), 72, 105)]
-#[case::quartic_nocedal_fr(UnconstrainedMethod::ConjugateGradient(NOCEDAL_FR), 140, 190)]
-#[case::quartic_thuente_pr(UnconstrainedMethod::ConjugateGradient(THUENTE_PR), 100, 139)]
-#[case::quartic_nocedal_pr(UnconstrainedMethod::ConjugateGradient(NOCEDAL_PR), 221, 274)]
+#[case::quartic_thuente_bfgs(UnconstrainedMethod::QuasiNewton(THUENTE_BFGS), 40, 67)]
+#[case::quartic_nocedal_bfgs(UnconstrainedMethod::QuasiNewton(NOCEDAL_BFGS), 55, 71)]
+#[case::quartic_thuente_fr(UnconstrainedMethod::ConjugateGradient(THUENTE_FR), 255, 321)]
+#[case::quartic_nocedal_fr(UnconstrainedMethod::ConjugateGradient(NOCEDAL_FR), 137, 154)]
+#[case::quartic_thuente_pr(UnconstrainedMethod::ConjugateGradient(THUENTE_PR), 304, 375)]
+#[case::quartic_nocedal_pr(UnconstrainedMethod::ConjugateGradient(NOCEDAL_PR), 158, 175)]
 fn test_quartic_without_constraints_matches_unconstrained_reference(
     #[case] unconstrained_method: UnconstrainedMethod,
     #[case] exp_num_fun_evals: usize,
@@ -526,9 +528,9 @@ fn test_quartic_without_constraints_matches_unconstrained_reference(
 #[case::quartic_thuente_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(THUENTE_BFGS),  1e-2, 1e-2, 1532, 2314)]
 #[case::quartic_nocedal_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(NOCEDAL_BFGS),  1e-2, 1e-2, 2757, 1936)]
 #[case::quartic_thuente_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_FR),  1e-2, 1e-2, 1862, 2675)]
-#[case::quartic_nocedal_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_FR),  1e-2, 1e-2, 4243, 2151)]
+#[case::quartic_nocedal_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_FR),  1e-2, 1e-2, 3898, 1895)]
 #[case::quartic_thuente_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_PR),  1e-2, 1e-2, 1971, 2819)]
-#[case::quartic_nocedal_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_PR),  1e-2, 1e-2, 3744, 1812)]
+#[case::quartic_nocedal_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_PR),  1e-2, 1e-2, 3789, 1848)]
 fn test_quartic_with_bound_constraints_matches_reference(
     #[case] x0: Vector,
     #[case] unconstrained_method: UnconstrainedMethod,
@@ -544,7 +546,7 @@ fn test_quartic_with_bound_constraints_matches_reference(
 
     let mut method = auglag_method(unconstrained_method);
     method.con_opts_mut().constraint_tol = 1e-3;
-    method.con_opts_mut().grad_rtol = 1e-4;
+    method.con_opts_mut().base_opts.grad_rtol = 1e-4;
 
     let mut ieq_constraints = BoundsConstraints::new(5);
     ieq_constraints.add_bounds(0, Some(20.0), None);
@@ -574,12 +576,12 @@ fn test_quartic_with_bound_constraints_matches_reference(
 //{{{ collection: rosenbrock
 //{{{ test: unconstrained
 #[rstest]
-#[case::rosenbrock_thuente_bfgs(colvec(&[0.0, 3.0]), UnconstrainedMethod::QuasiNewton(THUENTE_BFGS),  36, 61)]
-#[case::rosenbrock_nocedal_bfgs(colvec(&[0.0, 3.0]), UnconstrainedMethod::QuasiNewton(NOCEDAL_BFGS),  39, 41)]
-#[case::rosenbrock_thuente_fr(colvec(&[0.0, 3.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_FR),   98, 159)]
-#[case::rosenbrock_nocedal_fr(colvec(&[0.0, 3.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_FR),   151, 200)]
-#[case::rosenbrock_thuente_pr(colvec(&[0.0, 3.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_PR),   210, 302)]
-#[case::rosenbrock_nocedal_pr(colvec(&[0.0, 3.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_PR),   562, 487)]
+#[case::rosenbrock_thuente_bfgs(colvec(&[0.0, 3.0]), UnconstrainedMethod::QuasiNewton(THUENTE_BFGS),  49, 77)]
+#[case::rosenbrock_nocedal_bfgs(colvec(&[0.0, 3.0]), UnconstrainedMethod::QuasiNewton(NOCEDAL_BFGS),  64, 62)]
+#[case::rosenbrock_thuente_fr(colvec(&[0.0, 3.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_FR),   215, 337)]
+#[case::rosenbrock_nocedal_fr(colvec(&[0.0, 3.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_FR),   235, 220)]
+#[case::rosenbrock_thuente_pr(colvec(&[0.0, 3.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_PR),   319, 473)]
+#[case::rosenbrock_nocedal_pr(colvec(&[0.0, 3.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_PR),   199, 165)]
 fn test_rosenbrock_without_constraints_matches_unconstrained_reference(
     #[case] x0: Vector,
     #[case] unconstrained_method: UnconstrainedMethod,

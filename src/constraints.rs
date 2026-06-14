@@ -90,6 +90,11 @@ impl BoundsConstraints
         }
     }
     //}}}
+    #[trace_fn]
+    pub fn is_empty(&self) -> bool
+    {
+        self.bounds.is_empty()
+    }
     //{{{ fn: add_bounds
     #[trace_fn]
     pub fn add_bounds(
