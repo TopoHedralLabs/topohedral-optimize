@@ -3,7 +3,7 @@
 
 //{{{ crate imports
 use topohedral_optimize::constraints::BoundStatus::{AtLower, AtUpper};
-use topohedral_optimize::constraints::{BoundsConstraints, NoConstraints};
+use topohedral_optimize::constraints::{BoundsConstraints, CauchyPathPoint, NoConstraints};
 use topohedral_optimize::{Matrix, RealVectorFn, Vector};
 //}}}
 //{{{ std imports
@@ -18,6 +18,34 @@ use topohedral_linalg::{Shape, TransformOps, VectorOps};
 fn colvec(values: &[f64]) -> Vector
 {
     DVector::<f64>::from_slice_vec(values, values.len(), VecType::Col)
+}
+//}}}
+//{{{ fun: assert_vector_matches
+fn assert_vector_matches(
+    actual: &Vector,
+    expected: &[f64],
+)
+{
+    assert_eq!(actual.len(), expected.len());
+    for (i, expected_i) in expected.iter().enumerate()
+    {
+        assert_relative_eq!(actual[i], *expected_i, epsilon = 1e-12);
+    }
+}
+//}}}
+//{{{ fun: assert_cauchy_path_point
+fn assert_cauchy_path_point(
+    point: &CauchyPathPoint,
+    expected_alpha: f64,
+    expected_variable_index: usize,
+    expected_point: &[f64],
+    expected_direction: &[f64],
+)
+{
+    assert_relative_eq!(point.alpha, expected_alpha, epsilon = 1e-12);
+    assert_eq!(point.variable_index, expected_variable_index);
+    assert_vector_matches(&point.point, expected_point);
+    assert_vector_matches(&point.direction, expected_direction);
 }
 //}}}
 //{{{ fun: assert_bound_columns_match
@@ -151,9 +179,9 @@ fn test_cauchy_path_single_upper_bound_hit()
     let d = colvec(&[1.0]);
     let path = constraints.cauchy_path(&x, &d);
 
-    assert_eq!(path.len(), 1);
-    assert_eq!(path[0].1, 0);
-    assert_relative_eq!(path[0].0, 0.5, epsilon = 1e-12);
+    assert_eq!(path.len(), 2);
+    assert_cauchy_path_point(&path[0], 0.0, usize::MAX, &[0.5], &[1.0]);
+    assert_cauchy_path_point(&path[1], 0.5, 0, &[1.0], &[0.0]);
 }
 //}}}
 //{{{ test: cauchy path lower bound
@@ -167,14 +195,14 @@ fn test_cauchy_path_single_lower_bound_hit()
     let d = colvec(&[-1.0]);
     let path = constraints.cauchy_path(&x, &d);
 
-    assert_eq!(path.len(), 1);
-    assert_eq!(path[0].1, 0);
-    assert_relative_eq!(path[0].0, 0.5, epsilon = 1e-12);
+    assert_eq!(path.len(), 2);
+    assert_cauchy_path_point(&path[0], 0.0, usize::MAX, &[0.5], &[-1.0]);
+    assert_cauchy_path_point(&path[1], 0.5, 0, &[0.0], &[0.0]);
 }
 //}}}
 //{{{ test: cauchy path no hit
 #[test]
-fn test_cauchy_path_direction_away_from_only_bound_returns_empty()
+fn test_cauchy_path_direction_away_from_only_bound_returns_start_point()
 {
     // Only a lower bound; direction is positive (moving away from it).
     let mut constraints = BoundsConstraints::new(1);
@@ -184,7 +212,8 @@ fn test_cauchy_path_direction_away_from_only_bound_returns_empty()
     let d = colvec(&[1.0]);
     let path = constraints.cauchy_path(&x, &d);
 
-    assert!(path.is_empty());
+    assert_eq!(path.len(), 1);
+    assert_cauchy_path_point(&path[0], 0.0, usize::MAX, &[0.5], &[1.0]);
 }
 //}}}
 //{{{ test: cauchy path multiple variables sorted
@@ -195,7 +224,8 @@ fn test_cauchy_path_multiple_variables_sorted_by_t()
     // var 0: hits upper at t = (2 - 0.5) / 1 = 1.5
     // var 1: hits upper at t = (2 - 0.0) / 1 = 2.0
     // var 2: hits upper at t = (2 - 1.5) / 1 = 0.5
-    // Sorted: [(0.5, 2), (1.5, 0), (2.0, 1)]
+    // Sorted after the start point:
+    //   (0.5, 2), (1.5, 0), (2.0, 1)
     let mut constraints = BoundsConstraints::new(3);
     constraints.add_bounds(0, Some(0.0), Some(2.0));
     constraints.add_bounds(1, Some(0.0), Some(2.0));
@@ -205,13 +235,17 @@ fn test_cauchy_path_multiple_variables_sorted_by_t()
     let d = colvec(&[1.0, 1.0, 1.0]);
     let path = constraints.cauchy_path(&x, &d);
 
-    assert_eq!(path.len(), 3);
-    assert_relative_eq!(path[0].0, 0.5, epsilon = 1e-12);
-    assert_eq!(path[0].1, 2);
-    assert_relative_eq!(path[1].0, 1.5, epsilon = 1e-12);
-    assert_eq!(path[1].1, 0);
-    assert_relative_eq!(path[2].0, 2.0, epsilon = 1e-12);
-    assert_eq!(path[2].1, 1);
+    assert_eq!(path.len(), 4);
+    assert_cauchy_path_point(
+        &path[0],
+        0.0,
+        usize::MAX,
+        &[0.5, 0.0, 1.5],
+        &[1.0, 1.0, 1.0],
+    );
+    assert_cauchy_path_point(&path[1], 0.5, 2, &[1.0, 0.5, 2.0], &[1.0, 1.0, 0.0]);
+    assert_cauchy_path_point(&path[2], 1.5, 0, &[2.0, 1.5, 2.0], &[0.0, 1.0, 0.0]);
+    assert_cauchy_path_point(&path[3], 2.0, 1, &[2.0, 2.0, 2.0], &[0.0, 0.0, 0.0]);
 }
 //}}}
 //{{{ test: cauchy path infeasible start clamped
@@ -227,9 +261,9 @@ fn test_cauchy_path_infeasible_start_uses_clamped_location()
     let d = colvec(&[-1.0]);
     let path = constraints.cauchy_path(&x, &d);
 
-    assert_eq!(path.len(), 1);
-    assert_eq!(path[0].1, 0);
-    assert_relative_eq!(path[0].0, 1.0, epsilon = 1e-12);
+    assert_eq!(path.len(), 2);
+    assert_cauchy_path_point(&path[0], 0.0, usize::MAX, &[1.0], &[-1.0]);
+    assert_cauchy_path_point(&path[1], 1.0, 0, &[0.0], &[0.0]);
 }
 //}}}
 //{{{ test: cauchy path already at bound
@@ -244,9 +278,9 @@ fn test_cauchy_path_at_lower_bound_direction_into_bound_returns_t_zero()
     let d = colvec(&[-1.0]);
     let path = constraints.cauchy_path(&x, &d);
 
-    assert_eq!(path.len(), 1);
-    assert_eq!(path[0].1, 0);
-    assert_relative_eq!(path[0].0, 0.0, epsilon = 1e-12);
+    assert_eq!(path.len(), 2);
+    assert_cauchy_path_point(&path[0], 0.0, usize::MAX, &[0.0], &[-1.0]);
+    assert_cauchy_path_point(&path[1], 0.0, 0, &[0.0], &[0.0]);
 }
 //}}}
 //{{{ test: active_and_inactive — no bounded variables → all inactive
@@ -489,13 +523,17 @@ fn test_cauchy_path_geometric_projected_path_kinks_at_breakpoints()
 
     // Verify the breakpoint sequence first.
     let path = constraints.cauchy_path(&x, &d);
-    assert_eq!(path.len(), 3);
-    assert_relative_eq!(path[0].0, 0.5, epsilon = 1e-12);
-    assert_eq!(path[0].1, 2);
-    assert_relative_eq!(path[1].0, 1.5, epsilon = 1e-12);
-    assert_eq!(path[1].1, 0);
-    assert_relative_eq!(path[2].0, 2.0, epsilon = 1e-12);
-    assert_eq!(path[2].1, 1);
+    assert_eq!(path.len(), 4);
+    assert_cauchy_path_point(
+        &path[0],
+        0.0,
+        usize::MAX,
+        &[0.5, 0.0, 1.5],
+        &[1.0, 1.0, 1.0],
+    );
+    assert_cauchy_path_point(&path[1], 0.5, 2, &[1.0, 0.5, 2.0], &[1.0, 1.0, 0.0]);
+    assert_cauchy_path_point(&path[2], 1.5, 0, &[2.0, 1.5, 2.0], &[0.0, 1.0, 0.0]);
+    assert_cauchy_path_point(&path[3], 2.0, 1, &[2.0, 2.0, 2.0], &[0.0, 0.0, 0.0]);
 
     // Segment 0: t in [0, 0.5) — all three components move freely.
     let p = project_at(&constraints, &x, &d, 0.0);
