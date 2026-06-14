@@ -10,7 +10,7 @@ use topohedral_optimize::line_search::{LineSearchMethod, LineSearchOptions, Thue
 use topohedral_optimize::unconstrained::{
     QuasiNewtonOptions, UnconstrainedMethod, UnonstrainedOptions, UpdateMethod,
 };
-use topohedral_optimize::{RealFn, Returns, Vector};
+use topohedral_optimize::{BaseOptions, RealFn, Returns, Vector};
 //}}}
 //{{{ std imports
 //}}}
@@ -94,11 +94,13 @@ fn asa_options(max_iter: u64) -> AsaOptions
 {
     AsaOptions::new(
         BoundConstrainedOptions {
-            grad_rtol: 1e-8,
-            grad_atol: 1e-8,
+            base_opts: BaseOptions {
+                grad_rtol: 1e-8,
+                grad_atol: 1e-8,
+                max_iter: 100,
+                make_counting: false,
+            },
             constraint_tol: 1e-8,
-            max_iter,
-            make_counting: true,
         },
         UnconstrainedMethod::QuasiNewton(QuasiNewtonOptions {
             uncon_opts: UnonstrainedOptions {
@@ -141,8 +143,8 @@ fn solve_asa<F: RealFn>(
 {
     let mut minimizer = create_bound_constrained(
         fcn,
-        x0,
         bounds,
+        x0,
         BoundConstrainedMethod::Asa(asa_options(max_iter)),
     );
 

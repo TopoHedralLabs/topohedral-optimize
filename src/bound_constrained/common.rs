@@ -4,6 +4,7 @@
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
+use crate::common::BaseOptions;
 use crate::unconstrained::UnconstrainedError;
 //}}}
 //{{{ std imports
@@ -17,11 +18,8 @@ use thiserror::Error;
 #[derive(Copy, Clone)]
 pub struct Options
 {
-    pub grad_rtol: f64,
-    pub grad_atol: f64,
+    pub base_opts: BaseOptions,
     pub constraint_tol: f64,
-    pub max_iter: u64,
-    pub make_counting: bool,
 }
 //}}}
 //{{{ enum: Error

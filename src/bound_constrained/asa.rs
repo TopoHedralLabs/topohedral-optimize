@@ -28,27 +28,27 @@ const SMALL: f64 = 1e-20;
 #[derive(Clone)]
 pub struct Options
 {
-    bound_opts: BoundConstrainedOptions,
+    pub bound_opts: BoundConstrainedOptions,
     /// Settings for internal minimization
-    unconstrained_method: UnconstrainedMethod,
+    pub unconstrained_method: UnconstrainedMethod,
     /// Tolerance for ||g_I|| < mu * ||d^1|| means "face solved enough"
-    mu: f64,
+    pub mu: f64,
     /// Decay factor applied to mu when test triggers
-    rho: f64,
+    pub rho: f64,
     /// First counter controlling switch phase
-    n1: usize,
+    pub n1: usize,
     /// Second counter controlling switch phase
-    n2: usize,
+    pub n2: usize,
     /// No. of previous steps stored in memory
-    memory: usize,
+    pub memory: usize,
     /// Armijo descent constant
-    delta: f64,
+    pub delta: f64,
     /// Backtracking factor
-    eta: f64,
+    pub eta: f64,
     /// Minimum allowed step
-    alpha_min: f64,
+    pub alpha_min: f64,
     /// Maximum allowed step
-    alpha_max: f64,
+    pub alpha_max: f64,
 }
 //}}}
 //{{{ struct: BoundedFunction
@@ -174,9 +174,9 @@ impl<F: RealFn> RealFn for RestrictedFunction<F>
 pub struct ActiveSetAlgorithm<F: RealFn>
 {
     fcn: F,
+    bounds: BoundsConstraints,
     x_init: Vector,
     norm_grad_fx_init: f64,
-    bounds: BoundsConstraints,
     opts: Options,
 
     fn_history: CircularBuffer<f64>,
@@ -232,8 +232,8 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
     #[trace_fn]
     pub fn new(
         mut fcn: F,
-        mut x0: Vector,
         bounds: BoundsConstraints,
+        mut x0: Vector,
         opts: Options,
     ) -> Self
     {
@@ -247,9 +247,9 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
 
         Self {
             fcn,
+            bounds,
             x_init: x0,
             norm_grad_fx_init: projectd_grad_0.abs_max().unwrap(),
-            bounds,
             opts,
             fn_history: CircularBuffer::new(m),
             active_signature_history: CircularBuffer::new(n1),
@@ -270,7 +270,7 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
                 .projected_direction(&iter_k.x, &(-iter_k.grad_fx.clone()), 1.0);
         let projected_grad_norm = projected_grad.norm();
         let rtol_reached =
-            projected_grad_norm < self.opts.bound_opts.grad_rtol * self.norm_grad_fx_init;
+            projected_grad_norm < self.opts.bound_opts.base_opts.grad_rtol * self.norm_grad_fx_init;
 
         //{{{ trace
         trace!(target: "bc",
@@ -287,7 +287,7 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
             return Some(ConvergedReason::Rtol);
         }
 
-        let atol_reached = projected_grad_norm < self.opts.bound_opts.grad_atol;
+        let atol_reached = projected_grad_norm < self.opts.bound_opts.base_opts.grad_atol;
 
         if atol_reached
         {
@@ -457,7 +457,7 @@ impl<F: RealFn> Minimizer for ActiveSetAlgorithm<F>
         self.active_signature_history
             .append(self.bounds.active_signature(&iter_k.x));
 
-        for k in 0..self.opts.bound_opts.max_iter
+        for k in 0..self.opts.bound_opts.base_opts.max_iter
         {
             self.print_status(k, &iter_k);
             if let Some(reason) = self.is_converged(&iter_k)
@@ -641,7 +641,7 @@ impl<F: RealFn> Minimizer for ActiveSetAlgorithm<F>
             xmin: iter_k.x,
             fmin: iter_k.fx,
             reason: ConvergedReason::Atol,
-            num_iterations: self.opts.bound_opts.max_iter as usize,
+            num_iterations: self.opts.bound_opts.base_opts.max_iter as usize,
             num_fun_evals,
             num_grad_evals,
         })
