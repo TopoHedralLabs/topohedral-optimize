@@ -3,7 +3,8 @@
 
 //{{{ crate imports
 use topohedral_optimize::bound_constrained::{
-    create as create_bound_constrained, AsaOptions, BoundConstrainedMethod, BoundConstrainedOptions,
+    minimize as bound_constrained_minimize, AsaOptions, BoundConstrainedMethod,
+    BoundConstrainedOptions,
 };
 use topohedral_optimize::constraints::BoundsConstraints;
 use topohedral_optimize::line_search::{LineSearchMethod, LineSearchOptions, ThuenteOptions};
@@ -141,16 +142,13 @@ fn solve_asa<F: RealFn>(
     max_iter: u64,
 ) -> Returns
 {
-    let mut minimizer = create_bound_constrained(
+    bound_constrained_minimize(
         fcn,
         bounds,
         x0,
         BoundConstrainedMethod::Asa(asa_options(max_iter)),
-    );
-
-    minimizer
-        .minimize()
-        .expect("ASA minimization should succeed")
+    )
+    .expect("ASA minimization should succeed")
 }
 //}}}
 
