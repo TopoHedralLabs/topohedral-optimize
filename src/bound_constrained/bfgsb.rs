@@ -13,7 +13,7 @@ use crate::{Matrix, Vector};
 //}}}
 //{{{ dep imports
 use topohedral_linalg::VecType::Col;
-use topohedral_linalg::{MatMul, VectorOps};
+use topohedral_linalg::{MatMul, SubViewable, VectorOps};
 use topohedral_tracing::trace_fn;
 //}}}
 //--------------------------------------------------------------------------------------------------
@@ -33,8 +33,8 @@ fn cauchy_point(
     bmatk: &Matrix,
 ) -> CauchyPoint
 {
-    let mut dk = -gk.clone();
-    let (active_set, inactive_set) = bounds.active_and_inactive_sets(xk, Some(&dk));
+    let mut dir = -gk.clone();
+    let (active_set, inactive_set) = bounds.active_and_inactive_sets(xk, Some(&dir));
 
     if inactive_set.is_empty()
     {
@@ -48,53 +48,56 @@ fn cauchy_point(
     let mut x_cauchy = Vector::zeros_vec(xk.len(), Col);
     for (vi, bound_status) in active_set
     {
-        dk[vi] = 0.0;
-        match bound_status
+        dir[vi] = 0.0;
+        x_cauchy[vi] = match bound_status
         {
-            BoundStatus::AtLower =>
-            {
-                x_cauchy[vi] = bounds.get_lower(vi).unwrap();
-            }
-            BoundStatus::AtUpper =>
-            {
-                x_cauchy[vi] = bounds.get_upper(vi).unwrap();
-            }
-            _ =>
-            {
-                panic!("Unexpected")
-            }
+            BoundStatus::AtLower => bounds.get_lower(vi).unwrap(),
+            BoundStatus::AtUpper => bounds.get_upper(vi).unwrap(),
+            _ => panic!("Variable not at bound"),
         }
     }
 
-    let z = Vector::zeros_vec(dk.len(), Col);
-    let bmatk_z = z.clone();
-    let bmatk_d = bmatk.matmul(&dk);
+    // x - xk starting at x = xk
+    let mut x_minus_xk = Vector::zeros_vec(dir.len(), Col);
+    let mut bmatk_x_minus_xk = x_minus_xk.clone();
+    let mut bmatk_d = bmatk.matmul(&dir);
 
-    let mut df_dt = gk.dot(&dk);
-    let mut d2f_dt2 = (dk.dot(&bmatk.matmul(&dk))).max(f64::EPSILON);
+    let mut df_dt = gk.dot(&dir);
+    let mut d2f_dt2 = (dir.dot(&bmatk.matmul(&dir))).max(f64::EPSILON);
     let mut dalpha_min = -df_dt / d2f_dt2;
 
-    let cauchy_path = bounds.cauchy_path(xk, &dk);
-    let mut alpha_prev = 0.0;
-    let mut dir_cur = &dk;
+    let cauchy_path = bounds.cauchy_path(xk, &dir);
+    let mut alpha_old = 0.0;
+    let mut alpha_cur = cauchy_path.first().unwrap().alpha;
+    let mut d_alpha = alpha_cur - alpha_old;
 
-    for i in 1..cauchy_path.len()
+    for i in 0..cauchy_path.len()
     {
-        let CauchyPathPoint {
-            alpha: alphai,
-            point: xi,
-            direction: di,
-            variable_index: vi,
-        } = &cauchy_path[i];
-
-        let d_alpha = alphai - alpha_prev;
-
         if dalpha_min < d_alpha
         {
-            x_cauchy = (xi + d_alpha * di).into();
             break;
         }
-        alpha_prev = *alphai;
+
+        let CauchyPathPoint {
+            alpha: alpha_i,
+            variable_index: vi_i,
+            bound_status: bs_i,
+        } = cauchy_path[i];
+
+        x_cauchy[vi_i] = match bs_i
+        {
+            BoundStatus::AtLower => bounds.get_lower(vi_i).unwrap(),
+            BoundStatus::AtUpper => bounds.get_upper(vi_i).unwrap(),
+            _ => panic!("Variable not at bound"),
+        };
+
+        let gi = g[vi_i];
+        x_minus_xk += d_alpha * dir.clone();
+        bmatk_x_minus_xk += d_alpha * bmatk_d;
+        df_dt += d_alpha * d2f_dt2 + gi.powi(2) + gi * bmatk_x_minus_xk[vi_i];
+        d2f_dt2 += 2.0 * gi * bmatk_d[vi_i] + gi * bmatk[(vi_i, vi_i)] * gi;
+        dir[vi_i] = 0.0;
+        bmatk_d += gi * bmatk.col(vi_i);
     }
 
     todo!()
