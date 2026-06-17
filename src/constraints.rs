@@ -23,9 +23,8 @@ use topohedral_tracing::*;
 pub struct CauchyPathPoint
 {
     pub alpha: f64,
-    pub point: Vector,
-    pub direction: Vector,
     pub variable_index: usize,
+    pub bound_status: BoundStatus,
 }
 //}}}
 //{{{ struct: NoConstraints
@@ -217,7 +216,7 @@ impl BoundsConstraints
         let mut x_start = location.clone();
         self.clamp(&mut x_start);
 
-        let mut breakpoints = Vec::<(f64, usize, f64)>::with_capacity(self.bounds.len());
+        let mut breakpoints = Vec::<CauchyPathPoint>::with_capacity(self.bounds.len());
 
         for (variable_index, (opt_low_bound, opt_high_bound)) in self.bounds.iter()
         {
@@ -228,7 +227,11 @@ impl BoundsConstraints
                 if gi < 0.0
                 {
                     let xi = x_start[vi];
-                    breakpoints.push(((low_bound - xi) / gi, vi, *low_bound));
+                    breakpoints.push(CauchyPathPoint {
+                        alpha: (low_bound - xi) / gi,
+                        variable_index: vi,
+                        bound_status: AtLower,
+                    });
                 }
             }
             if let Some(high_bound) = opt_high_bound
@@ -237,36 +240,21 @@ impl BoundsConstraints
                 if gi > 0.0
                 {
                     let xi = x_start[vi];
-                    breakpoints.push(((high_bound - xi) / gi, vi, *high_bound));
+                    breakpoints.push(CauchyPathPoint {
+                        alpha: (high_bound - xi) / gi,
+                        variable_index: vi,
+                        bound_status: AtUpper,
+                    });
                 }
             }
         }
-        breakpoints.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap().then_with(|| a.1.cmp(&b.1)));
-
-        let mut out = Vec::<CauchyPathPoint>::with_capacity(breakpoints.len() + 1);
-        let mut dir_cur = direction.clone();
-
-        out.push(CauchyPathPoint {
-            alpha: 0.0,
-            point: x_start.clone(),
-            direction: dir_cur.clone(),
-            variable_index: usize::MAX,
+        breakpoints.sort_by(|a, b| {
+            a.alpha
+                .partial_cmp(&b.alpha)
+                .unwrap()
+                .then_with(|| a.variable_index.cmp(&b.variable_index))
         });
-
-        for (alpha, variable_index, bound_value) in breakpoints
-        {
-            let mut point: Vector = (&x_start + alpha * direction).into();
-            self.clamp(&mut point);
-            point[variable_index] = bound_value;
-            dir_cur[variable_index] = 0.0;
-            out.push(CauchyPathPoint {
-                alpha,
-                point,
-                direction: dir_cur.clone(),
-                variable_index,
-            });
-        }
-        out
+        breakpoints
     }
     //}}}
     //{{{ fn: active_set
