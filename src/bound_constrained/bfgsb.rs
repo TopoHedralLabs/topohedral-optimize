@@ -62,9 +62,9 @@ fn cauchy_point(
     let mut bmatk_x_minus_xk = x_minus_xk.clone();
     let mut bmatk_d = bmatk.matmul(&dir);
 
-    let mut df_dt = gk.dot(&dir);
-    let mut d2f_dt2 = (dir.dot(&bmatk.matmul(&dir))).max(f64::EPSILON);
-    let mut dalpha_min = -df_dt / d2f_dt2;
+    let mut dm_dalpha = gk.dot(&dir);
+    let mut d2m_dalpha2 = (dir.dot(&bmatk.matmul(&dir))).max(f64::EPSILON);
+    let mut dalpha_min = -dm_dalpha / d2m_dalpha2;
 
     let cauchy_path = bounds.cauchy_path(xk, &dir);
     let mut alpha_old = 0.0;
@@ -91,13 +91,15 @@ fn cauchy_point(
             _ => panic!("Variable not at bound"),
         };
 
-        let gi = g[vi_i];
+        let gi = gk[vi_i];
         x_minus_xk += d_alpha * dir.clone();
         bmatk_x_minus_xk += d_alpha * bmatk_d;
-        df_dt += d_alpha * d2f_dt2 + gi.powi(2) + gi * bmatk_x_minus_xk[vi_i];
-        d2f_dt2 += 2.0 * gi * bmatk_d[vi_i] + gi * bmatk[(vi_i, vi_i)] * gi;
+        dm_dalpha += d_alpha * d2m_dalpha2 + gi.powi(2) + gi * bmatk_x_minus_xk[vi_i];
+        d2m_dalpha2 += 2.0 * gi * bmatk_d[vi_i] + gi * bmatk[(vi_i, vi_i)] * gi;
         dir[vi_i] = 0.0;
-        bmatk_d += gi * bmatk.col(vi_i);
+        bmatk_d += gi * bmatk.col(vi_i).to_dmatrix();
+
+        dalpha_min = -dm_dalpha / d2m_dalpha2;
     }
 
     todo!()
