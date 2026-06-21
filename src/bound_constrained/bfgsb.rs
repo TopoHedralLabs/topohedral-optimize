@@ -3,9 +3,11 @@
 //! Longer description of module
 //--------------------------------------------------------------------------------------------------
 
+use crate::bound_constrained::BoundConstrainedOptions;
 use crate::constraints::BoundStatus::{AtLower, AtUpper};
 //{{{ crate imports
 use crate::constraints::{BoundStatus, BoundsConstraints, CauchyPathPoint};
+use crate::line_search::LineSearchMethod;
 use crate::{Matrix, Vector};
 //}}}
 //{{{ std imports
@@ -17,21 +19,39 @@ use topohedral_tracing::trace_fn;
 //}}}
 //--------------------------------------------------------------------------------------------------
 
+struct QuadraticModel
+{
+    fk: f64,
+    xk: Vector,
+    gk: Vector,
+    bmatk: Matrix,
+}
+
+impl QuadraticModel {}
+
+//{{{ struct: CauchyPoint
 struct CauchyPoint
 {
     pub cauchy_point: Vector,
     pub cauchy_curvature: Vector,
     pub bound_statuses: Vec<BoundStatus>,
 }
+//}}}
 
+//{{{ fn: cauchy_point
 #[trace_fn]
 fn cauchy_point(
     bounds: &BoundsConstraints,
-    xk: &Vector,
-    gk: &Vector,
-    bmatk: &Matrix,
+    quadratic_model: &QuadraticModel,
 ) -> CauchyPoint
 {
+    let QuadraticModel {
+        fk: _,
+        xk,
+        gk,
+        bmatk,
+    } = &quadratic_model;
+
     let mut dir = -gk.clone();
     let mut bound_statuses = bounds.bound_statuses(xk, Some(&dir));
 
@@ -134,6 +154,40 @@ fn cauchy_point(
         bound_statuses,
     }
 }
+//}}}
+
+fn subspace_minimize(
+    bounds: &BoundsConstraints,
+    quadratic_model: &QuadraticModel,
+    cauchy_point: &CauchyPoint,
+) -> Vector
+{
+    let free_variable_indices: Vec<usize> = cauchy_point
+        .bound_statuses
+        .iter()
+        .enumerate()
+        .filter_map(|(variable_index, status)| {
+            (*status == BoundStatus::Free).then_some(variable_index)
+        })
+        .collect();
+
+    if free_variable_indices.is_empty()
+    {
+        return cauchy_point.cauchy_point.clone();
+    }
+
+    // let reduced_gradient =
+
+    let out: Vector = cauchy_point.cauchy_point.clone();
+
+    out
+}
+
+struct Options
+{
+    pub bound_opts: BoundConstrainedOptions,
+    pub ls_method: LineSearchMethod,
+}
 
 //-------------------------------------------------------------------------------------------------
 //{{{ mod: tests
@@ -182,11 +236,17 @@ mod tests
         let xk = colvec(&[1.0, -1.0]);
         let gk = colvec(&[2.0, -1.0]);
         let bmatk = DMatrix::<f64>::from_row_slice(&[4.0, 0.0, 0.0, 2.0], 2, 2);
+        let qm = QuadraticModel {
+            fk,
+            xk: xk.clone(),
+            gk: gk.clone(),
+            bmatk: bmatk.clone(),
+        };
         let mut bounds = BoundsConstraints::new(2);
         bounds.add_bounds(0, Some(-10.0), Some(10.0));
         bounds.add_bounds(1, Some(-10.0), Some(10.0));
 
-        let result = cauchy_point(&bounds, &xk, &gk, &bmatk);
+        let result = cauchy_point(&bounds, &qm);
         let expected_alpha = 5.0 / 18.0;
         let expected = colvec(&[
             xk[0] - expected_alpha * gk[0],
@@ -218,7 +278,14 @@ mod tests
         bounds.add_bounds(0, Some(-1.0), Some(0.5));
         bounds.add_bounds(1, Some(-1.0), Some(2.0));
 
-        let result = cauchy_point(&bounds, &xk, &gk, &bmatk);
+        let qm = QuadraticModel {
+            fk,
+            xk: xk.clone(),
+            gk: gk.clone(),
+            bmatk: bmatk.clone(),
+        };
+
+        let result = cauchy_point(&bounds, &qm);
 
         assert_vector_close(&result.cauchy_point, &colvec(&[0.5, 0.75]));
         assert_vector_close(&result.cauchy_curvature, &colvec(&[1.375, 1.0]));
@@ -241,11 +308,17 @@ mod tests
         let xk = colvec(&[0.0, 1.0]);
         let gk = colvec(&[1.0, -2.0]);
         let bmatk = DMatrix::<f64>::from_row_slice(&[2.0, 0.25, 0.25, 3.0], 2, 2);
+        let qm = QuadraticModel {
+            fk,
+            xk: xk.clone(),
+            gk: gk.clone(),
+            bmatk: bmatk.clone(),
+        };
         let mut bounds = BoundsConstraints::new(2);
         bounds.add_bounds(0, Some(0.0), Some(2.0));
         bounds.add_bounds(1, Some(-1.0), Some(1.0));
 
-        let result = cauchy_point(&bounds, &xk, &gk, &bmatk);
+        let result = cauchy_point(&bounds, &qm);
 
         assert_vector_close(&result.cauchy_point, &xk);
         assert_vector_close(&result.cauchy_curvature, &colvec(&[0.0, 0.0]));
