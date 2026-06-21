@@ -59,8 +59,7 @@ struct RestrictedFunction<F: RealFn>
 {
     fcn: F,
     bounds: BoundsConstraints,
-    active_indices: Vec<(usize, BoundStatus)>,
-    inactive_indices: Vec<usize>,
+    bound_statuses: Vec<BoundStatus>,
 }
 //}}}
 //{{{ impl BoundedFunction
@@ -75,22 +74,10 @@ impl<F: RealFn> RestrictedFunction<F>
     ) -> Self
     {
         let bound_statuses = bounds.bound_statuses(x, None);
-        let active_indices = bound_statuses
-            .iter()
-            .copied()
-            .enumerate()
-            .filter(|(_, status)| *status != BoundStatus::Free)
-            .collect();
-        let inactive_indices = bound_statuses
-            .iter()
-            .enumerate()
-            .filter_map(|(idx, status)| (*status == BoundStatus::Free).then_some(idx))
-            .collect();
         RestrictedFunction {
             fcn,
             bounds,
-            active_indices,
-            inactive_indices,
+            bound_statuses,
         }
     }
     //}}}
@@ -103,27 +90,24 @@ impl<F: RealFn> RestrictedFunction<F>
     {
         let n_full = self.fcn.dimension();
         let mut x_full = Vector::zeros_vec(n_full, VecType::Col);
+        let mut local_index = 0;
 
-        for (loc_idx, glob_idx) in self.inactive_indices.iter().enumerate()
+        for (global_index, bound_status) in self.bound_statuses.iter().enumerate()
         {
-            x_full[*glob_idx] = x[loc_idx];
-        }
-
-        for (glob_idx, bound) in self.active_indices.iter()
-        {
-            match bound
+            match bound_status
             {
+                BoundStatus::Free =>
+                {
+                    x_full[global_index] = x[local_index];
+                    local_index += 1;
+                }
                 BoundStatus::AtLower =>
                 {
-                    x_full[*glob_idx] = self.bounds.get_lower(*glob_idx).unwrap()
+                    x_full[global_index] = self.bounds.get_lower(global_index).unwrap()
                 }
                 BoundStatus::AtUpper =>
                 {
-                    x_full[*glob_idx] = self.bounds.get_upper(*glob_idx).unwrap()
-                }
-                _ =>
-                {
-                    panic!()
+                    x_full[global_index] = self.bounds.get_upper(global_index).unwrap()
                 }
             }
         }
@@ -137,13 +121,20 @@ impl<F: RealFn> RestrictedFunction<F>
         x: &Vector,
     ) -> Vector
     {
-        let n_restricted = self.inactive_indices.len();
+        let n_restricted = self.dimension();
         let mut x_restricted = Vector::zeros_vec(n_restricted, VecType::Col);
-        for (loc_idx, glob_idx) in self.inactive_indices.iter().enumerate()
+        let mut local_index = 0;
+
+        for (global_index, bound_status) in self.bound_statuses.iter().enumerate()
         {
-            x_restricted[loc_idx] = x[*glob_idx];
+            if *bound_status == BoundStatus::Free
+            {
+                x_restricted[local_index] = x[global_index];
+                local_index += 1;
+            }
         }
-        return x_restricted;
+
+        x_restricted
     }
     //}}}
 }
@@ -155,7 +146,10 @@ impl<F: RealFn> RealFn for RestrictedFunction<F>
     #[trace_fn]
     fn dimension(&self) -> usize
     {
-        self.inactive_indices.len()
+        self.bound_statuses
+            .iter()
+            .filter(|status| **status == BoundStatus::Free)
+            .count()
     }
     //}}}
     //{{{ fn: eval
