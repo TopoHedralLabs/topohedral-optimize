@@ -256,23 +256,22 @@ fn test_cauchy_path_at_lower_bound_direction_into_bound_returns_t_zero()
     assert_cauchy_path_point(&path[0], 0.0, 0, AtLower);
 }
 //}}}
-//{{{ test: active_and_inactive — no bounded variables → all inactive
+//{{{ test: bound_statuses — no bounded variables → all free
 #[test]
-fn test_active_and_inactive_no_bounds_all_inactive()
+fn test_bound_statuses_no_bounds_all_free()
 {
     let constraints = BoundsConstraints::new(3);
     let x = colvec(&[1.0, 2.0, 3.0]);
     let d = colvec(&[-1.0, 0.0, 1.0]);
 
-    let (active, inactive) = constraints.active_and_inactive_sets(&x, Some(&d));
+    let statuses = constraints.bound_statuses(&x, Some(&d));
 
-    assert!(active.is_empty());
-    assert_eq!(inactive, vec![0, 1, 2]);
+    assert_eq!(statuses, vec![BoundStatus::Free; 3]);
 }
 //}}}
-//{{{ test: active_and_inactive — interior lower-bounded variable remains inactive
+//{{{ test: bound_statuses — interior lower-bounded variable remains free
 #[test]
-fn test_active_and_inactive_lower_bound_negative_direction_interior_is_inactive()
+fn test_bound_statuses_lower_bound_negative_direction_interior_is_free()
 {
     let mut constraints = BoundsConstraints::new(1);
     constraints.add_bounds(0, Some(0.0), None);
@@ -280,15 +279,14 @@ fn test_active_and_inactive_lower_bound_negative_direction_interior_is_inactive(
     let x = colvec(&[0.5]);
     let d = colvec(&[-1.0]);
 
-    let (active, inactive) = constraints.active_and_inactive_sets(&x, Some(&d));
+    let statuses = constraints.bound_statuses(&x, Some(&d));
 
-    assert!(active.is_empty());
-    assert_eq!(inactive, vec![0]);
+    assert_eq!(statuses, vec![BoundStatus::Free]);
 }
 //}}}
-//{{{ test: active_and_inactive — lower-bounded variable active at lower bound
+//{{{ test: bound_statuses — lower-bounded variable constrained at lower bound
 #[test]
-fn test_active_and_inactive_lower_bound_negative_direction_at_bound_is_active()
+fn test_bound_statuses_lower_bound_negative_direction_at_bound_is_at_lower()
 {
     let mut constraints = BoundsConstraints::new(1);
     constraints.add_bounds(0, Some(0.0), None);
@@ -296,15 +294,14 @@ fn test_active_and_inactive_lower_bound_negative_direction_at_bound_is_active()
     let x = colvec(&[0.0]);
     let d = colvec(&[-1.0]);
 
-    let (active, inactive) = constraints.active_and_inactive_sets(&x, Some(&d));
+    let statuses = constraints.bound_statuses(&x, Some(&d));
 
-    assert_eq!(active, vec![(0, AtLower)]);
-    assert!(inactive.is_empty());
+    assert_eq!(statuses, vec![AtLower]);
 }
 //}}}
-//{{{ test: active_and_inactive — lower bound with positive direction → inactive
+//{{{ test: bound_statuses — lower bound with positive direction → free
 #[test]
-fn test_active_and_inactive_lower_bound_positive_direction_is_inactive()
+fn test_bound_statuses_lower_bound_positive_direction_is_free()
 {
     let mut constraints = BoundsConstraints::new(1);
     constraints.add_bounds(0, Some(0.0), None);
@@ -312,15 +309,14 @@ fn test_active_and_inactive_lower_bound_positive_direction_is_inactive()
     let x = colvec(&[0.5]);
     let d = colvec(&[1.0]);
 
-    let (active, inactive) = constraints.active_and_inactive_sets(&x, Some(&d));
+    let statuses = constraints.bound_statuses(&x, Some(&d));
 
-    assert!(active.is_empty());
-    assert_eq!(inactive, vec![0]);
+    assert_eq!(statuses, vec![BoundStatus::Free]);
 }
 //}}}
-//{{{ test: active_and_inactive — interior upper-bounded variable remains inactive
+//{{{ test: bound_statuses — interior upper-bounded variable remains free
 #[test]
-fn test_active_and_inactive_upper_bound_positive_direction_interior_is_inactive()
+fn test_bound_statuses_upper_bound_positive_direction_interior_is_free()
 {
     let mut constraints = BoundsConstraints::new(1);
     constraints.add_bounds(0, None, Some(1.0));
@@ -328,15 +324,14 @@ fn test_active_and_inactive_upper_bound_positive_direction_interior_is_inactive(
     let x = colvec(&[0.5]);
     let d = colvec(&[1.0]);
 
-    let (active, inactive) = constraints.active_and_inactive_sets(&x, Some(&d));
+    let statuses = constraints.bound_statuses(&x, Some(&d));
 
-    assert!(active.is_empty());
-    assert_eq!(inactive, vec![0]);
+    assert_eq!(statuses, vec![BoundStatus::Free]);
 }
 //}}}
-//{{{ test: active_and_inactive — upper-bounded variable active at upper bound
+//{{{ test: bound_statuses — upper-bounded variable constrained at upper bound
 #[test]
-fn test_active_and_inactive_upper_bound_positive_direction_at_bound_is_active()
+fn test_bound_statuses_upper_bound_positive_direction_at_bound_is_at_upper()
 {
     let mut constraints = BoundsConstraints::new(1);
     constraints.add_bounds(0, None, Some(1.0));
@@ -344,15 +339,14 @@ fn test_active_and_inactive_upper_bound_positive_direction_at_bound_is_active()
     let x = colvec(&[1.0]);
     let d = colvec(&[1.0]);
 
-    let (active, inactive) = constraints.active_and_inactive_sets(&x, Some(&d));
+    let statuses = constraints.bound_statuses(&x, Some(&d));
 
-    assert_eq!(active, vec![(0, AtUpper)]);
-    assert!(inactive.is_empty());
+    assert_eq!(statuses, vec![AtUpper]);
 }
 //}}}
-//{{{ test: active_and_inactive — infeasible start uses clamped boundary
+//{{{ test: bound_statuses — infeasible start uses clamped boundary
 #[test]
-fn test_active_and_inactive_infeasible_start_uses_clamped_boundary()
+fn test_bound_statuses_infeasible_start_uses_clamped_boundary()
 {
     let mut constraints = BoundsConstraints::new(2);
     constraints.add_bounds(0, Some(0.0), None);
@@ -361,15 +355,14 @@ fn test_active_and_inactive_infeasible_start_uses_clamped_boundary()
     let x = colvec(&[-0.5, 1.5]);
     let d = colvec(&[-1.0, 1.0]);
 
-    let (active, inactive) = constraints.active_and_inactive_sets(&x, Some(&d));
+    let statuses = constraints.bound_statuses(&x, Some(&d));
 
-    assert_eq!(active, vec![(0, AtLower), (1, AtUpper)]);
-    assert!(inactive.is_empty());
+    assert_eq!(statuses, vec![AtLower, AtUpper]);
 }
 //}}}
-//{{{ test: active_and_inactive — upper bound with negative direction → inactive
+//{{{ test: bound_statuses — upper bound with negative direction → free
 #[test]
-fn test_active_and_inactive_upper_bound_negative_direction_is_inactive()
+fn test_bound_statuses_upper_bound_negative_direction_is_free()
 {
     let mut constraints = BoundsConstraints::new(1);
     constraints.add_bounds(0, None, Some(1.0));
@@ -377,15 +370,14 @@ fn test_active_and_inactive_upper_bound_negative_direction_is_inactive()
     let x = colvec(&[0.5]);
     let d = colvec(&[-1.0]);
 
-    let (active, inactive) = constraints.active_and_inactive_sets(&x, Some(&d));
+    let statuses = constraints.bound_statuses(&x, Some(&d));
 
-    assert!(active.is_empty());
-    assert_eq!(inactive, vec![0]);
+    assert_eq!(statuses, vec![BoundStatus::Free]);
 }
 //}}}
-//{{{ test: active_and_inactive — zero direction → inactive regardless of bounds
+//{{{ test: bound_statuses — zero direction → free regardless of bounds
 #[test]
-fn test_active_and_inactive_zero_direction_is_inactive()
+fn test_bound_statuses_zero_direction_is_free()
 {
     let mut constraints = BoundsConstraints::new(1);
     constraints.add_bounds(0, Some(0.0), Some(1.0));
@@ -393,15 +385,14 @@ fn test_active_and_inactive_zero_direction_is_inactive()
     let x = colvec(&[0.5]);
     let d = colvec(&[0.0]);
 
-    let (active, inactive) = constraints.active_and_inactive_sets(&x, Some(&d));
+    let statuses = constraints.bound_statuses(&x, Some(&d));
 
-    assert!(active.is_empty());
-    assert_eq!(inactive, vec![0]);
+    assert_eq!(statuses, vec![BoundStatus::Free]);
 }
 //}}}
-//{{{ test: active_and_inactive — mixed variables
+//{{{ test: bound_statuses — mixed variables
 #[test]
-fn test_active_and_inactive_mixed_variables()
+fn test_bound_statuses_mixed_variables()
 {
     // var 0: no bounds                           → always inactive
     // var 1: lower bound [0.0, _], x[1] = 0.0   → active (at lower, pushing lower)
@@ -415,15 +406,17 @@ fn test_active_and_inactive_mixed_variables()
     let x = colvec(&[5.0, 0.0, 2.0, 1.0]);
     let d = colvec(&[3.0, -1.0, 1.0, 0.0]);
 
-    let (active, inactive) = constraints.active_and_inactive_sets(&x, Some(&d));
+    let statuses = constraints.bound_statuses(&x, Some(&d));
 
-    assert_eq!(active, vec![(1, AtLower), (2, AtUpper)]);
-    assert_eq!(inactive, vec![0, 3]);
+    assert_eq!(
+        statuses,
+        vec![BoundStatus::Free, AtLower, AtUpper, BoundStatus::Free]
+    );
 }
 //}}}
-//{{{ test: active_and_inactive — omitted direction uses position only
+//{{{ test: bound_statuses — omitted direction uses position only
 #[test]
-fn test_active_and_inactive_no_direction_uses_position_only()
+fn test_bound_statuses_no_direction_uses_position_only()
 {
     // var 0: no bounds                         → inactive
     // var 1: lower bound [0.0, _], x[1] = 0.0 → active at lower
@@ -436,15 +429,17 @@ fn test_active_and_inactive_no_direction_uses_position_only()
 
     let x = colvec(&[5.0, 0.0, 2.5, 1.0]);
 
-    let (active, inactive) = constraints.active_and_inactive_sets(&x, None);
+    let statuses = constraints.bound_statuses(&x, None);
 
-    assert_eq!(active, vec![(1, AtLower), (2, AtUpper)]);
-    assert_eq!(inactive, vec![0, 3]);
+    assert_eq!(
+        statuses,
+        vec![BoundStatus::Free, AtLower, AtUpper, BoundStatus::Free]
+    );
 }
 //}}}
-//{{{ test: active_and_inactive — omitted direction does not use clamped direction
+//{{{ test: bound_statuses — omitted direction does not use clamped direction
 #[test]
-fn test_active_and_inactive_no_direction_marks_infeasible_position_active()
+fn test_bound_statuses_no_direction_marks_infeasible_position_constrained()
 {
     let mut constraints = BoundsConstraints::new(2);
     constraints.add_bounds(0, Some(0.0), Some(1.0));
@@ -452,10 +447,9 @@ fn test_active_and_inactive_no_direction_marks_infeasible_position_active()
 
     let x = colvec(&[-0.5, 1.5]);
 
-    let (active, inactive) = constraints.active_and_inactive_sets(&x, None);
+    let statuses = constraints.bound_statuses(&x, None);
 
-    assert_eq!(active, vec![(0, AtLower), (1, AtUpper)]);
-    assert!(inactive.is_empty());
+    assert_eq!(statuses, vec![AtLower, AtUpper]);
 }
 //}}}
 //{{{ fun: project_at

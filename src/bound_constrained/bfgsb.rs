@@ -34,9 +34,9 @@ fn cauchy_point(
 ) -> CauchyPoint
 {
     let mut dir = -gk.clone();
-    let (active_set, inactive_set) = bounds.active_and_inactive_sets(xk, Some(&dir));
+    let bound_statuses = bounds.bound_statuses(xk, Some(&dir));
 
-    if inactive_set.is_empty()
+    if !bound_statuses.contains(&BoundStatus::Free)
     {
         return CauchyPoint {
             cauchy_point: xk.clone(),
@@ -46,14 +46,22 @@ fn cauchy_point(
     }
 
     let mut x_cauchy = Vector::zeros_vec(xk.len(), Col);
-    for (vi, bound_status) in active_set
+    for (vi, bound_status) in bound_statuses.iter().copied().enumerate()
     {
-        dir[vi] = 0.0;
-        x_cauchy[vi] = match bound_status
+        match bound_status
         {
-            BoundStatus::AtLower => bounds.get_lower(vi).unwrap(),
-            BoundStatus::AtUpper => bounds.get_upper(vi).unwrap(),
-            _ => panic!("Variable not at bound"),
+            BoundStatus::Free =>
+            {}
+            BoundStatus::AtLower =>
+            {
+                dir[vi] = 0.0;
+                x_cauchy[vi] = bounds.get_lower(vi).unwrap();
+            }
+            BoundStatus::AtUpper =>
+            {
+                dir[vi] = 0.0;
+                x_cauchy[vi] = bounds.get_upper(vi).unwrap();
+            }
         }
     }
 
@@ -68,21 +76,22 @@ fn cauchy_point(
 
     let cauchy_path = bounds.cauchy_path(xk, &dir);
     let mut alpha_old = 0.0;
-    let mut alpha_cur = cauchy_path.first().unwrap().alpha;
-    let mut d_alpha = alpha_cur - alpha_old;
-
+    let mut final_i;
     for i in 0..cauchy_path.len()
     {
-        if dalpha_min < d_alpha
-        {
-            break;
-        }
-
         let CauchyPathPoint {
             alpha: alpha_i,
             variable_index: vi_i,
             bound_status: bs_i,
         } = cauchy_path[i];
+
+        let d_alpha = alpha_i - alpha_old;
+
+        if dalpha_min < d_alpha
+        {
+            final_i = i;
+            break;
+        }
 
         x_cauchy[vi_i] = match bs_i
         {
@@ -93,14 +102,20 @@ fn cauchy_point(
 
         let gi = gk[vi_i];
         x_minus_xk += d_alpha * dir.clone();
-        bmatk_x_minus_xk += d_alpha * bmatk_d;
+        bmatk_x_minus_xk += d_alpha * bmatk_d.clone();
+
         dm_dalpha += d_alpha * d2m_dalpha2 + gi.powi(2) + gi * bmatk_x_minus_xk[vi_i];
         d2m_dalpha2 += 2.0 * gi * bmatk_d[vi_i] + gi * bmatk[(vi_i, vi_i)] * gi;
+
         dir[vi_i] = 0.0;
         bmatk_d += gi * bmatk.col(vi_i).to_dmatrix();
 
         dalpha_min = -dm_dalpha / d2m_dalpha2;
+        alpha_old = alpha_i;
     }
+
+    dalpha_min = dalpha_min.max(0.0);
+    let alpha_total = alpha_old + dalpha_min;
 
     todo!()
 }

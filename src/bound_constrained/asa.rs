@@ -74,7 +74,18 @@ impl<F: RealFn> RestrictedFunction<F>
         bounds: BoundsConstraints,
     ) -> Self
     {
-        let (active_indices, inactive_indices) = bounds.active_and_inactive_sets(x, None);
+        let bound_statuses = bounds.bound_statuses(x, None);
+        let active_indices = bound_statuses
+            .iter()
+            .copied()
+            .enumerate()
+            .filter(|(_, status)| *status != BoundStatus::Free)
+            .collect();
+        let inactive_indices = bound_statuses
+            .iter()
+            .enumerate()
+            .filter_map(|(idx, status)| (*status == BoundStatus::Free).then_some(idx))
+            .collect();
         RestrictedFunction {
             fcn,
             bounds,
@@ -518,7 +529,12 @@ impl<F: RealFn> Minimizer for ActiveSetAlgorithm<F>
                         norm_grad_fx: _,
                     } = &iter_k;
 
-                    let active_count_before = self.bounds.active_and_inactive_sets(x, None).0.len();
+                    let active_count_before = self
+                        .bounds
+                        .bound_statuses(x, None)
+                        .iter()
+                        .filter(|status| **status != BoundStatus::Free)
+                        .count();
                     let restricted_fcn =
                         RestrictedFunction::new(self.fcn.clone(), x, self.bounds.clone());
 
@@ -557,9 +573,10 @@ impl<F: RealFn> Minimizer for ActiveSetAlgorithm<F>
                     let inactive_grad_norm_new = inactive_grad_new.norm();
                     let active_count_after = self
                         .bounds
-                        .active_and_inactive_sets(&iter_k.x, None)
-                        .0
-                        .len();
+                        .bound_statuses(&iter_k.x, None)
+                        .iter()
+                        .filter(|status| **status != BoundStatus::Free)
+                        .count();
 
                     self.fn_history.append(iter_k.fx);
                     self.active_signature_history

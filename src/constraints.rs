@@ -257,24 +257,16 @@ impl BoundsConstraints
         breakpoints
     }
     //}}}
-    //{{{ fn: active_set
+    //{{{ fn: bound_statuses
     #[trace_fn]
-    pub fn active_and_inactive_sets(
+    pub fn bound_statuses(
         &self,
         location: &Vector,
         direction: Option<&Vector>,
-    ) -> (Vec<(usize, BoundStatus)>, Vec<usize>)
+    ) -> Vec<BoundStatus>
     {
-        let mut active_set = Vec::<(usize, BoundStatus)>::with_capacity(self.num_variables);
-
-        let mut inactive_set = Vec::<usize>::with_capacity(self.num_variables);
-        for variable_index in 0..self.num_variables
-        {
-            if !self.bounds.contains_key(&variable_index)
-            {
-                inactive_set.push(variable_index);
-            }
-        }
+        assert_eq!(location.len(), self.dimension_domain());
+        let mut statuses = vec![BoundStatus::Free; self.num_variables];
 
         if let Some(direction) = direction
         {
@@ -291,7 +283,7 @@ impl BoundsConstraints
                     let xi = x_clamped[*variable_index];
                     if gi < 0.0 && xi == *low_bound
                     {
-                        active_set.push((*variable_index, AtLower));
+                        statuses[*variable_index] = AtLower;
                         continue;
                     }
                 }
@@ -301,12 +293,9 @@ impl BoundsConstraints
                     let xi = x_clamped[*variable_index];
                     if gi > 0.0 && xi == *high_bound
                     {
-                        active_set.push((*variable_index, AtUpper));
-                        continue;
+                        statuses[*variable_index] = AtUpper;
                     }
                 }
-
-                inactive_set.push(*variable_index)
             }
         }
         else
@@ -316,22 +305,17 @@ impl BoundsConstraints
                 let xi = location[*variable_index];
                 if opt_low_bound.is_some_and(|low_bound| xi <= low_bound)
                 {
-                    active_set.push((*variable_index, AtLower));
+                    statuses[*variable_index] = AtLower;
                     continue;
                 }
                 if opt_high_bound.is_some_and(|high_bound| xi >= high_bound)
                 {
-                    active_set.push((*variable_index, AtUpper));
-                    continue;
+                    statuses[*variable_index] = AtUpper;
                 }
-
-                inactive_set.push(*variable_index)
             }
         }
 
-        active_set.sort_by_key(|(idx, _)| *idx);
-        inactive_set.sort();
-        (active_set, inactive_set)
+        statuses
     }
     //}}}
     //{{{ fn active_signature
