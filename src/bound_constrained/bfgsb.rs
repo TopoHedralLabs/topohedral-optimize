@@ -8,13 +8,13 @@ use crate::constraints::BoundStatus::{AtLower, AtUpper};
 //{{{ crate imports
 use crate::constraints::{BoundStatus, BoundsConstraints, CauchyPathPoint};
 use crate::line_search::LineSearchMethod;
-use crate::{Matrix, Vector};
+use crate::{Matrix, RealFn, Vector};
 //}}}
 //{{{ std imports
 //}}}
 //{{{ dep imports
 use topohedral_linalg::VecType::Col;
-use topohedral_linalg::{MatMul, SubViewable, VectorOps};
+use topohedral_linalg::{MatMul, ReduceOps, SubViewable, VectorOps};
 use topohedral_tracing::trace_fn;
 //}}}
 //--------------------------------------------------------------------------------------------------
@@ -27,7 +27,19 @@ struct QuadraticModel
     bmatk: Matrix,
 }
 
-impl QuadraticModel {}
+impl QuadraticModel
+{
+    #[trace_fn]
+    fn new(n: usize) -> Self
+    {
+        QuadraticModel {
+            fk: 0.0,
+            xk: Vector::zeros_vec(n, Col),
+            gk: Vector::zeros_vec(n, Col),
+            bmatk: Matrix::identity(n, n),
+        }
+    }
+}
 
 //{{{ struct: CauchyPoint
 struct CauchyPoint
@@ -162,8 +174,13 @@ fn subspace_minimize(
     cauchy_point: &CauchyPoint,
 ) -> Vector
 {
-    let free_variable_indices: Vec<usize> = cauchy_point
-        .bound_statuses
+    let CauchyPoint {
+        cauchy_point: x_cauchy,
+        cauchy_curvature: bmat_x_minus_xk,
+        bound_statuses,
+    } = cauchy_point;
+
+    let free_variable_indices: Vec<usize> = bound_statuses
         .iter()
         .enumerate()
         .filter_map(|(variable_index, status)| {
@@ -176,17 +193,70 @@ fn subspace_minimize(
         return cauchy_point.cauchy_point.clone();
     }
 
-    // let reduced_gradient =
+    let n = free_variable_indices.len();
+    let mut reduced_gradient = Vector::zeros_vec(n, Col);
+    for (i, free_idx) in free_variable_indices.iter().enumerate()
+    {
+        reduced_gradient[i] = -(quadratic_model.gk[*free_idx] + bmat_x_minus_xk[*free_idx]);
+    }
+    let mut reduced_bmat = Matrix::zeros(n, n);
+
+    for (i, free_idx_i) in free_variable_indices.iter().enumerate()
+    {
+        for (j, free_idx_j) in free_variable_indices.iter().enumerate()
+        {
+            reduced_bmat[(j, i)] = quadratic_model.bmatk[(*free_idx_j, *free_idx_i)]
+        }
+    }
+
+    let dx = reduced_bmat.solve(&reduced_gradient);
 
     let out: Vector = cauchy_point.cauchy_point.clone();
-
     out
 }
 
-struct Options
+pub struct Options
 {
     pub bound_opts: BoundConstrainedOptions,
     pub ls_method: LineSearchMethod,
+}
+
+pub struct Bfgsb<F: RealFn>
+{
+    fcn: F,
+    bounds: BoundsConstraints,
+    x_init: Vector,
+    norm_grad_fx_init: f64,
+    opts: Options,
+
+    quadratic_model: QuadraticModel,
+}
+
+impl<F: RealFn> Bfgsb<F>
+{
+    #[trace_fn]
+    pub fn new(
+        mut fcn: F,
+        bounds: BoundsConstraints,
+        mut x0: Vector,
+        opts: Options,
+    ) -> Self
+    {
+        bounds.clamp(&mut x0);
+        let grad_0 = fcn.grad(&x0);
+        let negative_grad_0 = -grad_0.clone();
+        let projectd_grad_0 = bounds.projected_direction(&x0, &negative_grad_0, 1.0);
+
+        let n = x0.len();
+        Self {
+            fcn,
+            bounds,
+            x_init: x0,
+            norm_grad_fx_init: projectd_grad_0.abs_max().unwrap(),
+            opts,
+            quadratic_model: QuadraticModel::new(n),
+        }
+    }
 }
 
 //-------------------------------------------------------------------------------------------------
