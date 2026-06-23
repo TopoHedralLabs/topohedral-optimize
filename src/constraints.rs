@@ -205,6 +205,21 @@ impl BoundsConstraints
         return new_location;
     }
     //}}}
+    //{{{ fn: max_feasible_step
+    #[trace_fn]
+    pub fn max_feasible_step(
+        &self,
+        location: &Vector,
+        direction: &Vector,
+    ) -> f64
+    {
+        self.cauchy_path(location, direction)
+            .first()
+            .map(|point| point.alpha)
+            .unwrap_or(f64::INFINITY)
+            .max(0.0)
+    }
+    //}}}
     //{{{ fn: cauchy_path
     #[trace_fn]
     pub fn cauchy_path(

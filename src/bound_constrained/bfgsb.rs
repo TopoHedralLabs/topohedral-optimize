@@ -3,12 +3,14 @@
 //! Longer description of module
 //--------------------------------------------------------------------------------------------------
 
+//{{{ crate imports
+use super::common::Error;
 use crate::bound_constrained::BoundConstrainedOptions;
 use crate::constraints::BoundStatus::{AtLower, AtUpper};
-//{{{ crate imports
 use crate::constraints::{BoundStatus, BoundsConstraints, CauchyPathPoint};
+use crate::line_search::LineSearchError;
 use crate::line_search::LineSearchMethod;
-use crate::{Matrix, RealFn, Vector};
+use crate::{Matrix, Minimizer, RealFn, Vector};
 //}}}
 //{{{ std imports
 //}}}
@@ -256,6 +258,16 @@ impl<F: RealFn> Bfgsb<F>
             opts,
             quadratic_model: QuadraticModel::new(n),
         }
+    }
+}
+
+impl<F: RealFn> Minimizer for Bfgsb<F>
+{
+    type Error = Error;
+
+    fn minimize(&mut self) -> Result<crate::Returns, Self::Error>
+    {
+        todo!()
     }
 }
 

@@ -256,6 +256,47 @@ fn test_cauchy_path_at_lower_bound_direction_into_bound_returns_t_zero()
     assert_cauchy_path_point(&path[0], 0.0, 0, AtLower);
 }
 //}}}
+//{{{ test: max feasible step first bound
+#[test]
+fn test_max_feasible_step_returns_first_bound_hit()
+{
+    let mut constraints = BoundsConstraints::new(3);
+    constraints.add_bounds(0, Some(0.0), Some(2.0));
+    constraints.add_bounds(1, Some(0.0), Some(2.0));
+    constraints.add_bounds(2, Some(0.0), Some(2.0));
+
+    let x = colvec(&[0.5, 0.0, 1.5]);
+    let d = colvec(&[1.0, 1.0, 1.0]);
+
+    assert_relative_eq!(constraints.max_feasible_step(&x, &d), 0.5, epsilon = 1e-12);
+}
+//}}}
+//{{{ test: max feasible step no bound hit
+#[test]
+fn test_max_feasible_step_returns_infinity_when_direction_stays_feasible()
+{
+    let mut constraints = BoundsConstraints::new(1);
+    constraints.add_bounds(0, Some(0.0), None);
+
+    let x = colvec(&[0.5]);
+    let d = colvec(&[1.0]);
+
+    assert!(constraints.max_feasible_step(&x, &d).is_infinite());
+}
+//}}}
+//{{{ test: max feasible step blocked at bound
+#[test]
+fn test_max_feasible_step_returns_zero_when_already_blocked_at_bound()
+{
+    let mut constraints = BoundsConstraints::new(1);
+    constraints.add_bounds(0, Some(0.0), Some(1.0));
+
+    let x = colvec(&[0.0]);
+    let d = colvec(&[-1.0]);
+
+    assert_relative_eq!(constraints.max_feasible_step(&x, &d), 0.0, epsilon = 1e-12);
+}
+//}}}
 //{{{ test: bound_statuses — no bounded variables → all free
 #[test]
 fn test_bound_statuses_no_bounds_all_free()

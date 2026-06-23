@@ -5,6 +5,7 @@
 
 //{{{ crate imports
 use crate::common::BaseOptions;
+use crate::line_search::LineSearchError;
 use crate::unconstrained::UnconstrainedError;
 //}}}
 //{{{ std imports
@@ -30,5 +31,7 @@ pub enum Error
     UnconstrainedError(#[from] UnconstrainedError),
     #[error("Maximum iterations of {0} reached")]
     MaxIterations(usize),
+    #[error("Line Search Failed with error {0}")]
+    LineSearch(#[from] LineSearchError),
 }
 //}}}
