@@ -6,9 +6,7 @@
 //{{{ crate imports
 use super::common::Error;
 use crate::bound_constrained::BoundConstrainedOptions;
-use crate::constraints::BoundStatus::{AtLower, AtUpper};
 use crate::constraints::{BoundStatus, BoundsConstraints, CauchyPathPoint};
-use crate::line_search::LineSearchError;
 use crate::line_search::LineSearchMethod;
 use crate::{Matrix, Minimizer, RealFn, Vector};
 //}}}
@@ -85,15 +83,15 @@ fn cauchy_point(
         {
             BoundStatus::Free =>
             {}
-            BoundStatus::AtLower =>
+            BoundStatus::AtLower(value) =>
             {
                 dir[vi] = 0.0;
-                x_cauchy[vi] = bounds.get_lower(vi).unwrap();
+                x_cauchy[vi] = value;
             }
-            BoundStatus::AtUpper =>
+            BoundStatus::AtUpper(value) =>
             {
                 dir[vi] = 0.0;
-                x_cauchy[vi] = bounds.get_upper(vi).unwrap();
+                x_cauchy[vi] = value;
             }
         }
     }
@@ -125,15 +123,15 @@ fn cauchy_point(
 
         x_cauchy[vi_i] = match bs_i
         {
-            BoundStatus::AtLower =>
+            BoundStatus::AtLower(value) =>
             {
-                bound_statuses[vi_i] = AtLower;
-                bounds.get_lower(vi_i).unwrap()
+                bound_statuses[vi_i] = BoundStatus::AtLower(value);
+                value
             }
-            BoundStatus::AtUpper =>
+            BoundStatus::AtUpper(value) =>
             {
-                bound_statuses[vi_i] = AtUpper;
-                bounds.get_upper(vi_i).unwrap()
+                bound_statuses[vi_i] = BoundStatus::AtUpper(value);
+                value
             }
             _ => panic!("Variable not at bound"),
         };
@@ -176,6 +174,13 @@ fn subspace_minimize(
     cauchy_point: &CauchyPoint,
 ) -> Vector
 {
+    let QuadraticModel {
+        fk: _,
+        xk,
+        gk,
+        bmatk,
+    } = &quadratic_model;
+
     let CauchyPoint {
         cauchy_point: x_cauchy,
         cauchy_curvature: bmat_x_minus_xk,
@@ -199,7 +204,7 @@ fn subspace_minimize(
     let mut reduced_gradient = Vector::zeros_vec(n, Col);
     for (i, free_idx) in free_variable_indices.iter().enumerate()
     {
-        reduced_gradient[i] = -(quadratic_model.gk[*free_idx] + bmat_x_minus_xk[*free_idx]);
+        reduced_gradient[i] = -(gk[*free_idx] + bmat_x_minus_xk[*free_idx]);
     }
     let mut reduced_bmat = Matrix::zeros(n, n);
 
@@ -207,13 +212,23 @@ fn subspace_minimize(
     {
         for (j, free_idx_j) in free_variable_indices.iter().enumerate()
         {
-            reduced_bmat[(j, i)] = quadratic_model.bmatk[(*free_idx_j, *free_idx_i)]
+            reduced_bmat[(j, i)] = bmatk[(*free_idx_j, *free_idx_i)]
         }
     }
 
-    let dx = reduced_bmat.solve(&reduced_gradient);
+    let reduced_direction = reduced_bmat
+        .solve(&reduced_gradient)
+        .expect("subspace Hessian solve failed");
+    let mut full_direction = Vector::zeros_vec(xk.len(), Col);
+    for (i, free_index) in free_variable_indices.iter().enumerate()
+    {
+        full_direction[*free_index] = reduced_direction[i];
+    }
 
-    let out: Vector = cauchy_point.cauchy_point.clone();
+    let alpha_min = bounds.max_feasible_step(x_cauchy, &full_direction);
+
+    let mut out: Vector = (x_cauchy + alpha_min.min(1.0) * full_direction).into();
+    bounds.clamp(&mut out);
     out
 }
 
@@ -373,7 +388,7 @@ mod tests
         assert_vector_close(&result.cauchy_curvature, &colvec(&[1.375, 1.0]));
         assert_eq!(
             result.bound_statuses,
-            vec![BoundStatus::AtUpper, BoundStatus::Free]
+            vec![BoundStatus::AtUpper(0.5), BoundStatus::Free]
         );
 
         let before = colvec(&[0.5, 0.74]);
@@ -406,7 +421,7 @@ mod tests
         assert_vector_close(&result.cauchy_curvature, &colvec(&[0.0, 0.0]));
         assert_eq!(
             result.bound_statuses,
-            vec![BoundStatus::AtLower, BoundStatus::AtUpper]
+            vec![BoundStatus::AtLower(0.0), BoundStatus::AtUpper(1.0)]
         );
         assert_relative_eq!(
             quadratic_model(fk, &gk, &bmatk, &xk, &result.cauchy_point),

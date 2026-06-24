@@ -4,10 +4,7 @@
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
-use crate::{
-    constraints::BoundStatus::{AtLower, AtUpper},
-    Matrix, RealVectorFn, Vector,
-};
+use crate::{Matrix, RealVectorFn, Vector};
 //}}}
 //{{{ std imports
 use std::collections::HashMap;
@@ -75,16 +72,49 @@ pub struct BoundsConstraints
 //}}}
 //{{{ enum: BoundStatus
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum BoundSide
+{
+    Lower,
+    Upper,
+}
+//}}}
+//{{{ enum: BoundStatus
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum BoundStatus
 {
     Free,
-    AtLower,
-    AtUpper,
+    AtLower(f64),
+    AtUpper(f64),
+}
+//}}}
+//{{{ impl: BoundStatus
+impl BoundStatus
+{
+    #[trace_fn]
+    pub fn side(&self) -> Option<BoundSide>
+    {
+        match self
+        {
+            BoundStatus::Free => None,
+            BoundStatus::AtLower(_) => Some(BoundSide::Lower),
+            BoundStatus::AtUpper(_) => Some(BoundSide::Upper),
+        }
+    }
+
+    #[trace_fn]
+    pub fn value(&self) -> Option<f64>
+    {
+        match self
+        {
+            BoundStatus::Free => None,
+            BoundStatus::AtLower(value) | BoundStatus::AtUpper(value) => Some(*value),
+        }
+    }
 }
 //}}}
 //{{{ struct: BoundSignature
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct BoundSignature(Box<[(usize, BoundStatus)]>);
+pub struct BoundSignature(Box<[(usize, BoundSide)]>);
 //}}}
 //{{{ impl: BoundsConstraints
 impl BoundsConstraints
@@ -245,7 +275,7 @@ impl BoundsConstraints
                     breakpoints.push(CauchyPathPoint {
                         alpha: (low_bound - xi) / gi,
                         variable_index: vi,
-                        bound_status: AtLower,
+                        bound_status: BoundStatus::AtLower(*low_bound),
                     });
                 }
             }
@@ -258,7 +288,7 @@ impl BoundsConstraints
                     breakpoints.push(CauchyPathPoint {
                         alpha: (high_bound - xi) / gi,
                         variable_index: vi,
-                        bound_status: AtUpper,
+                        bound_status: BoundStatus::AtUpper(*high_bound),
                     });
                 }
             }
@@ -298,7 +328,7 @@ impl BoundsConstraints
                     let xi = x_clamped[*variable_index];
                     if gi < 0.0 && xi == *low_bound
                     {
-                        statuses[*variable_index] = AtLower;
+                        statuses[*variable_index] = BoundStatus::AtLower(*low_bound);
                         continue;
                     }
                 }
@@ -308,7 +338,7 @@ impl BoundsConstraints
                     let xi = x_clamped[*variable_index];
                     if gi > 0.0 && xi == *high_bound
                     {
-                        statuses[*variable_index] = AtUpper;
+                        statuses[*variable_index] = BoundStatus::AtUpper(*high_bound);
                     }
                 }
             }
@@ -318,14 +348,20 @@ impl BoundsConstraints
             for (variable_index, (opt_low_bound, opt_high_bound)) in self.bounds.iter()
             {
                 let xi = location[*variable_index];
-                if opt_low_bound.is_some_and(|low_bound| xi <= low_bound)
+                if let Some(low_bound) = opt_low_bound
                 {
-                    statuses[*variable_index] = AtLower;
-                    continue;
+                    if xi <= *low_bound
+                    {
+                        statuses[*variable_index] = BoundStatus::AtLower(*low_bound);
+                        continue;
+                    }
                 }
-                if opt_high_bound.is_some_and(|high_bound| xi >= high_bound)
+                if let Some(high_bound) = opt_high_bound
                 {
-                    statuses[*variable_index] = AtUpper;
+                    if xi >= *high_bound
+                    {
+                        statuses[*variable_index] = BoundStatus::AtUpper(*high_bound);
+                    }
                 }
             }
         }
@@ -340,7 +376,7 @@ impl BoundsConstraints
         x: &Vector,
     ) -> BoundSignature
     {
-        let mut sig = Vec::<(usize, BoundStatus)>::with_capacity(self.bounds.len());
+        let mut sig = Vec::<(usize, BoundSide)>::with_capacity(self.bounds.len());
 
         for (&idx, (lower, upper)) in &self.bounds
         {
@@ -348,11 +384,11 @@ impl BoundsConstraints
 
             if lower.is_some_and(|lower| xi <= lower)
             {
-                sig.push((idx, BoundStatus::AtLower));
+                sig.push((idx, BoundSide::Lower));
             }
             else if upper.is_some_and(|upper| xi >= upper)
             {
-                sig.push((idx, BoundStatus::AtUpper));
+                sig.push((idx, BoundSide::Upper));
             }
         }
 

@@ -5,6 +5,7 @@
 
 //{{{ crate imports
 use super::common::Options as BoundConstrainedOptions;
+use super::common::{lift, restrict};
 use super::utils::CircularBuffer;
 use crate::bound_constrained::asa::Phase::UA;
 use crate::common::{Minimizer, Vector};
@@ -58,7 +59,6 @@ pub struct Options
 struct RestrictedFunction<F: RealFn>
 {
     fcn: F,
-    bounds: BoundsConstraints,
     bound_statuses: Vec<BoundStatus>,
 }
 //}}}
@@ -70,71 +70,13 @@ impl<F: RealFn> RestrictedFunction<F>
     fn new(
         fcn: F,
         x: &Vector,
-        bounds: BoundsConstraints,
+        bound_statuses: Vec<BoundStatus>,
     ) -> Self
     {
-        let bound_statuses = bounds.bound_statuses(x, None);
         RestrictedFunction {
             fcn,
-            bounds,
             bound_statuses,
         }
-    }
-    //}}}
-    //{{{ fn: lift
-    #[trace_fn]
-    fn lift(
-        &self,
-        x: &Vector,
-    ) -> Vector
-    {
-        let n_full = self.fcn.dimension();
-        let mut x_full = Vector::zeros_vec(n_full, VecType::Col);
-        let mut local_index = 0;
-
-        for (global_index, bound_status) in self.bound_statuses.iter().enumerate()
-        {
-            match bound_status
-            {
-                BoundStatus::Free =>
-                {
-                    x_full[global_index] = x[local_index];
-                    local_index += 1;
-                }
-                BoundStatus::AtLower =>
-                {
-                    x_full[global_index] = self.bounds.get_lower(global_index).unwrap()
-                }
-                BoundStatus::AtUpper =>
-                {
-                    x_full[global_index] = self.bounds.get_upper(global_index).unwrap()
-                }
-            }
-        }
-        x_full
-    }
-    //}}}
-    //{{{ fn: restrict
-    #[trace_fn]
-    fn restrict(
-        &self,
-        x: &Vector,
-    ) -> Vector
-    {
-        let n_restricted = self.dimension();
-        let mut x_restricted = Vector::zeros_vec(n_restricted, VecType::Col);
-        let mut local_index = 0;
-
-        for (global_index, bound_status) in self.bound_statuses.iter().enumerate()
-        {
-            if *bound_status == BoundStatus::Free
-            {
-                x_restricted[local_index] = x[global_index];
-                local_index += 1;
-            }
-        }
-
-        x_restricted
     }
     //}}}
 }
@@ -159,7 +101,7 @@ impl<F: RealFn> RealFn for RestrictedFunction<F>
         x: &Vector,
     ) -> f64
     {
-        let x_full = self.lift(x);
+        let x_full = lift(&self.bound_statuses, x);
         self.fcn.eval(&x_full)
     }
     //}}}
@@ -170,9 +112,9 @@ impl<F: RealFn> RealFn for RestrictedFunction<F>
         x: &Vector,
     ) -> Vector
     {
-        let x_full = self.lift(x);
+        let x_full = lift(&self.bound_statuses, x);
         let grad_f_full = self.fcn.grad(&x_full);
-        self.restrict(&grad_f_full)
+        restrict(&self.bound_statuses, &grad_f_full)
     }
     //}}}
 }
@@ -529,10 +471,12 @@ impl<F: RealFn> Minimizer for ActiveSetAlgorithm<F>
                         .iter()
                         .filter(|status| **status != BoundStatus::Free)
                         .count();
-                    let restricted_fcn =
-                        RestrictedFunction::new(self.fcn.clone(), x, self.bounds.clone());
 
-                    let x0 = restricted_fcn.restrict(x);
+                    let bounds_statuses = self.bounds.bound_statuses(x, None);
+                    let restricted_fcn =
+                        RestrictedFunction::new(self.fcn.clone(), x, bounds_statuses.clone());
+
+                    let x0 = restrict(&bounds_statuses, x);
                     if x0.is_empty()
                     {
                         phase = Phase::NGPA;
@@ -552,7 +496,7 @@ impl<F: RealFn> Minimizer for ActiveSetAlgorithm<F>
                         continue;
                     };
 
-                    iter_k.x.copy_from(restricted_fcn.lift(&res.xmin));
+                    iter_k.x.copy_from(lift(&bounds_statuses, &res.xmin));
                     self.bounds.clamp(&mut iter_k.x);
                     iter_k.fx = res.fmin;
                     iter_k.grad_fx.copy_from(self.fcn.grad(&iter_k.x));

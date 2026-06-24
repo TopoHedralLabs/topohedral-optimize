@@ -165,7 +165,7 @@ fn test_cauchy_path_single_upper_bound_hit()
     let path = constraints.cauchy_path(&x, &d);
 
     assert_eq!(path.len(), 1);
-    assert_cauchy_path_point(&path[0], 0.5, 0, AtUpper);
+    assert_cauchy_path_point(&path[0], 0.5, 0, AtUpper(1.0));
 }
 //}}}
 //{{{ test: cauchy path lower bound
@@ -180,7 +180,7 @@ fn test_cauchy_path_single_lower_bound_hit()
     let path = constraints.cauchy_path(&x, &d);
 
     assert_eq!(path.len(), 1);
-    assert_cauchy_path_point(&path[0], 0.5, 0, AtLower);
+    assert_cauchy_path_point(&path[0], 0.5, 0, AtLower(0.0));
 }
 //}}}
 //{{{ test: cauchy path no hit
@@ -218,9 +218,9 @@ fn test_cauchy_path_multiple_variables_sorted_by_t()
     let path = constraints.cauchy_path(&x, &d);
 
     assert_eq!(path.len(), 3);
-    assert_cauchy_path_point(&path[0], 0.5, 2, AtUpper);
-    assert_cauchy_path_point(&path[1], 1.5, 0, AtUpper);
-    assert_cauchy_path_point(&path[2], 2.0, 1, AtUpper);
+    assert_cauchy_path_point(&path[0], 0.5, 2, AtUpper(2.0));
+    assert_cauchy_path_point(&path[1], 1.5, 0, AtUpper(2.0));
+    assert_cauchy_path_point(&path[2], 2.0, 1, AtUpper(2.0));
 }
 //}}}
 //{{{ test: cauchy path infeasible start clamped
@@ -237,7 +237,7 @@ fn test_cauchy_path_infeasible_start_uses_clamped_location()
     let path = constraints.cauchy_path(&x, &d);
 
     assert_eq!(path.len(), 1);
-    assert_cauchy_path_point(&path[0], 1.0, 0, AtLower);
+    assert_cauchy_path_point(&path[0], 1.0, 0, AtLower(0.0));
 }
 //}}}
 //{{{ test: cauchy path already at bound
@@ -253,7 +253,7 @@ fn test_cauchy_path_at_lower_bound_direction_into_bound_returns_t_zero()
     let path = constraints.cauchy_path(&x, &d);
 
     assert_eq!(path.len(), 1);
-    assert_cauchy_path_point(&path[0], 0.0, 0, AtLower);
+    assert_cauchy_path_point(&path[0], 0.0, 0, AtLower(0.0));
 }
 //}}}
 //{{{ test: max feasible step first bound
@@ -337,7 +337,7 @@ fn test_bound_statuses_lower_bound_negative_direction_at_bound_is_at_lower()
 
     let statuses = constraints.bound_statuses(&x, Some(&d));
 
-    assert_eq!(statuses, vec![AtLower]);
+    assert_eq!(statuses, vec![AtLower(0.0)]);
 }
 //}}}
 //{{{ test: bound_statuses — lower bound with positive direction → free
@@ -382,7 +382,7 @@ fn test_bound_statuses_upper_bound_positive_direction_at_bound_is_at_upper()
 
     let statuses = constraints.bound_statuses(&x, Some(&d));
 
-    assert_eq!(statuses, vec![AtUpper]);
+    assert_eq!(statuses, vec![AtUpper(1.0)]);
 }
 //}}}
 //{{{ test: bound_statuses — infeasible start uses clamped boundary
@@ -398,7 +398,7 @@ fn test_bound_statuses_infeasible_start_uses_clamped_boundary()
 
     let statuses = constraints.bound_statuses(&x, Some(&d));
 
-    assert_eq!(statuses, vec![AtLower, AtUpper]);
+    assert_eq!(statuses, vec![AtLower(0.0), AtUpper(1.0)]);
 }
 //}}}
 //{{{ test: bound_statuses — upper bound with negative direction → free
@@ -451,7 +451,12 @@ fn test_bound_statuses_mixed_variables()
 
     assert_eq!(
         statuses,
-        vec![BoundStatus::Free, AtLower, AtUpper, BoundStatus::Free]
+        vec![
+            BoundStatus::Free,
+            AtLower(0.0),
+            AtUpper(2.0),
+            BoundStatus::Free
+        ]
     );
 }
 //}}}
@@ -474,7 +479,12 @@ fn test_bound_statuses_no_direction_uses_position_only()
 
     assert_eq!(
         statuses,
-        vec![BoundStatus::Free, AtLower, AtUpper, BoundStatus::Free]
+        vec![
+            BoundStatus::Free,
+            AtLower(0.0),
+            AtUpper(2.0),
+            BoundStatus::Free
+        ]
     );
 }
 //}}}
@@ -490,7 +500,7 @@ fn test_bound_statuses_no_direction_marks_infeasible_position_constrained()
 
     let statuses = constraints.bound_statuses(&x, None);
 
-    assert_eq!(statuses, vec![AtLower, AtUpper]);
+    assert_eq!(statuses, vec![AtLower(0.0), AtUpper(1.0)]);
 }
 //}}}
 //{{{ fun: project_at
@@ -532,9 +542,9 @@ fn test_cauchy_path_geometric_projected_path_kinks_at_breakpoints()
     // Verify the breakpoint sequence first.
     let path = constraints.cauchy_path(&x, &d);
     assert_eq!(path.len(), 3);
-    assert_cauchy_path_point(&path[0], 0.5, 2, AtUpper);
-    assert_cauchy_path_point(&path[1], 1.5, 0, AtUpper);
-    assert_cauchy_path_point(&path[2], 2.0, 1, AtUpper);
+    assert_cauchy_path_point(&path[0], 0.5, 2, AtUpper(2.0));
+    assert_cauchy_path_point(&path[1], 1.5, 0, AtUpper(2.0));
+    assert_cauchy_path_point(&path[2], 2.0, 1, AtUpper(2.0));
 
     // Segment 0: t in [0, 0.5) — all three components move freely.
     let p = project_at(&constraints, &x, &d, 0.0);
