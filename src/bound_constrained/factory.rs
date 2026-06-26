@@ -5,6 +5,7 @@
 
 //{{{ crate imports
 use super::asa::{ActiveSetAlgorithm, Options as AsaOptions};
+use super::bfgsb::{Bfgsb, Options as BfgsbOptions};
 use super::common::Error;
 use crate::bound_constrained::BoundConstrainedOptions;
 use crate::constraints::BoundsConstraints;
@@ -21,6 +22,7 @@ use topohedral_tracing::trace_fn;
 pub enum Method
 {
     Asa(AsaOptions),
+    Bfgsb(BfgsbOptions),
 }
 
 impl Method
@@ -30,6 +32,7 @@ impl Method
         match self
         {
             Method::Asa(asa_opts) => &asa_opts.bound_opts,
+            Method::Bfgsb(bfgsb_opts) => &bfgsb_opts.bound_opts,
         }
     }
 
@@ -38,6 +41,7 @@ impl Method
         match self
         {
             Method::Asa(asa_opts) => &mut asa_opts.bound_opts,
+            Method::Bfgsb(bfgsb_opts) => &mut bfgsb_opts.bound_opts,
         }
     }
 }
@@ -53,5 +57,6 @@ pub fn create<'a, F: RealFn + 'a>(
     match method
     {
         Method::Asa(opts) => Box::new(ActiveSetAlgorithm::new(fcn, bounds, x0, opts)),
+        Method::Bfgsb(opts) => Box::new(Bfgsb::new(fcn, bounds, x0, opts)),
     }
 }
