@@ -8,8 +8,8 @@ use super::common::Error;
 use crate::bound_constrained::BoundConstrainedOptions;
 use crate::common::ConvergedReason;
 use crate::constraints::{BoundStatus, BoundsConstraints, CauchyPathPoint};
-use crate::line_search::{LineSearchError, LineSearchMethod};
-use crate::{Matrix, Minimizer, RealFn, Vector};
+use crate::line_search::{self as ls, LineSearchError, LineSearchMethod};
+use crate::{IterData, Matrix, Minimizer, RealFn, Vector};
 //}}}
 //{{{ std imports
 //}}}
@@ -315,15 +315,6 @@ fn subspace_minimize(
     out
 }
 
-//{{{ struct: WolfeSearchResult
-struct WolfeSearchResult
-{
-    alpha: f64,
-    fx: f64,
-    grad_fx: Vector,
-}
-//}}}
-
 //{{{ fn: projected_gradient_inf_norm
 #[trace_fn]
 fn projected_gradient_inf_norm(
@@ -337,196 +328,6 @@ fn projected_gradient_inf_norm(
         .projected_direction(x, &negative_grad, 1.0)
         .abs_max()
         .unwrap_or(0.0)
-}
-//}}}
-
-//{{{ fn: wolfe_params
-fn wolfe_params(ls_method: &LineSearchMethod) -> (f64, f64, usize)
-{
-    match ls_method
-    {
-        LineSearchMethod::Thuente(opts) => (opts.ls_opts.c1, opts.ls_opts.c2, opts.maxiter.max(1)),
-        LineSearchMethod::Nocedal(opts) => (
-            opts.ls_opts.c1,
-            opts.ls_opts.c2,
-            (opts.maxiter + opts.zoom_maxiter).max(1),
-        ),
-    }
-}
-//}}}
-
-//{{{ fn: eval_along
-#[trace_fn]
-fn eval_along<F: RealFn>(
-    fcn: &mut F,
-    x0: &Vector,
-    dir: &Vector,
-    alpha: f64,
-) -> (f64, Vector)
-{
-    let x_new: Vector = (x0 + alpha * dir).into();
-    let f_new = fcn.eval(&x_new);
-    let g_new = fcn.grad(&x_new);
-    (f_new, g_new)
-}
-//}}}
-
-//{{{ fn: zoom
-#[allow(clippy::too_many_arguments)]
-#[trace_fn]
-fn zoom<F: RealFn>(
-    fcn: &mut F,
-    x0: &Vector,
-    dir: &Vector,
-    mut alpha_lo: f64,
-    mut alpha_hi: f64,
-    mut phi_lo: f64,
-    phi0: f64,
-    dphi0: f64,
-    c1: f64,
-    c2: f64,
-    max_iter: usize,
-) -> Option<WolfeSearchResult>
-{
-    let mut alpha = 0.5 * (alpha_lo + alpha_hi);
-
-    for _ in 0..max_iter
-    {
-        alpha = 0.5 * (alpha_lo + alpha_hi);
-        let (phi, grad) = eval_along(fcn, x0, dir, alpha);
-        let dphi = grad.dot(dir);
-
-        if (alpha_hi - alpha_lo).abs() < 1e-16 * alpha_lo.abs().max(1.0)
-        {
-            return Some(WolfeSearchResult {
-                alpha,
-                fx: phi,
-                grad_fx: grad,
-            });
-        }
-
-        if phi > phi0 + c1 * alpha * dphi0 || phi >= phi_lo
-        {
-            alpha_hi = alpha;
-        }
-        else
-        {
-            if dphi.abs() <= -c2 * dphi0
-            {
-                return Some(WolfeSearchResult {
-                    alpha,
-                    fx: phi,
-                    grad_fx: grad,
-                });
-            }
-
-            if dphi * (alpha_hi - alpha_lo) >= 0.0
-            {
-                alpha_hi = alpha_lo;
-            }
-            alpha_lo = alpha;
-            phi_lo = phi;
-        }
-    }
-
-    let (phi, grad) = eval_along(fcn, x0, dir, alpha);
-    Some(WolfeSearchResult {
-        alpha,
-        fx: phi,
-        grad_fx: grad,
-    })
-}
-//}}}
-
-//{{{ fn: line_search_wolfe
-#[allow(clippy::too_many_arguments)]
-#[trace_fn]
-fn line_search_wolfe<F: RealFn>(
-    fcn: &mut F,
-    x0: &Vector,
-    dir: &Vector,
-    f0: f64,
-    g0: &Vector,
-    alpha_max: f64,
-    c1: f64,
-    c2: f64,
-    max_iter: usize,
-) -> Option<WolfeSearchResult>
-{
-    let dphi0 = g0.dot(dir);
-    if dphi0 >= 0.0
-    {
-        return None;
-    }
-
-    let mut alpha_prev = 0.0;
-    let mut phi_prev = f0;
-    let mut alpha = if alpha_max.is_finite()
-    {
-        (0.99 * alpha_max).min(1.0)
-    }
-    else
-    {
-        1.0
-    }
-    .max(1e-30);
-    let mut last_result: Option<WolfeSearchResult> = None;
-
-    for i in 0..max_iter
-    {
-        let (phi, grad) = eval_along(fcn, x0, dir, alpha);
-        let dphi = grad.dot(dir);
-        last_result = Some(WolfeSearchResult {
-            alpha,
-            fx: phi,
-            grad_fx: grad.clone(),
-        });
-
-        if phi > f0 + c1 * alpha * dphi0 || (i > 0 && phi >= phi_prev)
-        {
-            return zoom(
-                fcn, x0, dir, alpha_prev, alpha, phi_prev, f0, dphi0, c1, c2, max_iter,
-            );
-        }
-
-        if dphi.abs() <= -c2 * dphi0
-        {
-            return Some(WolfeSearchResult {
-                alpha,
-                fx: phi,
-                grad_fx: grad,
-            });
-        }
-
-        if dphi >= 0.0
-        {
-            return zoom(
-                fcn, x0, dir, alpha, alpha_prev, phi, f0, dphi0, c1, c2, max_iter,
-            );
-        }
-
-        alpha_prev = alpha;
-        phi_prev = phi;
-        if alpha_max.is_finite() && alpha >= 0.99 * alpha_max
-        {
-            return Some(WolfeSearchResult {
-                alpha,
-                fx: phi,
-                grad_fx: grad,
-            });
-        }
-
-        alpha = if alpha_max.is_finite()
-        {
-            (2.0 * alpha).min(alpha_max)
-        }
-        else
-        {
-            2.0 * alpha
-        };
-    }
-
-    last_result
 }
 //}}}
 
@@ -606,7 +407,6 @@ impl<F: RealFn> Minimizer for Bfgsb<F>
         let mut projected_grad_norm = projected_gradient_inf_norm(&self.bounds, &xk, &gk);
         let max_iter = self.opts.bound_opts.base_opts.max_iter;
         let ftol = self.opts.bound_opts.constraint_tol.max(f64::EPSILON);
-        let (c1, c2, max_ls) = wolfe_params(&self.opts.ls_method);
 
         for k in 0..max_iter
         {
@@ -687,19 +487,32 @@ impl<F: RealFn> Minimizer for Bfgsb<F>
                 return Err(Error::LineSearch(LineSearchError::NoStepFound));
             }
 
-            let search_result = line_search_wolfe(
-                &mut self.fcn,
-                &xk,
+            let alpha_init = if max_feasible_alpha.is_finite()
+            {
+                (0.99 * max_feasible_alpha).min(1.0)
+            }
+            else
+            {
+                1.0
+            }
+            .max(1e-30);
+
+            let iter_k = IterData {
+                x: xk.clone(),
+                fx: fk,
+                grad_fx: gk.clone(),
+                norm_grad_fx: gk.norm(),
+            };
+
+            let search_result = ls::search(
+                self.fcn.clone(),
+                &iter_k,
                 &dir,
-                fk,
-                &gk,
-                max_feasible_alpha,
-                c1,
-                c2,
-                max_ls,
+                alpha_init,
+                self.opts.ls_method.clone(),
             );
 
-            let Some(search_result) = search_result
+            let Ok(search_result) = search_result
             else
             {
                 if !self.quadratic_model.had_first_update
@@ -710,10 +523,10 @@ impl<F: RealFn> Minimizer for Bfgsb<F>
                 continue;
             };
 
-            let mut xk_new: Vector = (&xk + search_result.alpha * &dir).into();
+            let mut xk_new = search_result.x;
             self.bounds.clamp(&mut xk_new);
-            let fk_new = search_result.fx;
-            let gk_new = search_result.grad_fx;
+            let fk_new = self.fcn.eval(&xk_new);
+            let gk_new = self.fcn.grad(&xk_new);
             let sk: Vector = (&xk_new - &xk).into();
             let yk: Vector = (&gk_new - &gk).into();
             let rel_red = (fk - fk_new) / fk.abs().max(fk_new.abs()).max(1.0);
