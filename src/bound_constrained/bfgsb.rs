@@ -15,11 +15,14 @@ use crate::{IterData, Matrix, Minimizer, RealFn, Vector};
 //}}}
 //{{{ dep imports
 use topohedral_linalg::VecType::Col;
-use topohedral_linalg::{MatMul, ReduceOps, Shape, SubViewable, TransformOps, VectorOps};
+use topohedral_linalg::{
+    MatMul, ReduceOps, Shape, SubViewable, SubViewableMut, TransformOps, VectorOps,
+};
 use topohedral_tracing::*;
 //}}}
 //--------------------------------------------------------------------------------------------------
 
+//{{{ struct QuadraticModel
 struct QuadraticModel
 {
     fk: f64,
@@ -28,7 +31,8 @@ struct QuadraticModel
     bmatk: Matrix,
     had_first_update: bool,
 }
-
+//}}}
+//{{{ impl QuadraticModel
 impl QuadraticModel
 {
     #[trace_fn]
@@ -120,7 +124,7 @@ impl QuadraticModel
         true
     }
 }
-
+//}}}
 //{{{ struct: CauchyPoint
 struct CauchyPoint
 {
@@ -129,7 +133,6 @@ struct CauchyPoint
     pub bound_statuses: Vec<BoundStatus>,
 }
 //}}}
-
 //{{{ fn: cauchy_point
 #[trace_fn]
 fn cauchy_point(
@@ -248,7 +251,8 @@ fn cauchy_point(
     }
 }
 //}}}
-
+//{{{ fn: subspace_minimize
+#[trace_fn]
 fn subspace_minimize(
     bounds: &BoundsConstraints,
     quadratic_model: &QuadraticModel,
@@ -288,15 +292,10 @@ fn subspace_minimize(
     {
         reduced_gradient[i] = -(gk[*free_idx] + bmat_x_minus_xk[*free_idx]);
     }
-    let mut reduced_bmat = Matrix::zeros(n, n);
 
-    for (i, free_idx_i) in free_variable_indices.iter().enumerate()
-    {
-        for (j, free_idx_j) in free_variable_indices.iter().enumerate()
-        {
-            reduced_bmat[(j, i)] = bmatk[(*free_idx_j, *free_idx_i)]
-        }
-    }
+    let reduced_bmat = bmatk
+        .subview_indices(&free_variable_indices, &free_variable_indices)
+        .to_dmatrix();
 
     let Ok(reduced_direction) = reduced_bmat.solve(&reduced_gradient)
     else
@@ -304,17 +303,16 @@ fn subspace_minimize(
         return cauchy_point.cauchy_point.clone();
     };
     let mut full_direction = Vector::zeros_vec(xk.len(), Col);
-    for (i, free_index) in free_variable_indices.iter().enumerate()
-    {
-        full_direction[*free_index] = reduced_direction[i];
-    }
+    full_direction
+        .rows_indices_mut(&free_variable_indices)
+        .copy_from(&reduced_direction);
 
     let alpha_min = bounds.max_feasible_step(x_cauchy, &full_direction).min(1.0);
-    let mut out: Vector = (x_cauchy + alpha_min * full_direction).into();
+    let mut out: Vector = (x_cauchy + alpha_min * &full_direction).into();
     bounds.clamp(&mut out);
     out
 }
-
+//}}}
 //{{{ fn: projected_gradient_inf_norm
 #[trace_fn]
 fn projected_gradient_inf_norm(
@@ -330,8 +328,8 @@ fn projected_gradient_inf_norm(
         .unwrap_or(0.0)
 }
 //}}}
-
 //{{{ fn: capped_line_search_method
+#[trace_fn]
 fn capped_line_search_method(
     method: &LineSearchMethod,
     step_max: f64,
@@ -357,14 +355,15 @@ fn capped_line_search_method(
     method
 }
 //}}}
-
+//{{{ struct: Options
 #[derive(Clone)]
 pub struct Options
 {
     pub bound_opts: BoundConstrainedOptions,
     pub ls_method: LineSearchMethod,
 }
-
+//}}}
+//{{{ struct: Bfgsb
 pub struct Bfgsb<F: RealFn>
 {
     fcn: F,
@@ -375,7 +374,8 @@ pub struct Bfgsb<F: RealFn>
 
     quadratic_model: QuadraticModel,
 }
-
+//}}}
+//{{{ impl Bfgsb
 impl<F: RealFn> Bfgsb<F>
 {
     #[trace_fn]
@@ -420,7 +420,8 @@ impl<F: RealFn> Bfgsb<F>
         None
     }
 }
-
+//}}}
+//{{{ impl Minimizer for Bfgsb
 impl<F: RealFn> Minimizer for Bfgsb<F>
 {
     type Error = Error;
@@ -592,6 +593,7 @@ impl<F: RealFn> Minimizer for Bfgsb<F>
         Err(Error::MaxIterations(max_iter as usize))
     }
 }
+//}}}
 
 //-------------------------------------------------------------------------------------------------
 //{{{ mod: tests
