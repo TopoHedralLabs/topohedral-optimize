@@ -331,6 +331,33 @@ fn projected_gradient_inf_norm(
 }
 //}}}
 
+//{{{ fn: capped_line_search_method
+fn capped_line_search_method(
+    method: &LineSearchMethod,
+    step_max: f64,
+) -> LineSearchMethod
+{
+    let mut method = method.clone();
+    if step_max.is_finite()
+    {
+        match &mut method
+        {
+            LineSearchMethod::Thuente(opts) =>
+            {
+                opts.ls_opts.step_max = step_max;
+                opts.ls_opts.step_min = opts.ls_opts.step_min.min(step_max);
+            }
+            LineSearchMethod::Nocedal(opts) =>
+            {
+                opts.ls_opts.step_max = step_max;
+                opts.ls_opts.step_min = opts.ls_opts.step_min.min(step_max);
+            }
+        }
+    }
+    method
+}
+//}}}
+
 #[derive(Clone)]
 pub struct Options
 {
@@ -509,7 +536,7 @@ impl<F: RealFn> Minimizer for Bfgsb<F>
                 &iter_k,
                 &dir,
                 alpha_init,
-                self.opts.ls_method.clone(),
+                capped_line_search_method(&self.opts.ls_method, max_feasible_alpha),
             );
 
             let Ok(search_result) = search_result
