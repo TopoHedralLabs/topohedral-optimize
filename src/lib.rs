@@ -21,9 +21,6 @@
 //{{{ dep imports
 //}}}
 //--------------------------------------------------------------------------------------------------
-#![allow(incomplete_features)]
-#![feature(generic_const_exprs)]
-
 //{{{ mod: submodules
 mod common;
 //}}}
@@ -39,5 +36,6 @@ pub mod bound_constrained;
 pub mod constrained;
 pub mod constraints;
 pub mod line_search;
+pub mod quadratic_model;
 pub mod unconstrained;
 //}}}
