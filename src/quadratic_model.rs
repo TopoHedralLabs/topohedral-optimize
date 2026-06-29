@@ -145,18 +145,18 @@ impl QuadraticModel
         let n = self.xk.len();
         let sk = delta_x;
         let yk = delta_x;
-        let bsk = hess_mult_delta_x;
+        let b_sk = hess_mult_delta_x;
+        let sk_b_sk = sk.dot(b_sk);
+
+        let yk_dot_sk = yk.dot(sk);
 
         for i in 0..n
         {
             for j in 0..n
             {
-
+                self.hess_k[(i, j)] += (yk[i] * yk[j] / yk_dot_sk) - b_sk[i] * b_sk[j];
             }
         }
-        self.hess_k
-
-
 
         false
     }
