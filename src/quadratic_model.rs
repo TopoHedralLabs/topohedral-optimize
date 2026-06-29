@@ -72,17 +72,23 @@ impl QuadraticModel
     {
         let n = self.xk.len();
         let sk = delta_x;
-        let yk = delta_x;
+        let yk = delta_grad_fx;
+        let hessk_mult_sk = self.hess_k.matmul(sk);
         let sk_dot_yk = sk.dot(yk);
         let yk_dot_yk = yk.dot(yk);
+
+        if sk_dot_yk <= f64::EPSILON * yk_dot_yk.max(1.0)
+        {
+            return false;
+        }
 
         if !self.had_first_update
         {
             self.first_update(yk_dot_yk, sk_dot_yk, update_type);
         }
 
-        let curvature = sk.dot(&(self.hess_k.matmul(sk)));
-        if sk_dot_yk <= f64::EPSILON * yk_dot_yk.max(1.0)
+        let curvature = sk.dot(&hessk_mult_sk);
+        if curvature < 0.0
         {
             return false;
         }
@@ -133,10 +139,24 @@ impl QuadraticModel
         &mut self,
         delta_x: &Vector,
         delta_grad_fx: &Vector,
+        hess_mult_delta_x: &Vector,
     ) -> bool
     {
+        let n = self.xk.len();
         let sk = delta_x;
         let yk = delta_x;
+        let bsk = hess_mult_delta_x;
+
+        for i in 0..n
+        {
+            for j in 0..n
+            {
+
+            }
+        }
+        self.hess_k
+
+
 
         false
     }
