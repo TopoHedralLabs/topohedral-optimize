@@ -9,9 +9,7 @@ use crate::common::{Matrix, Vector};
 //{{{ std imports
 //}}}
 //{{{ dep imports
-use topohedral_linalg::{
-    MatMul, ReduceOps, Shape, SubViewable, SubViewableMut, TransformOps, VecType::Col, VectorOps,
-};
+use topohedral_linalg::{MatMul, MatrixOps, OuterProduct, TransformOps, VecType::Col, VectorOps};
 use topohedral_tracing::*;
 //}}}
 //--------------------------------------------------------------------------------------------------
@@ -60,6 +58,7 @@ impl QuadraticModel
             self.hess_k[(i, i)] = 1.0;
             self.inv_hess_k[(i, i)] = 1.0;
         }
+        self.had_first_update = false;
     }
 
     #[trace_fn]
@@ -70,10 +69,8 @@ impl QuadraticModel
         update_type: UpdateType,
     ) -> bool
     {
-        let n = self.xk.len();
         let sk = delta_x;
         let yk = delta_grad_fx;
-        let hessk_mult_sk = self.hess_k.matmul(sk);
         let sk_dot_yk = sk.dot(yk);
         let yk_dot_yk = yk.dot(yk);
 
@@ -87,6 +84,7 @@ impl QuadraticModel
             self.first_update(yk_dot_yk, sk_dot_yk, update_type);
         }
 
+        let hessk_mult_sk = self.hess_k.matmul(sk);
         let curvature = sk.dot(&hessk_mult_sk);
         if curvature < 0.0
         {
@@ -97,7 +95,7 @@ impl QuadraticModel
 
         if update_type == UpdateType::Direct || update_type == UpdateType::Both
         {
-            out = out && self.try_update_direct(delta_x, delta_grad_fx);
+            out = out && self.try_update_direct(delta_x, delta_grad_fx, &hessk_mult_sk);
         }
         if update_type == UpdateType::Inverse || update_type == UpdateType::Both
         {
@@ -144,21 +142,24 @@ impl QuadraticModel
     {
         let n = self.xk.len();
         let sk = delta_x;
-        let yk = delta_x;
+        let yk = delta_grad_fx;
         let b_sk = hess_mult_delta_x;
         let sk_b_sk = sk.dot(b_sk);
-
         let yk_dot_sk = yk.dot(sk);
+
+        if sk_b_sk <= 0.0 || yk_dot_sk <= 0.0
+        {
+            return false;
+        }
 
         for i in 0..n
         {
             for j in 0..n
             {
-                self.hess_k[(i, j)] += (yk[i] * yk[j] / yk_dot_sk) - b_sk[i] * b_sk[j];
+                self.hess_k[(i, j)] += (yk[i] * yk[j] / yk_dot_sk) - (b_sk[i] * b_sk[j] / sk_b_sk);
             }
         }
-
-        false
+        true
     }
 
     fn try_update_inverse(
@@ -167,6 +168,21 @@ impl QuadraticModel
         delta_grad_fx: &Vector,
     ) -> bool
     {
-        false
+        let n = self.xk.len();
+        let sk = delta_x;
+        let yk = delta_grad_fx;
+        let yk_dot_sk = yk.dot(sk);
+        if yk_dot_sk <= 0.0
+        {
+            return false;
+        }
+        let rho_k = 1.0 / (sk.dot(yk));
+        let identity = Matrix::identity(n, n);
+        let mat1: Matrix = (&identity - rho_k * sk.outer(yk)).into();
+        let mat2 = mat1.transpose();
+        let mat3: Matrix = (rho_k * sk.outer(sk)).into();
+        let new_inv_hess = mat1.matmul(&self.inv_hess_k).matmul(mat2) + mat3;
+        self.inv_hess_k.copy_from(new_inv_hess);
+        true
     }
 }
