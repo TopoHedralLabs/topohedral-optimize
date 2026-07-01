@@ -9,122 +9,18 @@ use crate::bound_constrained::BoundConstrainedOptions;
 use crate::common::ConvergedReason;
 use crate::constraints::{BoundStatus, BoundsConstraints, CauchyPathPoint};
 use crate::line_search::{self as ls, LineSearchError, LineSearchMethod};
-use crate::{IterData, Matrix, Minimizer, RealFn, Vector};
+use crate::quadratic_model::{QuadraticModel, UpdateType::Direct};
+use crate::{IterData, Minimizer, RealFn, Vector};
 //}}}
 //{{{ std imports
 //}}}
 //{{{ dep imports
 use topohedral_linalg::VecType::Col;
-use topohedral_linalg::{
-    MatMul, ReduceOps, Shape, SubViewable, SubViewableMut, TransformOps, VectorOps,
-};
+use topohedral_linalg::{MatMul, ReduceOps, SubViewable, SubViewableMut, VectorOps};
 use topohedral_tracing::*;
 //}}}
 //--------------------------------------------------------------------------------------------------
 
-//{{{ struct QuadraticModel
-struct QuadraticModel
-{
-    fk: f64,
-    xk: Vector,
-    gk: Vector,
-    bmatk: Matrix,
-    had_first_update: bool,
-}
-//}}}
-//{{{ impl QuadraticModel
-impl QuadraticModel
-{
-    #[trace_fn]
-    fn new(n: usize) -> Self
-    {
-        QuadraticModel {
-            fk: 0.0,
-            xk: Vector::zeros_vec(n, Col),
-            gk: Vector::zeros_vec(n, Col),
-            bmatk: Matrix::identity(n, n),
-            had_first_update: false,
-        }
-    }
-
-    #[trace_fn]
-    fn reset(&mut self)
-    {
-        self.bmatk.fill(0.0);
-        for i in 0..self.bmatk.ncols()
-        {
-            self.bmatk[(i, i)] = 1.0;
-        }
-        self.had_first_update = false;
-    }
-
-    #[trace_fn]
-    fn update_iterate(
-        &mut self,
-        fk: f64,
-        xk: &Vector,
-        gk: &Vector,
-    )
-    {
-        self.fk = fk;
-        self.xk.copy_from(xk);
-        self.gk.copy_from(gk);
-    }
-
-    #[trace_fn]
-    fn try_update(
-        &mut self,
-        s: &Vector,
-        y: &Vector,
-    ) -> bool
-    {
-        let sty = s.dot(y);
-        let yty = y.dot(y);
-        if sty <= f64::EPSILON * yty.max(1.0)
-        {
-            return false;
-        }
-
-        if !self.had_first_update
-        {
-            let scale = yty / sty;
-            self.bmatk.fill(0.0);
-            for i in 0..self.bmatk.ncols()
-            {
-                self.bmatk[(i, i)] = scale;
-            }
-            self.had_first_update = true;
-        }
-
-        let bs = self.bmatk.matmul(s);
-        let sbs = s.dot(&bs);
-        if sbs <= 0.0
-        {
-            return false;
-        }
-
-        for i in 0..self.bmatk.nrows()
-        {
-            for j in 0..self.bmatk.ncols()
-            {
-                self.bmatk[(i, j)] += y[i] * y[j] / sty - bs[i] * bs[j] / sbs;
-            }
-        }
-
-        for i in 0..self.bmatk.nrows()
-        {
-            for j in (i + 1)..self.bmatk.ncols()
-            {
-                let symmetric_value = 0.5 * (self.bmatk[(i, j)] + self.bmatk[(j, i)]);
-                self.bmatk[(i, j)] = symmetric_value;
-                self.bmatk[(j, i)] = symmetric_value;
-            }
-        }
-
-        true
-    }
-}
-//}}}
 //{{{ struct: CauchyPoint
 struct CauchyPoint
 {
@@ -143,8 +39,8 @@ fn cauchy_point(
     let QuadraticModel {
         fk: _,
         xk,
-        gk,
-        bmatk,
+        grad_fk: gk,
+        hess_k: bmatk,
         ..
     } = &quadratic_model;
 
@@ -262,8 +158,8 @@ fn subspace_minimize(
     let QuadraticModel {
         fk: _,
         xk,
-        gk,
-        bmatk,
+        grad_fk: gk,
+        hess_k: bmatk,
         ..
     } = &quadratic_model;
 
@@ -371,7 +267,6 @@ pub struct Bfgsb<F: RealFn>
     x_init: Vector,
     norm_grad_fx_init: f64,
     opts: Options,
-
     quadratic_model: QuadraticModel,
 }
 //}}}
@@ -450,7 +345,7 @@ impl<F: RealFn> Minimizer for Bfgsb<F>
                 });
             }
 
-            self.quadratic_model.update_iterate(fk, &xk, &gk);
+            self.quadratic_model.update_iterate(&xk, fk, &gk);
             let cp = cauchy_point(&self.bounds, &self.quadratic_model);
 
             let has_free = cp
@@ -563,7 +458,7 @@ impl<F: RealFn> Minimizer for Bfgsb<F>
             fk = fk_new;
             gk = gk_new;
             projected_grad_norm = projected_gradient_inf_norm(&self.bounds, &xk, &gk);
-            self.quadratic_model.try_update(&sk, &yk);
+            self.quadratic_model.try_update(&sk, &yk, Direct);
 
             if let Some(reason) = self.is_converged(projected_grad_norm)
             {
@@ -602,6 +497,8 @@ mod tests
 {
     use super::*;
 
+    use crate::Matrix;
+
     use approx::assert_relative_eq;
     use topohedral_linalg::{DMatrix, DVector, VecType};
 
@@ -635,6 +532,24 @@ mod tests
         }
     }
 
+    fn test_quadratic_model(
+        fk: f64,
+        gk: &Vector,
+        bmatk: &Matrix,
+        xk: &Vector,
+    ) -> QuadraticModel
+    {
+        let n = xk.len();
+        QuadraticModel {
+            fk,
+            xk: xk.clone(),
+            grad_fk: gk.clone(),
+            hess_k: bmatk.clone(),
+            inv_hess_k: Matrix::identity(n, n),
+            had_first_update: false,
+        }
+    }
+
     #[test]
     fn cauchy_point_minimizes_model_before_any_bound_is_reached()
     {
@@ -642,13 +557,7 @@ mod tests
         let xk = colvec(&[1.0, -1.0]);
         let gk = colvec(&[2.0, -1.0]);
         let bmatk = DMatrix::<f64>::from_row_slice(&[4.0, 0.0, 0.0, 2.0], 2, 2);
-        let qm = QuadraticModel {
-            fk,
-            xk: xk.clone(),
-            gk: gk.clone(),
-            bmatk: bmatk.clone(),
-            had_first_update: false,
-        };
+        let qm = test_quadratic_model(fk, &gk, &bmatk, &xk);
         let mut bounds = BoundsConstraints::new(2);
         bounds.add_bounds(0, Some(-10.0), Some(10.0));
         bounds.add_bounds(1, Some(-10.0), Some(10.0));
@@ -685,13 +594,7 @@ mod tests
         bounds.add_bounds(0, Some(-1.0), Some(0.5));
         bounds.add_bounds(1, Some(-1.0), Some(2.0));
 
-        let qm = QuadraticModel {
-            fk,
-            xk: xk.clone(),
-            gk: gk.clone(),
-            bmatk: bmatk.clone(),
-            had_first_update: false,
-        };
+        let qm = test_quadratic_model(fk, &gk, &bmatk, &xk);
 
         let result = cauchy_point(&bounds, &qm);
 
@@ -716,13 +619,7 @@ mod tests
         let xk = colvec(&[0.0, 1.0]);
         let gk = colvec(&[1.0, -2.0]);
         let bmatk = DMatrix::<f64>::from_row_slice(&[2.0, 0.25, 0.25, 3.0], 2, 2);
-        let qm = QuadraticModel {
-            fk,
-            xk: xk.clone(),
-            gk: gk.clone(),
-            bmatk: bmatk.clone(),
-            had_first_update: false,
-        };
+        let qm = test_quadratic_model(fk, &gk, &bmatk, &xk);
         let mut bounds = BoundsConstraints::new(2);
         bounds.add_bounds(0, Some(0.0), Some(2.0));
         bounds.add_bounds(1, Some(-1.0), Some(1.0));

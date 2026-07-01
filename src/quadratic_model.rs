@@ -62,6 +62,19 @@ impl QuadraticModel
     }
 
     #[trace_fn]
+    pub fn update_iterate(
+        &mut self,
+        xk: &Vector,
+        fk: f64,
+        grad_fk: &Vector,
+    )
+    {
+        self.xk.copy_from(xk);
+        self.fk = fk;
+        self.grad_fk.copy_from(grad_fk);
+    }
+
+    #[trace_fn]
     pub fn try_update(
         &mut self,
         delta_x: &Vector,
