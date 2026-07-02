@@ -65,16 +65,8 @@ impl<F: RealFn> QuasiNewton<F>
             x_init: x0,
             norm_grad_fx_init: norm_grad_0,
             opts,
-            quadratic_model: Self::identity_quadratic_model(n),
+            quadratic_model: QuadraticModel::new(n),
         }
-    }
-
-    fn identity_quadratic_model(n: usize) -> QuadraticModel
-    {
-        let mut quadratic_model = QuadraticModel::new(n);
-        // Preserve the legacy unconstrained BFGS identity initialization.
-        quadratic_model.had_first_update = true;
-        quadratic_model
     }
 
     #[trace_fn]
@@ -148,7 +140,7 @@ impl<F: RealFn> QuasiNewton<F>
     {
         if !self.update_hessian(xk_prev, xk, grad_fk_prev, grad_fk)
         {
-            self.quadratic_model = Self::identity_quadratic_model(grad_fk.len());
+            self.quadratic_model.reset();
             return -grad_fk.clone();
         }
         -self.quadratic_model.inv_hess_k.matmul(grad_fk)
@@ -197,15 +189,35 @@ impl<F: RealFn> Minimizer for QuasiNewton<F>
             let alpha_init =
                 ls::initial_step(iter_k.fx, iter_prev_k.fx, iter_k.grad_fx.dot(&dir_k));
 
+            let fx_prev = iter_prev_k.fx;
             iter_prev_k = iter_k;
 
-            iter_k = ls::search(
+            let search_result = ls::search(
                 self.fcn.clone(),
                 &iter_prev_k,
                 &dir_k,
                 alpha_init,
                 self.opts.ls_method.clone(),
-            )?;
+            );
+
+            iter_k = match search_result
+            {
+                Ok(iter) => iter,
+                Err(_) =>
+                {
+                    self.quadratic_model.reset();
+                    dir_k = -iter_prev_k.grad_fx.clone();
+                    let alpha_init =
+                        ls::initial_step(iter_prev_k.fx, fx_prev, iter_prev_k.grad_fx.dot(&dir_k));
+                    ls::search(
+                        self.fcn.clone(),
+                        &iter_prev_k,
+                        &dir_k,
+                        alpha_init,
+                        self.opts.ls_method.clone(),
+                    )?
+                }
+            };
 
             dir_k = self.update_direction(
                 &iter_prev_k.x,
