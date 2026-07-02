@@ -44,8 +44,7 @@ fn implied_linear_term(model: &QuadraticModel) -> Vector
 
 fn implied_constant_term(model: &QuadraticModel) -> f64
 {
-    model.fk - model.grad_fk.dot(&model.xk)
-        + 0.5 * model.xk.dot(&model.hess_k.matmul(&model.xk))
+    model.fk - model.grad_fk.dot(&model.xk) + 0.5 * model.xk.dot(&model.hess_k.matmul(&model.xk))
 }
 
 fn assert_vector_close(
@@ -97,7 +96,9 @@ fn coordinate_updates_recover_quadratic_coefficients()
     let mut model = QuadraticModel::new(3);
     model.xk.copy_from(&xk);
     model.fk = quadratic_value(&hess, &linear, constant, &xk);
-    model.grad_fk.copy_from(&quadratic_grad(&hess, &linear, &xk));
+    model
+        .grad_fk
+        .copy_from(&quadratic_grad(&hess, &linear, &xk));
 
     for i in 0..3
     {
@@ -110,11 +111,7 @@ fn coordinate_updates_recover_quadratic_coefficients()
 
     assert_matrix_close(&model.hess_k, &hess, 1e-12);
     assert_vector_close(&implied_linear_term(&model), &linear, 1e-12);
-    assert_relative_eq!(
-        implied_constant_term(&model),
-        constant,
-        epsilon = 1e-12
-    );
+    assert_relative_eq!(implied_constant_term(&model), constant, epsilon = 1e-12);
 
     let x = colvec(&[-0.5, 1.5, 0.75]);
     let model_value = model.fk
