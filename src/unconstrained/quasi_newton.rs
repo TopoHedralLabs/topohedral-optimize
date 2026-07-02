@@ -12,6 +12,8 @@ use crate::quadratic_model::{QuadraticModel, UpdateType::Inverse};
 use crate::{ConvergedReason, IterData, Minimizer, RealFn, Returns};
 //}}}
 //{{{ std imports
+#[allow(unused_imports)]
+use topohedral_linalg::MatrixOps;
 use topohedral_linalg::{MatMul, VectorOps};
 //}}}
 //{{{ dep imports

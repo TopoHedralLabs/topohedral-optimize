@@ -18,7 +18,7 @@ use crate::{IterData, RealFn};
 //{{{ dep imports
 #[allow(unused_imports)]
 use topohedral_linalg::MatrixOps;
-use topohedral_linalg::{ReduceOps, VecType, VectorOps};
+use topohedral_linalg::{ReduceOps, VectorOps};
 use topohedral_tracing::*;
 //}}}
 //--------------------------------------------------------------------------------------------------
@@ -69,7 +69,7 @@ impl<F: RealFn> RestrictedFunction<F>
     #[trace_fn]
     fn new(
         fcn: F,
-        x: &Vector,
+        _x: &Vector,
         bound_statuses: Vec<BoundStatus>,
     ) -> Self
     {

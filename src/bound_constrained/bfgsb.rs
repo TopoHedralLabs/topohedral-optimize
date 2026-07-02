@@ -86,13 +86,13 @@ fn cauchy_point(
 
     let cauchy_path = bounds.cauchy_path(xk, &dir);
     let mut alpha_old = 0.0;
-    for i in 0..cauchy_path.len()
+    for path_point in &cauchy_path
     {
         let CauchyPathPoint {
             alpha: alpha_i,
             variable_index: vi_i,
             bound_status: bs_i,
-        } = cauchy_path[i];
+        } = *path_point;
 
         let d_alpha = alpha_i - alpha_old;
 
@@ -348,10 +348,7 @@ impl<F: RealFn> Minimizer for Bfgsb<F>
             self.quadratic_model.update_iterate(&xk, fk, &gk);
             let cp = cauchy_point(&self.bounds, &self.quadratic_model);
 
-            let has_free = cp
-                .bound_statuses
-                .iter()
-                .any(|status| *status == BoundStatus::Free);
+            let has_free = cp.bound_statuses.contains(&BoundStatus::Free);
 
             let z = if has_free
             {

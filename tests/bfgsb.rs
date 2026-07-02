@@ -496,7 +496,7 @@ fn kkt_residual_is_small_on_representative_problems()
     );
     assert!(kkt_residual(Rosenbrock { n: 5 }, &ret_rosen.xmin, &bounds_rosen) <= 1e-5);
 
-    let bounds_box = bounds_from_pairs(&vec![(Some(0.0), Some(0.5)); 4]);
+    let bounds_box = bounds_from_pairs(&[(Some(0.0), Some(0.5)); 4]);
     let ret_box = solve_bfgsb(
         Rosenbrock { n: 4 },
         DVector::<f64>::from_value_vec(0.3, 4, VecType::Col),
