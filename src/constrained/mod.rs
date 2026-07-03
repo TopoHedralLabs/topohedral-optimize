@@ -3,7 +3,10 @@
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
-use crate::common::{arc_real_fn, CountingRealFn, RealFn, RealVectorFn, Vector};
+use crate::{
+    common::{arc_real_fn, CountingRealFn, RealFn, RealVectorFn, Vector},
+    constraints::BoundsConstraints,
+};
 //}}}
 //{{{ std imports
 //}}}
@@ -38,6 +41,7 @@ pub use factory::Method as ConstrainedMethod;
 #[trace_fn]
 pub fn minimize<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn>(
     fcn: F1,
+    bounds: Option<BoundsConstraints>,
     eq_constraints: Option<F2>,
     ieq_constraints: Option<F3>,
     x0: Vector,
@@ -49,6 +53,7 @@ pub fn minimize<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn>(
         let counting_fcn = arc_real_fn(CountingRealFn::new(fcn));
         let mut minimizer = factory::create(
             counting_fcn.clone(),
+            bounds,
             eq_constraints,
             ieq_constraints,
             x0,
@@ -62,7 +67,8 @@ pub fn minimize<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn>(
     }
     else
     {
-        let mut minimizer = factory::create(fcn, eq_constraints, ieq_constraints, x0, method);
+        let mut minimizer =
+            factory::create(fcn, bounds, eq_constraints, ieq_constraints, x0, method);
         minimizer.minimize()
     }
 }

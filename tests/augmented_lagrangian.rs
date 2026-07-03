@@ -429,6 +429,7 @@ fn test_quadratic_without_constraints_matches_unconstrained_reference(
 
     let ret = constrained_minimize(
         quad,
+        None,
         None::<NoConstraints>,
         None::<NoConstraints>,
         x0,
@@ -473,6 +474,7 @@ fn test_quadratic_with_bound_constraints_matches_reference(
 
     let ret = constrained_minimize(
         quad,
+        None,
         None::<NoConstraints>,
         Some(ieq_constraints),
         x0,
@@ -515,6 +517,7 @@ fn test_quartic_without_constraints_matches_unconstrained_reference(
     let x0_in = colvec(&[11.0, 11.0, 11.0, 11.0, 11.0]);
     let ret = constrained_minimize(
         quart,
+        None,
         None::<NoConstraints>,
         None::<NoConstraints>,
         x0_in,
@@ -563,6 +566,7 @@ fn test_quartic_with_bound_constraints_matches_reference(
 
     let ret = constrained_minimize(
         quart,
+        None,
         None::<NoConstraints>,
         Some(ieq_constraints),
         x0,
@@ -602,6 +606,7 @@ fn test_rosenbrock_without_constraints_matches_unconstrained_reference(
     let rosenbrock = Rosenbrock::new();
     let ret = constrained_minimize(
         rosenbrock,
+        None,
         None::<NoConstraints>,
         None::<NoConstraints>,
         x0,

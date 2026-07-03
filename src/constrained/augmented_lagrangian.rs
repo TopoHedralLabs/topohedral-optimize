@@ -7,6 +7,7 @@
 use crate::{
     common::{arc_real_fn, ConvergedReason, CountingRealFn, IterData, Returns},
     constrained::{ConstrainedError, ConstriainedOptions},
+    constraints::BoundsConstraints,
     unconstrained::{minimize, UnconstrainedMethod, UnconstrainedReturns},
     Matrix, Minimizer, RealFn, RealVectorFn, Vector,
 };
@@ -762,6 +763,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
     #[trace_fn]
     pub fn new(
         fcn: F1,
+        bounds: Option<BoundsConstraints>,
         eq_constraints: Option<F2>,
         ieq_constraints: Option<F3>,
         x0: Vector,

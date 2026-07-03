@@ -9,6 +9,7 @@ use crate::{
         augmented_lagrangian::AugmentedLagrangian, common::Error, AugmentedLagrangianOptions,
         ConstriainedOptions,
     },
+    constraints::BoundsConstraints,
     unconstrained::UnconstrainedMethod,
     Minimizer, RealFn, RealVectorFn, Vector,
 };
@@ -71,6 +72,7 @@ impl Method
 #[trace_fn]
 pub fn create<'a, F1: RealFn + 'a, F2: RealVectorFn + 'a, F3: RealVectorFn + 'a>(
     fcn: F1,
+    bounds: Option<BoundsConstraints>,
     eq_constraints: Option<F2>,
     ieq_constraints: Option<F3>,
     x0: Vector,
@@ -81,6 +83,7 @@ pub fn create<'a, F1: RealFn + 'a, F2: RealVectorFn + 'a, F3: RealVectorFn + 'a>
     {
         Method::AugmentedLagrangian(opts) => Box::new(AugmentedLagrangian::new(
             fcn,
+            bounds,
             eq_constraints,
             ieq_constraints,
             x0,
