@@ -29,5 +29,7 @@ pub enum Error
     UnconstrainedError(#[from] UnconstrainedError),
     #[error("Maximum iterations of {0} reached")]
     MaxIterations(usize),
+    #[error("Cannot use bounds without inner bounded solver")]
+    BoundsWithoutBoundsSolver,
 }
 //}}}

@@ -28,46 +28,6 @@ pub enum Method
     AugmentedLagrangian(AugmentedLagrangianOptions),
 }
 //}}}
-//{{{ impl: Method
-impl Method
-{
-    #[trace_fn]
-    pub fn uncon_method_mut(&mut self) -> &mut UnconstrainedMethod
-    {
-        match self
-        {
-            Method::AugmentedLagrangian(aut_opts) => aut_opts.uncon_method_mut(),
-        }
-    }
-
-    #[trace_fn]
-    pub fn uncon_method(&self) -> &UnconstrainedMethod
-    {
-        match self
-        {
-            Method::AugmentedLagrangian(aut_opts) => aut_opts.uncon_method(),
-        }
-    }
-
-    #[trace_fn]
-    pub fn con_opts_mut(&mut self) -> &mut ConstriainedOptions
-    {
-        match self
-        {
-            Method::AugmentedLagrangian(aut_opts) => &mut aut_opts.constrained_opts,
-        }
-    }
-
-    #[trace_fn]
-    pub fn con_opts(&self) -> &ConstriainedOptions
-    {
-        match self
-        {
-            Method::AugmentedLagrangian(aut_opts) => &aut_opts.constrained_opts,
-        }
-    }
-}
-//}}}
 //{{{ fun: create
 #[trace_fn]
 pub fn create<'a, F1: RealFn + 'a, F2: RealVectorFn + 'a, F3: RealVectorFn + 'a>(
@@ -77,18 +37,18 @@ pub fn create<'a, F1: RealFn + 'a, F2: RealVectorFn + 'a, F3: RealVectorFn + 'a>
     ieq_constraints: Option<F3>,
     x0: Vector,
     method: Method,
-) -> Box<dyn Minimizer<Error = Error> + 'a>
+) -> Result<Box<dyn Minimizer<Error = Error> + 'a>, Error>
 {
     match method
     {
-        Method::AugmentedLagrangian(opts) => Box::new(AugmentedLagrangian::new(
+        Method::AugmentedLagrangian(opts) => Ok(Box::new(AugmentedLagrangian::new(
             fcn,
             bounds,
             eq_constraints,
             ieq_constraints,
             x0,
             opts,
-        )),
+        ))),
     }
 }
 

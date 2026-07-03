@@ -5,8 +5,9 @@
 
 //{{{ crate imports
 use crate::{
+    bound_constrained::BoundConstrainedMethod,
     common::{arc_real_fn, ConvergedReason, CountingRealFn, IterData, Returns},
-    constrained::{ConstrainedError, ConstriainedOptions},
+    constrained::{ConstrainedError, ConstrainedMethod, ConstriainedOptions},
     constraints::BoundsConstraints,
     unconstrained::{minimize, UnconstrainedMethod, UnconstrainedReturns},
     Matrix, Minimizer, RealFn, RealVectorFn, Vector,
@@ -31,19 +32,26 @@ use topohedral_tracing::*;
 
 //{{{ enum: LagrangianType
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-enum LagrangianType
+pub enum LagrangianType
 {
     AugmentedLagrangian,
     Lagrangian,
 }
 //}}}
 
+#[derive(Clone)]
+pub enum InnerMethod
+{
+    Unconstrainted(UnconstrainedMethod),
+    BoundConstrained(BoundConstrainedMethod),
+}
+
 //{{{ struct Options
 #[derive(Clone)]
 pub struct Options
 {
     pub constrained_opts: ConstriainedOptions,
-    pub uncon_method: UnconstrainedMethod,
+    pub inner_method: InnerMethod,
     pub initial_penalty: f64,
     pub constraint_improvement_factor: f64,
     pub penalty_growth_factor: f64,
@@ -55,7 +63,7 @@ impl Options
     #[trace_fn]
     pub fn new(
         constrained_opts: ConstriainedOptions,
-        uncon_method: UnconstrainedMethod,
+        inner_method: InnerMethod,
         initial_penalty: f64,
         constraint_improvement_factor: f64,
         penalty_growth_factor: f64,
@@ -63,7 +71,7 @@ impl Options
     {
         Self {
             constrained_opts,
-            uncon_method,
+            inner_method,
             initial_penalty,
             constraint_improvement_factor,
             penalty_growth_factor,
@@ -71,15 +79,15 @@ impl Options
     }
 
     #[trace_fn]
-    pub(crate) fn uncon_method_mut(&mut self) -> &mut UnconstrainedMethod
+    pub(crate) fn inner_method_mut(&mut self) -> &mut InnerMethod
     {
-        &mut self.uncon_method
+        &mut self.inner_method
     }
 
     #[trace_fn]
-    pub(crate) fn uncon_method(&self) -> &UnconstrainedMethod
+    pub(crate) fn inner_method(&self) -> &InnerMethod
     {
-        &self.uncon_method
+        &self.inner_method
     }
 }
 //}}}
@@ -770,8 +778,6 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
         opts: Options,
     ) -> Self
     {
-        assert!(!opts.uncon_method.uncon_opts().make_counting);
-
         //{{{ trace
         trace!(target: "aug", "Creating new Augmented Lagrangian function");
         //}}}
@@ -932,15 +938,15 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
     #[trace_fn]
     fn set_inner_tolerances(&self) -> UnconstrainedMethod
     {
-        let mut uncon_method = self.opts.uncon_method.clone();
-        uncon_method.uncon_opts_mut().grad_rtol = 0.0;
+        let mut inner_method = self.opts.inner_method.clone();
+        inner_method.uncon_opts_mut().grad_rtol = 0.0;
 
         self.fcn.lock().unwrap().with_inner_mut(|fcn| {
             if !fcn.is_constrained()
             {
-                uncon_method.uncon_opts_mut().grad_rtol =
+                inner_method.uncon_opts_mut().grad_rtol =
                     self.opts.constrained_opts.base_opts.grad_rtol;
-                uncon_method.uncon_opts_mut().grad_atol =
+                inner_method.uncon_opts_mut().grad_atol =
                     self.opts.constrained_opts.base_opts.grad_atol;
                 return;
             }
@@ -977,10 +983,10 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
             //{{{ trace
             info!(target: "aug", "Setting innner atol to {atol:.4e}");
             //}}}
-            uncon_method.uncon_opts_mut().grad_atol = atol;
+            inner_method.uncon_opts_mut().grad_atol = atol;
         });
 
-        uncon_method
+        inner_method
     }
 }
 //}}}
