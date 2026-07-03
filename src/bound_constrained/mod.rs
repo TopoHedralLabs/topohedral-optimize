@@ -18,12 +18,16 @@ use topohedral_tracing::*;
 
 //{{{ mod: submodules
 mod asa;
+mod bfgsb;
 mod common;
 mod factory;
 mod utils;
 //}}}
 //{{{ pub use: asa exports
 pub use asa::{ActiveSetAlgorithm, Options as AsaOptions};
+//}}}
+//{{{ pub use: bfgsb exports
+pub use bfgsb::{Bfgsb, Options as BfgsbOptions};
 //}}}
 //{{{ pub use: common exports
 pub use common::{Error as BoundConstrainedError, Options as BoundConstrainedOptions};

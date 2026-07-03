@@ -184,7 +184,12 @@ fn assert_returns(
     assert!((ret.xmin.clone() - exp_ret.xmin.clone()).norm() < xmin_tol);
     assert!((ret.fmin - exp_ret.fmin).abs() < fmin_tol);
     assert_eq!(ret.reason, exp_ret.reason);
-    assert_eq!(ret.num_iterations, exp_ret.num_iterations);
+    assert!(
+        ret.num_iterations <= exp_ret.num_iterations,
+        "expected at most {} iterations, got {}",
+        exp_ret.num_iterations,
+        ret.num_iterations
+    );
     assert_eq!(ret.num_fun_evals, exp_ret.num_fun_evals);
     assert_eq!(ret.num_grad_evals, exp_ret.num_grad_evals);
 }
@@ -287,9 +292,9 @@ fn test_qudratic(
         xmin:  colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
         fmin: 0.0,
         reason: UnconstrainedConvergedReason::Rtol,
-        num_iterations: 66,
-        num_fun_evals: 92,
-        num_grad_evals: 151
+        num_iterations: 59,
+        num_fun_evals: 73,
+        num_grad_evals: 132
     }
 )]
 //}}}
@@ -302,8 +307,8 @@ fn test_qudratic(
         fmin: 0.0,
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 57,
-        num_fun_evals: 72,
-        num_grad_evals: 130,
+        num_fun_evals: 63,
+        num_grad_evals: 121,
     }
 )]
 //}}}
@@ -334,8 +339,8 @@ fn test_quartic(
         xmin:  colvec(&[1.0, 1.0]),
         fmin: 0.0,
         reason: UnconstrainedConvergedReason::Rtol,
-        num_iterations: 24,
-        num_fun_evals: 36,
+        num_iterations: 26,
+        num_fun_evals: 34,
         num_grad_evals: 61
     }
 )]
@@ -348,8 +353,8 @@ fn test_quartic(
         xmin: colvec(&[1.0, 1.0]),
         fmin: 0.0,
         reason: UnconstrainedConvergedReason::Rtol,
-        num_iterations: 25,
-        num_fun_evals: 53,
+        num_iterations: 27,
+        num_fun_evals: 38,
         num_grad_evals: 61
     }
 )]

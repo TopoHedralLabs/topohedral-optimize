@@ -5,13 +5,16 @@
 
 //{{{ crate imports
 use super::common::{Error, Options as UnconstrainedOptions};
-use crate::common::{Matrix, Vector};
+use crate::common::Vector;
 use crate::line_search as ls;
 use crate::line_search::LineSearchMethod;
+use crate::quadratic_model::{QuadraticModel, UpdateType::Inverse};
 use crate::{ConvergedReason, IterData, Minimizer, RealFn, Returns};
 //}}}
 //{{{ std imports
-use topohedral_linalg::{MatMul, MatrixOps, VecType, VectorOps};
+#[allow(unused_imports)]
+use topohedral_linalg::MatrixOps;
+use topohedral_linalg::{MatMul, VectorOps};
 //}}}
 //{{{ dep imports
 use topohedral_tracing::*;
@@ -36,17 +39,6 @@ pub struct Options
     pub restart: u64,
 }
 //}}}
-//{{{ struct: Data
-struct Data
-{
-    identity: Matrix,
-    mat1: Matrix,
-    mat2: Matrix,
-    mat3: Matrix,
-    sk: Vector,
-    yk: Vector,
-}
-//}}}
 //{{{ struct: QuasiNewton
 pub struct QuasiNewton<F: RealFn>
 {
@@ -54,7 +46,7 @@ pub struct QuasiNewton<F: RealFn>
     x_init: Vector,
     norm_grad_fx_init: f64,
     opts: Options,
-    data: Data,
+    quadratic_model: QuadraticModel,
 }
 //}}}
 //{{{ impl: QuasiNewton
@@ -69,19 +61,13 @@ impl<F: RealFn> QuasiNewton<F>
     {
         let grad_0 = fcn.grad(&x0);
         let norm_grad_0 = grad_0.norm();
+        let n = x0.len();
         Self {
             fcn,
-            x_init: x0.clone(),
+            x_init: x0,
             norm_grad_fx_init: norm_grad_0,
             opts,
-            data: Data {
-                identity: Matrix::identity(x0.len(), x0.len()),
-                mat1: Matrix::zeros(x0.len(), x0.len()),
-                mat2: Matrix::zeros(x0.len(), x0.len()),
-                mat3: Matrix::zeros(x0.len(), x0.len()),
-                sk: Vector::zeros_vec(x0.len(), VecType::Col),
-                yk: Vector::zeros_vec(x0.len(), VecType::Col),
-            },
+            quadratic_model: QuadraticModel::new(n),
         }
     }
 
@@ -128,35 +114,15 @@ impl<F: RealFn> QuasiNewton<F>
         xk: &Vector,
         grad_fk_prev: &Vector,
         grad_fk: &Vector,
-        hess_k: &mut Matrix,
-    )
+    ) -> bool
     {
         match self.opts.method
         {
             UpdateMethod::BFGS =>
             {
-                let Data {
-                    identity,
-                    mat1,
-                    mat2,
-                    mat3,
-                    sk,
-                    yk,
-                } = &mut self.data;
-
-                *sk = (xk - xk_prev).into();
-
-                *yk = (grad_fk - grad_fk_prev).into();
-
-                let rho_k = 1.0 / (sk.dot(yk));
-
-                *mat1 = (&*identity - rho_k * &sk.matmul(yk.transpose())).into();
-
-                *mat2 = (&*identity - rho_k * &yk.matmul(sk.transpose())).into();
-
-                *mat3 = rho_k * sk.matmul(sk.transpose());
-
-                *hess_k = (&mat1.matmul(hess_k.clone().matmul(mat2)) + &*mat3).into();
+                let sk: Vector = (xk - xk_prev).into();
+                let yk: Vector = (grad_fk - grad_fk_prev).into();
+                self.quadratic_model.try_update(&sk, &yk, Inverse)
             }
             UpdateMethod::DFP =>
             {
@@ -172,11 +138,14 @@ impl<F: RealFn> QuasiNewton<F>
         xk: &Vector,
         grad_fk_prev: &Vector,
         grad_fk: &Vector,
-        hess_k: &mut Matrix,
     ) -> Vector
     {
-        self.update_hessian(xk_prev, xk, grad_fk_prev, grad_fk, hess_k);
-        -hess_k.matmul(grad_fk)
+        if !self.update_hessian(xk_prev, xk, grad_fk_prev, grad_fk)
+        {
+            self.quadratic_model.reset();
+            return -grad_fk.clone();
+        }
+        -self.quadratic_model.inv_hess_k.matmul(grad_fk)
     }
 
     fn print_status(
@@ -211,8 +180,8 @@ impl<F: RealFn> Minimizer for QuasiNewton<F>
         let mut dir_k = -iter_k.grad_fx.clone();
         let max_iter = self.opts.uncon_opts.max_iter;
 
-        let n = iter_k.x.len();
-        let mut hess_k = Matrix::identity(n, n);
+        self.quadratic_model
+            .update_iterate(&iter_k.x, iter_k.fx, &iter_k.grad_fx);
 
         for k in 1..max_iter
         {
@@ -222,23 +191,44 @@ impl<F: RealFn> Minimizer for QuasiNewton<F>
             let alpha_init =
                 ls::initial_step(iter_k.fx, iter_prev_k.fx, iter_k.grad_fx.dot(&dir_k));
 
+            let fx_prev = iter_prev_k.fx;
             iter_prev_k = iter_k;
 
-            iter_k = ls::search(
+            let search_result = ls::search(
                 self.fcn.clone(),
                 &iter_prev_k,
                 &dir_k,
                 alpha_init,
                 self.opts.ls_method.clone(),
-            )?;
+            );
+
+            iter_k = match search_result
+            {
+                Ok(iter) => iter,
+                Err(_) =>
+                {
+                    self.quadratic_model.reset();
+                    dir_k = -iter_prev_k.grad_fx.clone();
+                    let alpha_init =
+                        ls::initial_step(iter_prev_k.fx, fx_prev, iter_prev_k.grad_fx.dot(&dir_k));
+                    ls::search(
+                        self.fcn.clone(),
+                        &iter_prev_k,
+                        &dir_k,
+                        alpha_init,
+                        self.opts.ls_method.clone(),
+                    )?
+                }
+            };
 
             dir_k = self.update_direction(
                 &iter_prev_k.x,
                 &iter_k.x,
                 &iter_prev_k.grad_fx,
                 &iter_k.grad_fx,
-                &mut hess_k,
             );
+            self.quadratic_model
+                .update_iterate(&iter_k.x, iter_k.fx, &iter_k.grad_fx);
 
             if let Some(reason) = self.is_converged(iter_k.norm_grad_fx)
             {

@@ -66,6 +66,9 @@ impl<F: RealFn1> LineSearch for Nocedal<F>
         }
         let c1 = self.opts.ls_opts.c1;
         let c2 = self.opts.ls_opts.c2;
+        let step_min = self.opts.ls_opts.step_min;
+        let step_max = self.opts.ls_opts.step_max;
+        alpha1 = alpha1.clamp(step_min, step_max);
         let mut alpha0 = 0.0;
         let mut phi_a0 = phi0;
         let mut dphi_a0 = dphi0;
@@ -199,10 +202,21 @@ impl<F: RealFn1> LineSearch for Nocedal<F>
                 });
             }
 
+            if alpha1 >= step_max
+            {
+                //{{{ trace
+                trace!(target: "ls", "Reached maximum step size, returning current alpha");
+                //}}}
+                return Ok(Returns {
+                    alpha: alpha1,
+                    phi_alpha: phi_a1,
+                });
+            }
+
             //{{{ trace
-            trace!(target: "ls", "Doubling alpha for next iteration to {:.4e}", 2.0 * alpha1);
+            trace!(target: "ls", "Doubling alpha for next iteration to {:.4e}", (2.0 * alpha1).min(step_max));
             //}}}
-            let alpha2 = 2.0 * alpha1;
+            let alpha2 = (2.0 * alpha1).min(step_max);
             alpha0 = alpha1;
             alpha1 = alpha2;
             phi_a0 = phi_a1;

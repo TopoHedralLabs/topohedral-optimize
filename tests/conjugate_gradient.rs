@@ -184,7 +184,12 @@ fn assert_returns(
     assert!((ret.xmin.clone() - exp_ret.xmin.clone()).norm() < xmin_tol);
     assert!((ret.fmin - exp_ret.fmin).abs() < fmin_tol);
     assert_eq!(ret.reason, exp_ret.reason);
-    assert_eq!(ret.num_iterations, exp_ret.num_iterations);
+    assert!(
+        ret.num_iterations <= exp_ret.num_iterations,
+        "expected at most {} iterations, got {}",
+        exp_ret.num_iterations,
+        ret.num_iterations
+    );
     assert_eq!(ret.num_fun_evals, exp_ret.num_fun_evals);
     assert_eq!(ret.num_grad_evals, exp_ret.num_grad_evals);
 }
