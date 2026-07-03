@@ -93,8 +93,8 @@ fn kkt_residual<F: RealFn>(
 //{{{ fun: asa_options
 fn asa_options(max_iter: u64) -> AsaOptions
 {
-    AsaOptions {
-        bound_opts: BoundConstrainedOptions {
+    AsaOptions::new(
+        BoundConstrainedOptions {
             base_opts: BaseOptions {
                 grad_rtol: 1e-8,
                 grad_atol: 1e-8,
@@ -103,7 +103,7 @@ fn asa_options(max_iter: u64) -> AsaOptions
             },
             constraint_tol: 1e-8,
         },
-        unconstrained_method: UnconstrainedMethod::QuasiNewton(QuasiNewtonOptions {
+        UnconstrainedMethod::QuasiNewton(QuasiNewtonOptions {
             uncon_opts: UnonstrainedOptions {
                 grad_rtol: 1e-8,
                 grad_atol: 1e-8,
@@ -122,16 +122,7 @@ fn asa_options(max_iter: u64) -> AsaOptions
             method: UpdateMethod::BFGS,
             restart: 10,
         }),
-        mu: 0.1,
-        rho: 0.5,
-        n1: 2,
-        n2: 1,
-        memory: 8,
-        delta: 1e-4,
-        eta: 0.5,
-        alpha_min: 1e-20,
-        alpha_max: 1e20,
-    }
+    )
 }
 //}}}
 //{{{ fun: solve_asa

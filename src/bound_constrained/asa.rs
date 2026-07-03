@@ -26,6 +26,15 @@ use topohedral_tracing::*;
 const ALPHA: f64 = 0.5;
 const BETA: f64 = 1.5;
 const SMALL: f64 = 1e-20;
+const DEFUALT_MU: f64 = 0.1;
+const DEFAULT_RHO: f64 = 0.5;
+const DEFAULT_N1: usize = 2;
+const DEFAULT_N2: usize = 1;
+const DEFAULT_MEMORY: usize = 8;
+const DEFAULT_DELTA: f64 = 1e-4;
+const DEFAULT_ETA: f64 = 0.5;
+const DEFAULT_ALPHA_MIN: f64 = 1e-20;
+const DEFAULT_ALPHA_MAX: f64 = 1e20;
 
 //{{{ struct: Options
 #[derive(Clone)]
@@ -53,6 +62,31 @@ pub struct Options
     /// Maximum allowed step
     pub alpha_max: f64,
 }
+//}}}
+//{{{ impl Optoins
+impl Options
+{
+    pub fn new(
+        bound_opts: BoundConstrainedOptions,
+        unconstrained_method: UnconstrainedMethod,
+    ) -> Self
+    {
+        Self {
+            bound_opts,
+            unconstrained_method,
+            mu: DEFUALT_MU,
+            rho: DEFAULT_RHO,
+            n1: DEFAULT_N1,
+            n2: DEFAULT_N2,
+            memory: DEFAULT_MEMORY,
+            delta: DEFAULT_DELTA,
+            eta: DEFAULT_ETA,
+            alpha_min: DEFAULT_ALPHA_MIN,
+            alpha_max: DEFAULT_ALPHA_MAX,
+        }
+    }
+}
+
 //}}}
 //{{{ struct: BoundedFunction
 #[derive(Debug, Clone)]
