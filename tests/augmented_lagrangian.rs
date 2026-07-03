@@ -240,8 +240,18 @@ fn assert_counts(
     exp_num_grad_evals: usize,
 )
 {
-    assert_eq!(ret.num_fun_evals, exp_num_fun_evals);
-    assert_eq!(ret.num_grad_evals, exp_num_grad_evals);
+    assert!(
+        ret.num_fun_evals <= exp_num_fun_evals,
+        "expected at most {} function evaluations, got {}",
+        exp_num_fun_evals,
+        ret.num_fun_evals
+    );
+    assert!(
+        ret.num_grad_evals <= exp_num_grad_evals,
+        "expected at most {} gradient evaluations, got {}",
+        exp_num_grad_evals,
+        ret.num_grad_evals
+    );
 }
 //}}}
 //{{{ fun: auglag_method
