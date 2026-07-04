@@ -4,8 +4,8 @@
 
 //{{{ crate imports
 use topohedral_optimize::constrained::{
-    minimize as constrained_minimize, AugmentedLagrangianOptions, ConstrainedMethod,
-    ConstrainedReturns, ConstriainedOptions,
+    minimize as constrained_minimize, AugmentedLagrangianInnerMethod, AugmentedLagrangianOptions,
+    ConstrainedMethod, ConstrainedReturns, ConstriainedOptions,
 };
 use topohedral_optimize::constraints::{BoundsConstraints, NoConstraints};
 use topohedral_optimize::line_search::{
@@ -269,10 +269,7 @@ fn auglag_method(mut unconstrained_method: UnconstrainedMethod) -> ConstrainedMe
             },
             constraint_tol: 1e-6,
         },
-        unconstrained_method,
-        1.0,
-        0.9,
-        2.5,
+        AugmentedLagrangianInnerMethod::Unconstrained(unconstrained_method),
     ))
 }
 //}}}

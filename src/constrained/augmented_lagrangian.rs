@@ -5,11 +5,13 @@
 
 //{{{ crate imports
 use crate::{
-    bound_constrained::BoundConstrainedMethod,
-    common::{arc_real_fn, ConvergedReason, CountingRealFn, IterData, Returns},
+    bound_constrained::{
+        self, minimize as bcon_minimize, BoundConstrainedError, BoundConstrainedMethod,
+    },
+    common::{self, arc_real_fn, ConvergedReason, CountingRealFn, IterData, Returns},
     constrained::{ConstrainedError, ConstrainedMethod, ConstriainedOptions},
     constraints::BoundsConstraints,
-    unconstrained::{minimize, UnconstrainedMethod, UnconstrainedReturns},
+    unconstrained::{minimize as uncon_minimize, UnconstrainedError, UnconstrainedMethod},
     Matrix, Minimizer, RealFn, RealVectorFn, Vector,
 };
 use core::f64;
@@ -19,6 +21,7 @@ use std::{
     collections::HashMap,
     sync::{Arc, Mutex},
 };
+use thiserror::Error;
 //}}}
 //{{{ dep imports
 #[allow(unused_imports)]
@@ -29,6 +32,10 @@ use topohedral_linalg::{
 use topohedral_tracing::*;
 //}}}
 //--------------------------------------------------------------------------------------------------
+
+const DEFUALT_INITIAL_PENALTY: f64 = 1.0;
+const DEFUALT_CONSTRAINT_IMPROVEMENT_FACTOR: f64 = 0.9;
+const DEFAULT_PENALTY_GROWTH_FACTOR: f64 = 2.5;
 
 //{{{ enum: LagrangianType
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -42,7 +49,7 @@ pub enum LagrangianType
 #[derive(Clone)]
 pub enum InnerMethod
 {
-    Unconstrainted(UnconstrainedMethod),
+    Unconstrained(UnconstrainedMethod),
     BoundConstrained(BoundConstrainedMethod),
 }
 
@@ -64,17 +71,14 @@ impl Options
     pub fn new(
         constrained_opts: ConstriainedOptions,
         inner_method: InnerMethod,
-        initial_penalty: f64,
-        constraint_improvement_factor: f64,
-        penalty_growth_factor: f64,
     ) -> Self
     {
         Self {
             constrained_opts,
             inner_method,
-            initial_penalty,
-            constraint_improvement_factor,
-            penalty_growth_factor,
+            initial_penalty: DEFUALT_INITIAL_PENALTY,
+            constraint_improvement_factor: DEFUALT_CONSTRAINT_IMPROVEMENT_FACTOR,
+            penalty_growth_factor: DEFAULT_PENALTY_GROWTH_FACTOR,
         }
     }
 
@@ -761,6 +765,7 @@ pub struct AugmentedLagrangian<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn>
 {
     fcn: Arc<Mutex<CountingRealFn<AugmentedLagrangianFcn<F1, F2, F3>>>>,
     x_init: Vector,
+    bounds: Option<BoundsConstraints>,
     opts: Options,
 }
 //}}}
@@ -796,6 +801,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
         Self {
             fcn: fcn_shared,
             x_init: x0,
+            bounds,
             opts,
         }
     }
@@ -906,7 +912,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
         &mut self,
         constraint_improvement_factor: f64,
         penalty_increase_factor: f64,
-        uncon_ret: UnconstrainedReturns,
+        uncon_ret: Returns,
     ) -> IterData
     {
         self.fcn.lock().unwrap().with_inner_mut(|fcn| {
@@ -936,60 +942,136 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
     }
     //}}}
     #[trace_fn]
-    fn set_inner_tolerances(&self) -> UnconstrainedMethod
+    fn set_inner_tolerances(&self) -> InnerMethod
     {
-        let mut inner_method = self.opts.inner_method.clone();
-        inner_method.uncon_opts_mut().grad_rtol = 0.0;
+        let inner_method = self.opts.inner_method.clone();
 
-        self.fcn.lock().unwrap().with_inner_mut(|fcn| {
-            if !fcn.is_constrained()
+        match inner_method
+        {
+            InnerMethod::Unconstrained(mut uncon_method) =>
             {
-                inner_method.uncon_opts_mut().grad_rtol =
-                    self.opts.constrained_opts.base_opts.grad_rtol;
-                inner_method.uncon_opts_mut().grad_atol =
-                    self.opts.constrained_opts.base_opts.grad_atol;
-                return;
+                uncon_method.uncon_opts_mut().grad_rtol = 0.0;
+
+                self.fcn.lock().unwrap().with_inner_mut(|fcn| {
+                    if !fcn.is_constrained()
+                    {
+                        uncon_method.uncon_opts_mut().grad_rtol =
+                            self.opts.constrained_opts.base_opts.grad_rtol;
+                        uncon_method.uncon_opts_mut().grad_atol =
+                            self.opts.constrained_opts.base_opts.grad_atol;
+                        return;
+                    }
+
+                    let (norm_eq, max_penalty_eq) = if let Some(eq_penalty) = &fcn.eq_penalty
+                    {
+                        (
+                            eq_penalty.data.values.abs_max().unwrap(),
+                            eq_penalty.data.penalties.allmax().unwrap(),
+                        )
+                    }
+                    else
+                    {
+                        (0.0, 1.0)
+                    };
+                    let (norm_ieq, max_penalty_ieq) = if let Some(ieq_penalty) = &fcn.ieq_penalty
+                    {
+                        (
+                            ieq_penalty.data.values.posed().abs_max().unwrap(),
+                            ieq_penalty.data.penalties.allmax().unwrap(),
+                        )
+                    }
+                    else
+                    {
+                        (0.0, 1.0)
+                    };
+
+                    let residual_primal = norm_eq.max(norm_ieq);
+                    let penalty_max = max_penalty_eq.max(max_penalty_ieq);
+                    let atol_min = 1e-6;
+                    let atol_max = 1e-2;
+                    let atol = (0.1 * (residual_primal.max(1.0 / penalty_max)).powf(1.5))
+                        .clamp(atol_min, atol_max);
+                    //{{{ trace
+                    info!(target: "aug", "Setting innner atol to {atol:.4e}");
+                    //}}}
+                    uncon_method.uncon_opts_mut().grad_atol = atol;
+                });
+
+                InnerMethod::Unconstrained(uncon_method)
             }
-
-            let (norm_eq, max_penalty_eq) = if let Some(eq_penalty) = &fcn.eq_penalty
+            InnerMethod::BoundConstrained(mut bcon_method) =>
             {
-                (
-                    eq_penalty.data.values.abs_max().unwrap(),
-                    eq_penalty.data.penalties.allmax().unwrap(),
-                )
+                bcon_method.bound_opts_mut().base_opts.grad_rtol = 0.0;
+
+                self.fcn.lock().unwrap().with_inner_mut(|fcn| {
+                    if !fcn.is_constrained()
+                    {
+                        bcon_method.bound_opts_mut().base_opts.grad_rtol =
+                            self.opts.constrained_opts.base_opts.grad_rtol;
+                        bcon_method.bound_opts_mut().base_opts.grad_atol =
+                            self.opts.constrained_opts.base_opts.grad_atol;
+                        return;
+                    }
+
+                    let (norm_eq, max_penalty_eq) = if let Some(eq_penalty) = &fcn.eq_penalty
+                    {
+                        (
+                            eq_penalty.data.values.abs_max().unwrap(),
+                            eq_penalty.data.penalties.allmax().unwrap(),
+                        )
+                    }
+                    else
+                    {
+                        (0.0, 1.0)
+                    };
+                    let (norm_ieq, max_penalty_ieq) = if let Some(ieq_penalty) = &fcn.ieq_penalty
+                    {
+                        (
+                            ieq_penalty.data.values.posed().abs_max().unwrap(),
+                            ieq_penalty.data.penalties.allmax().unwrap(),
+                        )
+                    }
+                    else
+                    {
+                        (0.0, 1.0)
+                    };
+
+                    let residual_primal = norm_eq.max(norm_ieq);
+                    let penalty_max = max_penalty_eq.max(max_penalty_ieq);
+                    let atol_min = 1e-6;
+                    let atol_max = 1e-2;
+                    let atol = (0.1 * (residual_primal.max(1.0 / penalty_max)).powf(1.5))
+                        .clamp(atol_min, atol_max);
+                    //{{{ trace
+                    info!(target: "aug", "Setting innner atol to {atol:.4e}");
+                    //}}}
+                    bcon_method.bound_opts_mut().base_opts.grad_atol = atol;
+                });
+
+                InnerMethod::BoundConstrained(bcon_method)
             }
-            else
-            {
-                (0.0, 1.0)
-            };
-            let (norm_ieq, max_penalty_ieq) = if let Some(ieq_penalty) = &fcn.ieq_penalty
-            {
-                (
-                    ieq_penalty.data.values.posed().abs_max().unwrap(),
-                    ieq_penalty.data.penalties.allmax().unwrap(),
-                )
-            }
-            else
-            {
-                (0.0, 1.0)
-            };
-
-            let residual_primal = norm_eq.max(norm_ieq);
-            let penalty_max = max_penalty_eq.max(max_penalty_ieq);
-            let atol_min = 1e-6;
-            let atol_max = 1e-2;
-            let atol = (0.1 * (residual_primal.max(1.0 / penalty_max)).powf(1.5))
-                .clamp(atol_min, atol_max);
-            //{{{ trace
-            info!(target: "aug", "Setting innner atol to {atol:.4e}");
-            //}}}
-            inner_method.uncon_opts_mut().grad_atol = atol;
-        });
-
-        inner_method
+        }
     }
 }
 //}}}
+
+fn inner_minimize<F: RealFn>(
+    fcn: F,
+    bounds: Option<BoundsConstraints>,
+    x0: Vector,
+    inner_method: InnerMethod,
+) -> Result<common::Returns, ConstrainedError>
+{
+    match inner_method
+    {
+        InnerMethod::Unconstrained(uncon_method) => Ok(uncon_minimize(fcn, x0, uncon_method)?),
+        InnerMethod::BoundConstrained(bcon_method) =>
+        {
+            Ok(bcon_minimize(fcn, bounds.unwrap(), x0, bcon_method)?)
+        }
+    }
+}
+
 //{{{ impl: Minimizer for AugmentedLagrangian
 impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> Minimizer for AugmentedLagrangian<F1, F2, F3>
 {
@@ -1008,7 +1090,12 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> Minimizer for AugmentedLagr
         {
             self.print_status(k, &iter_k);
             let uncon_method = self.set_inner_tolerances();
-            let ret = minimize(self.fcn.clone(), iter_prev_k.x.clone(), uncon_method)?;
+            let ret = inner_minimize(
+                self.fcn.clone(),
+                self.bounds.clone(),
+                iter_prev_k.x.clone(),
+                uncon_method,
+            )?;
             iter_k = self.update_lagrangian(alpha, beta, ret);
             iter_prev_k.copy_from(&iter_k);
             if let Some(reason) = self.is_converged(&iter_k)

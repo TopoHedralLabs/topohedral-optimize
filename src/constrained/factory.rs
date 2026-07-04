@@ -28,6 +28,27 @@ pub enum Method
     AugmentedLagrangian(AugmentedLagrangianOptions),
 }
 //}}}
+//{{{ impl Method
+impl Method
+{
+    pub fn con_opts(&self) -> &ConstriainedOptions
+    {
+        match self
+        {
+            Method::AugmentedLagrangian(opts) => &opts.constrained_opts,
+        }
+    }
+
+    pub fn con_opts_mut(&mut self) -> &mut ConstriainedOptions
+    {
+        match self
+        {
+            Method::AugmentedLagrangian(opts) => &mut opts.constrained_opts,
+        }
+    }
+}
+//}}}
+
 //{{{ fun: create
 #[trace_fn]
 pub fn create<'a, F1: RealFn + 'a, F2: RealVectorFn + 'a, F3: RealVectorFn + 'a>(

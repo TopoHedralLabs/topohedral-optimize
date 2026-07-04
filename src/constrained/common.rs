@@ -4,6 +4,7 @@
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
+use crate::bound_constrained::BoundConstrainedError;
 use crate::common::BaseOptions;
 use crate::unconstrained::UnconstrainedError;
 //}}}
@@ -27,6 +28,8 @@ pub enum Error
 {
     #[error("Unconstrianed minimization failed with error {0}")]
     UnconstrainedError(#[from] UnconstrainedError),
+    #[error("Bound constrained minimization failed with error {0}")]
+    BoundConstrainedError(#[from] BoundConstrainedError),
     #[error("Maximum iterations of {0} reached")]
     MaxIterations(usize),
     #[error("Cannot use bounds without inner bounded solver")]

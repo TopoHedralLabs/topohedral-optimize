@@ -30,7 +30,8 @@ pub use common::{Error as ConstrainedError, Options as ConstriainedOptions};
 //}}}
 //{{{ pub use: augmented_lagrangian exports
 pub use augmented_lagrangian::{
-    AugmentedLagrangian, AugmentedLagrangianFcn, Options as AugmentedLagrangianOptions,
+    AugmentedLagrangian, AugmentedLagrangianFcn, InnerMethod as AugmentedLagrangianInnerMethod,
+    Options as AugmentedLagrangianOptions,
 };
 //}}}
 //{{{ pub use: factory export
@@ -59,7 +60,7 @@ pub fn minimize<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn>(
             x0,
             method,
         );
-        let mut ret = minimizer.minimize()?;
+        let mut ret = minimizer?.minimize()?;
         let counting_fcn_lock = counting_fcn.lock().unwrap();
         ret.num_fun_evals = counting_fcn_lock.num_func_evals;
         ret.num_grad_evals = counting_fcn_lock.num_grad_evals;
@@ -69,7 +70,7 @@ pub fn minimize<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn>(
     {
         let mut minimizer =
             factory::create(fcn, bounds, eq_constraints, ieq_constraints, x0, method);
-        minimizer.minimize()
+        minimizer?.minimize()
     }
 }
 //}}}
