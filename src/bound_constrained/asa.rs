@@ -211,7 +211,7 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
     ) -> Option<ConvergedReason>
     {
         //{{{ trace
-        trace!(target: "bc", "Checking convergence");
+        trace!(target: "asa", "Checking convergence");
         //}}}
         let projected_grad =
             self.bounds
@@ -221,7 +221,7 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
             projected_grad_norm < self.opts.bound_opts.base_opts.grad_rtol * self.norm_grad_fx_init;
 
         //{{{ trace
-        trace!(target: "bc",
+        trace!(target: "asa",
             "||∇f_proj|| / |∇f_proj_0|| = {}",
             projected_grad_norm / self.norm_grad_fx_init
         );
@@ -230,7 +230,7 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
         if rtol_reached
         {
             //{{{ trace
-            trace!(target: "bc", "Rtol reached");
+            trace!(target: "asa", "Rtol reached");
             //}}}
             return Some(ConvergedReason::Rtol);
         }
@@ -240,7 +240,7 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
         if atol_reached
         {
             //{{{ trace
-            trace!(target: "bc", "Atol reached");
+            trace!(target: "asa", "Atol reached");
             //}}}
             return Some(ConvergedReason::Atol);
         }
@@ -263,7 +263,7 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
         }
         let a = s.dot(s) / s_dot_y;
         //{{{ trace
-        trace!(target: "bc", "a = {a:.4e}");
+        trace!(target: "asa", "a = {a:.4e}");
         //}}}
         a.clamp(self.opts.alpha_min, self.opts.alpha_max)
     }
@@ -289,7 +289,7 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
         if d.abs_max().unwrap() < SMALL
         {
             //{{{ trace
-            trace!(target: "bc", "Projected grad is small");
+            trace!(target: "asa", "Projected grad is small");
             //}}}
             return None;
         }
@@ -302,7 +302,7 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
         let gradfk_dot_d = grad_fx.dot(&d);
 
         //{{{ trace
-        trace!(target: "bc", "Running backtracking armijo");
+        trace!(target: "asa", "Running backtracking armijo");
         //}}}
         let max_iterations = 25;
         for _i in 0..max_iterations
@@ -378,10 +378,10 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
         _iter_k: &IterData,
     )
     {
-        info!(target: "bc", ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> k = {_k}");
-        trace!(target: "bc", "x: {}", _iter_k.x.clone().transpose());
-        trace!(target: "bc", "∇f: {}", _iter_k.grad_fx.clone().transpose());
-        trace!(target: "bc", "∇f_proj: {}", self.bounds.projected_direction(&_iter_k.x, &(-_iter_k.grad_fx.clone()), 1.0).transpose());
+        info!(target: "asa", ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> k = {_k}");
+        trace!(target: "asa", "x: {}", _iter_k.x.clone().transpose());
+        trace!(target: "asa", "∇f: {}", _iter_k.grad_fx.clone().transpose());
+        trace!(target: "asa", "∇f_proj: {}", self.bounds.projected_direction(&_iter_k.x, &(-_iter_k.grad_fx.clone()), 1.0).transpose());
     }
 }
 //}}}
@@ -423,7 +423,7 @@ impl<F: RealFn> Minimizer for ActiveSetAlgorithm<F>
                 Phase::NGPA =>
                 {
                     //{{{ trace
-                    trace!(target: "bc", "Entering NGPA Phase");
+                    trace!(target: "asa", "Entering NGPA Phase");
                     //}}}
                     iter_k_prev.copy_from(&iter_k);
 
@@ -458,7 +458,7 @@ impl<F: RealFn> Minimizer for ActiveSetAlgorithm<F>
                     let y = (grad_fx - grad_fx_prev).into();
                     alpha_bb = self.bb_step(&s, &y, alpha_bb);
                     //{{{ trace
-                    trace!(target: "bc", "alpha_bb = {alpha_bb:.4e}");
+                    trace!(target: "asa", "alpha_bb = {alpha_bb:.4e}");
                     //}}}
 
                     let projected_grad =
@@ -488,7 +488,7 @@ impl<F: RealFn> Minimizer for ActiveSetAlgorithm<F>
                 Phase::UA =>
                 {
                     //{{{ trace
-                    trace!(target: "bc", "Entering AU Phase");
+                    trace!(target: "asa", "Entering AU Phase");
                     //}}}
                     iter_k_prev.copy_from(&iter_k);
 
@@ -557,8 +557,8 @@ impl<F: RealFn> Minimizer for ActiveSetAlgorithm<F>
                     if inactive_grad_norm_new < mu * projected_grad_norm_new
                     {
                         //{{{ trace
-                        trace!(target: "bc", "||∇f_inactive|| < mu ||∇f_proj||");
-                        trace!(target: "bc", "Switching to NPGP");
+                        trace!(target: "asa", "||∇f_inactive|| < mu ||∇f_proj||");
+                        trace!(target: "asa", "Switching to NPGP");
                         //}}}
                         phase = Phase::NGPA;
                     }
@@ -571,16 +571,16 @@ impl<F: RealFn> Minimizer for ActiveSetAlgorithm<F>
                         )
                     {
                         //{{{ trace
-                        trace!(target: "bc", "No. of active bounds has increased");
-                        trace!(target: "bc", "Switching to NPGA");
+                        trace!(target: "asa", "No. of active bounds has increased");
+                        trace!(target: "asa", "Switching to NPGA");
                         //}}}
                         phase = Phase::NGPA;
                     }
                     else
                     {
                         //{{{ trace
-                        trace!(target: "bc", "No. of active bounds has decreased");
-                        trace!(target: "bc", "Sticking to UA");
+                        trace!(target: "asa", "No. of active bounds has decreased");
+                        trace!(target: "asa", "Sticking to UA");
                         //}}}
                         phase = Phase::UA;
                     }
