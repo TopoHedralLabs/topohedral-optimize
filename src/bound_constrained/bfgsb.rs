@@ -314,6 +314,35 @@ impl<F: RealFn> Bfgsb<F>
         }
         None
     }
+
+    fn print_status(
+        &self,
+        _k: u64,
+        current_iter: &IterData,
+    )
+    {
+        //{{{ trace
+        info!(target: "bfgsb", "======================================================================== i = {_k}");
+        trace!(target: "bfgsb", "Current solution: {}", current_iter.x.clone().transpose());
+        info!(target: "bfgsb", "Current values: {current_iter}");
+        info!(target: "bfgsb", "Convergence measures:");
+        let _projected_grad =
+            self.bounds
+                .projected_direction(&current_iter.x, &(-current_iter.grad_fx.clone()), 1.0);
+        let _projected_grad_norm = _projected_grad.abs_max().unwrap_or(0.0);
+        let _grad_ratio = if self.norm_grad_fx_init > 0.0
+        {
+            _projected_grad_norm / self.norm_grad_fx_init
+        }
+        else
+        {
+            0.0
+        };
+        info!(target: "bfgsb", "||∇f_proj(k)|| / ||∇f_proj(0)|| = {_grad_ratio:.4e}");
+        info!(target: "bfgsb", "||∇f_proj(k)|| = {_projected_grad_norm:.4e}");
+        trace!(target: "bfgsb", "∇f_proj: {}", _projected_grad.transpose());
+        //}}}
+    }
 }
 //}}}
 //{{{ impl Minimizer for Bfgsb
@@ -333,6 +362,14 @@ impl<F: RealFn> Minimizer for Bfgsb<F>
 
         for k in 0..max_iter
         {
+            let iter_k = IterData {
+                x: xk.clone(),
+                fx: fk,
+                grad_fx: gk.clone(),
+                norm_grad_fx: gk.norm(),
+            };
+            self.print_status(k, &iter_k);
+
             if let Some(reason) = self.is_converged(projected_grad_norm)
             {
                 return Ok(crate::Returns {
@@ -416,13 +453,6 @@ impl<F: RealFn> Minimizer for Bfgsb<F>
                 1.0
             }
             .max(1e-30);
-
-            let iter_k = IterData {
-                x: xk.clone(),
-                fx: fk,
-                grad_fx: gk.clone(),
-                norm_grad_fx: gk.norm(),
-            };
 
             let search_result = ls::search(
                 self.fcn.clone(),
