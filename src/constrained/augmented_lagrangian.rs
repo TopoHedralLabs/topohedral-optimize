@@ -844,15 +844,26 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
             let cached_values = classical_auglag.get_cached_values();
             let norm_grad_f = cached_values.fcn_grad.abs_max().unwrap();
             let norm_grad_penalty = cached_values.all_constraint_grad.abs_max().unwrap();
-            let norm_grad_auglag = cached_values.auglag_grad.abs_max().unwrap();
+            let stationarity_gradient = if let Some(bounds) = &self.bounds
+            {
+                bounds.projected_direction(&iter_k.x, &(-cached_values.auglag_grad.clone()), 1.0)
+            }
+            else
+            {
+                cached_values.auglag_grad.clone()
+            };
+            let _norm_grad_auglag = cached_values.auglag_grad.abs_max().unwrap();
+            let norm_projected_grad_auglag = stationarity_gradient.abs_max().unwrap_or(0.0);
 
-            let residual_stationarity = norm_grad_auglag;
-            let residual_stationarity_scaled = norm_grad_auglag / 1.0f64.max(norm_grad_f).max(norm_grad_penalty);
+            let residual_stationarity = norm_projected_grad_auglag;
+            let residual_stationarity_scaled =
+                norm_projected_grad_auglag / 1.0f64.max(norm_grad_f).max(norm_grad_penalty);
             let residual_primal = norm_eq.max(norm_ieq);
             //{{{ trace
             info!(target: "aug", "||∇P|| = {norm_grad_penalty:.4e} ||∇F|| = {norm_grad_f:.4} ||h|| = {norm_eq:.4e} ||g|| = {norm_ieq:.4e}");
-            info!(target: "aug", "||∇L|| = {norm_grad_auglag:.4e})");
-            info!(target: "aug", "||∇L|| / max(1, ||∇F||, ||∇P||) = {residual_stationarity_scaled:.4e}");
+            info!(target: "aug", "||∇L|| = {_norm_grad_auglag:.4e})");
+            info!(target: "aug", "||∇L_proj|| = {norm_projected_grad_auglag:.4e})");
+            info!(target: "aug", "||∇L_proj|| / max(1, ||∇F||, ||∇P||) = {residual_stationarity_scaled:.4e}");
             //}}}
             let ctol = self.opts.constrained_opts.constraint_tol;
             let rtol = self.opts.constrained_opts.base_opts.grad_rtol;
