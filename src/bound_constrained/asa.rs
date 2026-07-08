@@ -7,7 +7,7 @@
 use super::common::Options as BoundConstrainedOptions;
 use super::common::{lift, restrict};
 use super::utils::CircularBuffer;
-use crate::bound_constrained::asa::Phase::UA;
+use crate::bound_constrained::asa::Phase::Ua;
 use crate::common::{Minimizer, Vector};
 use crate::constraints::BoundsConstraints;
 use crate::constraints::{BoundSignature, BoundStatus};
@@ -170,9 +170,8 @@ pub struct ActiveSetAlgorithm<F: RealFn>
 #[derive(Debug)]
 enum Phase
 {
-    #[allow(clippy::upper_case_acronyms)]
-    NGPA,
-    UA,
+    Ngpa,
+    Ua,
 }
 //}}}
 //{{{ impl: ActiveSetAlgorithm
@@ -466,7 +465,7 @@ impl<F: RealFn> Minimizer for ActiveSetAlgorithm<F>
     {
         let mut iter_k_prev = IterData::new(self.fcn.clone(), &self.x_init);
         let mut iter_k = IterData::new(self.fcn.clone(), &self.x_init);
-        let mut phase = Phase::NGPA;
+        let mut phase = Phase::Ngpa;
         let mut mu = self.opts.mu;
         let mut alpha_bb = 1.0;
 
@@ -499,7 +498,7 @@ impl<F: RealFn> Minimizer for ActiveSetAlgorithm<F>
 
             match phase
             {
-                Phase::NGPA =>
+                Phase::Ngpa =>
                 {
                     //{{{ trace
                     debug!(target: "asa", "Entering NGPA phase with alpha_bb = {alpha_bb:.4e}, mu = {mu:.4e}");
@@ -572,7 +571,7 @@ impl<F: RealFn> Minimizer for ActiveSetAlgorithm<F>
                             //{{{ trace
                             debug!(target: "asa", "Undecided set empty but inactive gradient is large; switching to UA");
                             //}}}
-                            phase = UA;
+                            phase = Ua;
                         }
                     }
 
@@ -582,10 +581,10 @@ impl<F: RealFn> Minimizer for ActiveSetAlgorithm<F>
                         //{{{ trace
                         debug!(target: "asa", "Active set is stable and inactive gradient is large; switching to UA");
                         //}}}
-                        phase = UA;
+                        phase = Ua;
                     }
                 }
-                Phase::UA =>
+                Phase::Ua =>
                 {
                     //{{{ trace
                     debug!(target: "asa", "Entering UA phase with mu = {mu:.4e}");
@@ -623,7 +622,7 @@ impl<F: RealFn> Minimizer for ActiveSetAlgorithm<F>
                         //{{{ trace
                         debug!(target: "asa", "UA restricted problem has no free variables; switching to NGPA");
                         //}}}
-                        phase = Phase::NGPA;
+                        phase = Phase::Ngpa;
                         continue;
                     }
 
@@ -639,7 +638,7 @@ impl<F: RealFn> Minimizer for ActiveSetAlgorithm<F>
                         //{{{ trace
                         debug!(target: "asa", "UA internal minimization failed; switching to NGPA");
                         //}}}
-                        phase = Phase::NGPA;
+                        phase = Phase::Ngpa;
                         continue;
                     };
 
@@ -690,7 +689,7 @@ impl<F: RealFn> Minimizer for ActiveSetAlgorithm<F>
                         //{{{ trace
                         debug!(target: "asa", "||∇f_inactive|| < mu ||∇f_proj||; switching to NGPA");
                         //}}}
-                        phase = Phase::NGPA;
+                        phase = Phase::Ngpa;
                     }
                     else if active_count_after > active_count_before
                         && active_count_after <= active_count_before + self.opts.n2
@@ -703,14 +702,14 @@ impl<F: RealFn> Minimizer for ActiveSetAlgorithm<F>
                         //{{{ trace
                         debug!(target: "asa", "Active bound count increased within n2 and undecided set remains nonempty; switching to NGPA");
                         //}}}
-                        phase = Phase::NGPA;
+                        phase = Phase::Ngpa;
                     }
                     else
                     {
                         //{{{ trace
                         debug!(target: "asa", "Continuing in UA");
                         //}}}
-                        phase = Phase::UA;
+                        phase = Phase::Ua;
                     }
                 }
             }

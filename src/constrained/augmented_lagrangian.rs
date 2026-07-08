@@ -96,7 +96,7 @@ impl Options
 }
 //}}}
 
-//{{{ struct: ConstraintData
+//{{{ struct: LagrangianPenaltyData
 #[derive(Debug, Clone)]
 struct LagrangianPenaltyData<F: RealVectorFn>
 {
@@ -108,7 +108,7 @@ struct LagrangianPenaltyData<F: RealVectorFn>
     pub max_violations: Vec<(f64, bool)>,
 }
 //}}}
-//{{{ impl: ConstraintData
+//{{{ impl: LagrangianPenaltyData
 impl<F: RealVectorFn> LagrangianPenaltyData<F>
 {
     //{{{ fn: new
@@ -805,10 +805,6 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
             opts,
         }
     }
-    //}}}
-    //{{{ fn: set_innter_rtol
-    #[trace_fn]
-    fn set_uncon_options(&mut self) {}
     //}}}
     //{{{ fn: is_converged
     #[trace_fn]
