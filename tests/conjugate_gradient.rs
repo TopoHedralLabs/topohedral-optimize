@@ -435,8 +435,8 @@ fn test_qudratic(
         fmin: 0.0,
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 12,
-        num_fun_evals: 40,
-        num_grad_evals: 53
+        num_fun_evals: 34,
+        num_grad_evals: 46
     }
 )]
 //}}}
@@ -463,8 +463,8 @@ fn test_qudratic(
         fmin: 0.0,
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 12,
-        num_fun_evals: 40,
-        num_grad_evals: 53,
+        num_fun_evals: 34,
+        num_grad_evals: 46,
     }
 )]
 //}}}
@@ -491,8 +491,8 @@ fn test_qudratic(
         fmin: 0.0,
         reason: UnconstrainedConvergedReason::Rtol,
         num_iterations: 15,
-        num_fun_evals: 81,
-        num_grad_evals: 81,
+        num_fun_evals: 71,
+        num_grad_evals: 70,
     }
 )]
 //}}}

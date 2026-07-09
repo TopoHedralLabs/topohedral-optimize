@@ -224,7 +224,7 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
         let projected_grad =
             self.bounds
                 .projected_direction(&iter_k.x, &(-iter_k.grad_fx.clone()), 1.0);
-        let projected_grad_norm = projected_grad.norm();
+        let projected_grad_norm = projected_grad.abs_max().unwrap_or(0.0);
         let _projected_grad_ratio = if self.norm_grad_fx_init > 0.0
         {
             projected_grad_norm / self.norm_grad_fx_init
@@ -347,7 +347,7 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
         }
 
         let grad_fx_new = self.fcn.grad(&x_trial);
-        let norm_grad_fx_new = grad_fx_new.norm();
+        let norm_grad_fx_new = grad_fx_new.abs_max().unwrap_or(0.0);
         //{{{ trace
         debug!(target: "asa", "NGPA accepted point: f = {f_trial:.4e}, ||∇f|| = {norm_grad_fx_new:.4e}");
         //}}}
@@ -439,7 +439,7 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
         let projected_grad =
             self.bounds
                 .projected_direction(&_iter_k.x, &(-_iter_k.grad_fx.clone()), 1.0);
-        let projected_grad_norm = projected_grad.norm();
+        let projected_grad_norm = projected_grad.abs_max().unwrap_or(0.0);
         let _projected_grad_ratio = if self.norm_grad_fx_init > 0.0
         {
             projected_grad_norm / self.norm_grad_fx_init
@@ -657,7 +657,7 @@ impl<F: RealFn> Minimizer for ActiveSetAlgorithm<F>
                     iter_k.fx = res.fmin;
                     iter_k.grad_fx.copy_from(self.fcn.grad(&iter_k.x));
                     iter_k.fx = self.fcn.eval(&iter_k.x);
-                    iter_k.norm_grad_fx = iter_k.grad_fx.norm();
+                    iter_k.norm_grad_fx = iter_k.grad_fx.abs_max().unwrap_or(0.0);
 
                     let projected_grad_new =
                         self.bounds

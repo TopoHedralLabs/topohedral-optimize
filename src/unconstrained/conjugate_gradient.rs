@@ -14,6 +14,7 @@ use crate::{ConvergedReason, IterData, Minimizer, RealFn, Returns, Vector};
 //{{{ dep imports
 #[allow(unused_imports)]
 use topohedral_linalg::MatrixOps;
+use topohedral_linalg::ReduceOps;
 use topohedral_linalg::VectorOps;
 use topohedral_tracing::*;
 //}}}
@@ -58,7 +59,7 @@ impl<F: RealFn> ConjugateGradient<F>
     ) -> Self
     {
         let grad_0 = fcn.grad(&x0);
-        let norm_grad_0 = grad_0.norm();
+        let norm_grad_0 = grad_0.abs_max().unwrap_or(0.0);
         Self {
             fcn,
             x_init: x0.clone(),
@@ -170,7 +171,8 @@ impl<F: RealFn> ConjugateGradient<F>
         trace!(target: "aug", "Current solution: {}", current_iter.x.clone().transpose());
         info!(target: "cg", "Current values: {current_iter}");
         info!(target: "cg","Convergence measures:");
-        let _grad_ratio = current_iter.norm_grad_fx / self.norm_grad_fx_init;
+        let stationarity = current_iter.grad_fx.abs_max().unwrap_or(0.0);
+        let _grad_ratio = stationarity / self.norm_grad_fx_init;
         info!(target: "cg", "||∇f(k)|| / ||∇f(0)|| = {_grad_ratio:.4e}");
         //}}}
     }
@@ -219,15 +221,16 @@ impl<F: RealFn> Minimizer for ConjugateGradient<F>
                 &dir_k,
             );
 
-            if let Some(reason) = self.is_converged(iter_k.norm_grad_fx)
+            let stationarity = iter_k.grad_fx.abs_max().unwrap_or(0.0);
+            if let Some(reason) = self.is_converged(stationarity)
             {
                 //{{{ trace
                 info!(target: "cg", "=============================================");
                 info!(target: "cg", "Converging with reason {reason:?}");
                 info!(target: "cg","Convergence measures:");
-                let _grad_ratio = iter_k.norm_grad_fx / self.norm_grad_fx_init;
+                let _grad_ratio = stationarity / self.norm_grad_fx_init;
                 info!(target: "cg", "||∇f(k)|| / ||∇f(0)|| = {_grad_ratio:.4e}");
-                info!(target: "cg", "||∇f(k)|| = {:.4e}", iter_k.norm_grad_fx);
+                info!(target: "cg", "||∇f(k)|| = {:.4e}", stationarity);
                 trace!(target: "cg", "fx = {:.4e} x = {}", iter_k.fx, iter_k.x.clone().transpose());
                 info!(target: "cg", "=============================================");
                 //}}}

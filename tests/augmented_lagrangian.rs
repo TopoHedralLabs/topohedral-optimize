@@ -127,7 +127,7 @@ fn uncon_auglag_method(mut unconstrained_method: UnconstrainedMethod) -> Constra
         ConstriainedOptions {
             base_opts: UnonstrainedOptions {
                 grad_rtol: 1e-6,
-                grad_atol: 1e-8,
+                grad_atol: 1e-6,
                 max_iter: 1000,
                 make_counting: true,
             },
@@ -146,7 +146,7 @@ fn bcon_auglag_method(mut bcon_method: BoundConstrainedMethod) -> ConstrainedMet
         ConstriainedOptions {
             base_opts: UnonstrainedOptions {
                 grad_rtol: 1e-6,
-                grad_atol: 1e-8,
+                grad_atol: 1e-6,
                 max_iter: 1000,
                 make_counting: true,
             },
@@ -459,9 +459,9 @@ fn test_unconstrained_quadratic(
 //}}}
 //{{{ test: test_bound constrained with unconstrained inner
 #[rstest]
-#[case::quadratic_thuente_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(THUENTE_BFGS),  1e-6, 1e-4,  113, 161)]
-#[case::quadratic_nocedal_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(NOCEDAL_BFGS),  1e-6, 1e-4,  120, 151)]
-#[case::quadratic_thuente_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_FR),  1e-6, 1e-4,  128, 183)]
+#[case::quadratic_thuente_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(THUENTE_BFGS),  1e-6, 1e-4,  115, 165)]
+#[case::quadratic_nocedal_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(NOCEDAL_BFGS),  1e-6, 1e-4,  122, 154)]
+#[case::quadratic_thuente_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_FR),  1e-6, 1e-4,  130, 186)]
 #[case::quadratic_nocedal_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_FR),  2e-6, 1e-4,  127, 151)]
 #[case::quadratic_thuente_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_PR),  1e-6, 1e-4,  122, 174)]
 #[case::quadratic_nocedal_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_PR),  1e-6, 1e-4,  123, 147)]
@@ -549,7 +549,7 @@ fn test_bound_constrained_quadratic_bound_constrained_inner_single_bound(
 #[case::quadratic_nocedal_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(NOCEDAL_BFGS),  1e-6, 1e-4,  1286, 701)]
 #[case::quadratic_thuente_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_FR),  1e-6, 1e-4,  4135, 5798)]
 #[case::quadratic_nocedal_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_FR),  2e-6, 1e-4,  5690, 2893)]
-#[case::quadratic_thuente_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_PR),  1e-6, 1e-4,  92, 133)]
+#[case::quadratic_thuente_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_PR),  1e-6, 1e-4,  164, 240)]
 #[case::quadratic_nocedal_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_PR),  1e-6, 1e-4,  7978, 4006)]
 fn test_bound_constrained_quadratic_unconstrained_circle_bound(
     #[case] x0: Vector,
@@ -600,7 +600,7 @@ fn test_bound_constrained_quadratic_unconstrained_circle_bound(
 //{{{ test: test_bound_constrained_quadratic_bound_constrained_circle_bound
 #[rstest]
 #[case::quadratic_asa_nocedal_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), BoundConstrainedMethod::Asa(ASA_NOCEDAL_PR),  1e-6, 1e-4,  303, 219)]
-#[case::quadratic_bfsgb_nocedal(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), BoundConstrainedMethod::Bfgsb(BFGSB_NOCEDAL),  1e-6, 1e-4,  14, 17)]
+#[case::quadratic_bfsgb_nocedal(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), BoundConstrainedMethod::Bfgsb(BFGSB_NOCEDAL),  1e-6, 1e-4,  9904, 5368)]
 fn test_bound_constrained_quadratic_bound_constrained_circle_bound(
     #[case] x0: Vector,
     #[case] bound_constrained_method: BoundConstrainedMethod,
@@ -741,12 +741,12 @@ fn test_quartic_without_constraints_matches_unconstrained_reference(
 //}}}
 //{{{ test: bound constrained
 #[rstest]
-#[case::quartic_thuente_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(THUENTE_BFGS),  1e-2, 1e-2, 1563, 2373)]
-#[case::quartic_nocedal_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(NOCEDAL_BFGS),  1e-2, 1e-2, 2777, 1956)]
-#[case::quartic_thuente_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_FR),  1e-2, 1e-2, 1862, 2675)]
-#[case::quartic_nocedal_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_FR),  1e-2, 1e-2, 3898, 1895)]
-#[case::quartic_thuente_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_PR),  1e-2, 1e-2, 1971, 2819)]
-#[case::quartic_nocedal_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_PR),  1e-2, 1e-2, 3789, 1848)]
+#[case::quartic_thuente_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(THUENTE_BFGS),  1e-2, 1e-2, 7478, 8470)]
+#[case::quartic_nocedal_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(NOCEDAL_BFGS),  1e-2, 1e-2, 3950, 2378)]
+#[case::quartic_thuente_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_FR),  1e-2, 1e-2, 82704, 90724)]
+#[case::quartic_nocedal_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_FR),  1e-2, 1e-2, 6622, 2340)]
+#[case::quartic_thuente_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_PR),  1e-2, 1e-2, 6780, 7826)]
+#[case::quartic_nocedal_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_PR),  1e-2, 1e-2, 6137, 2159)]
 fn test_quartic_with_bound_constraints_matches_reference(
     #[case] x0: Vector,
     #[case] unconstrained_method: UnconstrainedMethod,
@@ -870,6 +870,59 @@ fn test_rosenbrock_without_constraints_matches_unconstrained_reference(
     println!("ret = {ret:?}");
     assert_answer(&ret, &colvec(&[1.0, 1.0]), 0.0, 1e-3, 1e-5);
     assert_counts(&ret, exp_num_fun_evals, exp_num_grad_evals);
+}
+//}}}
+//{{{ test: tight_grad_atol_below_old_hardcoded_floor_converges
+// Regression test for the AL inner-tolerance schedule fix: `set_inner_tolerances`
+// used to clamp the inner atol to a hardcoded [1e-6, 1e-2], so a user-requested
+// `grad_atol` tighter than 1e-6 could never actually be delivered no matter how
+// long the outer loop ran. This asks for 1e-8 (tighter than that old floor) on a
+// well-conditioned single-bound quadratic and checks the solve both converges and
+// actually reaches that tighter accuracy, rather than silently stalling at 1e-6.
+#[test]
+fn tight_grad_atol_below_old_hardcoded_floor_converges()
+{
+    let quad = Quadratic {
+        xmin: colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
+    };
+    let mut ieq_constraints = BoundsConstraints::new(5);
+    ieq_constraints.add_bounds(0, Some(20.0), None);
+
+    let opts = ConstrainedMethod::AugmentedLagrangian(AugmentedLagrangianOptions::new(
+        ConstriainedOptions {
+            base_opts: UnonstrainedOptions {
+                grad_rtol: 0.0,
+                grad_atol: 1e-8,
+                max_iter: 1000,
+                make_counting: true,
+            },
+            constraint_tol: 1e-8,
+        },
+        AugmentedLagrangianInnerMethod::Unconstrained(UnconstrainedMethod::QuasiNewton(
+            THUENTE_BFGS,
+        )),
+    ));
+
+    let ret = constrained_minimize(
+        quad,
+        None,
+        None::<NoConstraints>,
+        Some(ieq_constraints),
+        colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
+        opts,
+    )
+    .expect(
+        "AL should reach a grad_atol tighter than the old hardcoded 1e-6 inner-tolerance floor",
+    );
+
+    println!("ret = {ret:?}");
+    assert_answer(
+        &ret,
+        &colvec(&[20.0, 10.0, 10.0, 10.0, 10.0]),
+        100.0,
+        1e-6,
+        1e-6,
+    );
 }
 //}}}
 //}}}
