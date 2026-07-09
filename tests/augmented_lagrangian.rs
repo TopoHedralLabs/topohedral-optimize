@@ -415,7 +415,7 @@ impl RealFn for Quadratic
     }
 }
 //}}}
-//{{{ test: unconstrained
+//{{{ test: test_quadratic_unconstrained
 #[rstest]
 #[case::quadratic_thuente_bfgs(UnconstrainedMethod::QuasiNewton(THUENTE_BFGS), 12, 14)]
 #[case::quadratic_nocedal_bfgs(UnconstrainedMethod::QuasiNewton(NOCEDAL_BFGS), 18, 20)]
@@ -423,7 +423,7 @@ impl RealFn for Quadratic
 #[case::quadratic_nocedal_fr(UnconstrainedMethod::ConjugateGradient(NOCEDAL_FR), 19, 20)]
 #[case::quadratic_thuente_pr(UnconstrainedMethod::ConjugateGradient(THUENTE_PR), 14, 17)]
 #[case::quadratic_nocedal_pr(UnconstrainedMethod::ConjugateGradient(NOCEDAL_PR), 19, 20)]
-fn test_unconstrained_quadratic(
+fn test_quadratic_unconstrained(
     #[case] unconstrained_method: UnconstrainedMethod,
     #[case] exp_num_fun_evals: usize,
     #[case] exp_num_grad_evals: usize,
@@ -457,7 +457,7 @@ fn test_unconstrained_quadratic(
     assert_counts(&ret, exp_num_fun_evals, exp_num_grad_evals);
 }
 //}}}
-//{{{ test: test_bound constrained with unconstrained inner
+//{{{ test: test_quadratic_bound_constrained_ucon_inner
 #[rstest]
 #[case::quadratic_thuente_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(THUENTE_BFGS),  1e-6, 1e-4,  115, 165)]
 #[case::quadratic_nocedal_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(NOCEDAL_BFGS),  1e-6, 1e-4,  122, 154)]
@@ -465,7 +465,7 @@ fn test_unconstrained_quadratic(
 #[case::quadratic_nocedal_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_FR),  2e-6, 1e-4,  127, 151)]
 #[case::quadratic_thuente_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_PR),  1e-6, 1e-4,  122, 174)]
 #[case::quadratic_nocedal_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_PR),  1e-6, 1e-4,  123, 147)]
-fn test_bound_constrained_quadratic_unconstrained_inner(
+fn test_quadratic_bound_constrained_ucon_inner(
     #[case] x0: Vector,
     #[case] unconstrained_method: UnconstrainedMethod,
     #[case] xmin_tol: f64,
@@ -502,11 +502,11 @@ fn test_bound_constrained_quadratic_unconstrained_inner(
     assert_counts(&ret, exp_num_fun_evals, exp_num_grad_evals);
 }
 //}}}
-//{{{ test: test_bound_constrained_quadratic_bound_constrained_inner_single_bound
+//{{{ test: test_quadratic_bound_constrained_bcon_inner
 #[rstest]
 #[case::quadratic_asa_nocedal_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), BoundConstrainedMethod::Asa(ASA_NOCEDAL_PR),  1e-6, 1e-4,  9, 9)]
 #[case::quadratic_bfsgb_nocedal(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), BoundConstrainedMethod::Bfgsb(BFGSB_NOCEDAL),  1e-6, 1e-4,  14, 17)]
-fn test_bound_constrained_quadratic_bound_constrained_inner_single_bound(
+fn test_quadratic_bound_constrained_bcon_inner(
     #[case] x0: Vector,
     #[case] bound_constrained_method: BoundConstrainedMethod,
     #[case] xmin_tol: f64,
@@ -543,7 +543,7 @@ fn test_bound_constrained_quadratic_bound_constrained_inner_single_bound(
     assert_counts(&ret, exp_num_fun_evals, exp_num_grad_evals);
 }
 //}}}
-//{{{ test: test_bound_constrained_quadratic_bound_constrained_inner_circle_bound
+//{{{ test: test_quadratic_hsphere_constrained_ucon_inner
 #[rstest]
 #[case::quadratic_thuente_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(THUENTE_BFGS),  1e-6, 1e-4,  3042, 4272)]
 #[case::quadratic_nocedal_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(NOCEDAL_BFGS),  1e-6, 1e-4,  1286, 701)]
@@ -551,7 +551,7 @@ fn test_bound_constrained_quadratic_bound_constrained_inner_single_bound(
 #[case::quadratic_nocedal_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_FR),  2e-6, 1e-4,  5690, 2893)]
 #[case::quadratic_thuente_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_PR),  1e-6, 1e-4,  164, 240)]
 #[case::quadratic_nocedal_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_PR),  1e-6, 1e-4,  7978, 4006)]
-fn test_bound_constrained_quadratic_unconstrained_circle_bound(
+fn test_quadratic_hsphere_constrained_ucon_inner(
     #[case] x0: Vector,
     #[case] unconstrained_method: UnconstrainedMethod,
     #[case] xmin_tol: f64,
@@ -597,11 +597,11 @@ fn test_bound_constrained_quadratic_unconstrained_circle_bound(
     assert_counts(&ret, exp_num_fun_evals, exp_num_grad_evals);
 }
 //}}}
-//{{{ test: test_bound_constrained_quadratic_bound_constrained_circle_bound
+//{{{ test: test_quadratic_bound_constrained_quadratic_bound_constrained_circle_bound
 #[rstest]
 #[case::quadratic_asa_nocedal_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), BoundConstrainedMethod::Asa(ASA_NOCEDAL_PR),  1e-6, 1e-4,  303, 219)]
 #[case::quadratic_bfsgb_nocedal(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), BoundConstrainedMethod::Bfgsb(BFGSB_NOCEDAL),  1e-6, 1e-4,  9904, 5368)]
-fn test_bound_constrained_quadratic_bound_constrained_circle_bound(
+fn test_quadratic_hsphere_and_bound_constrained_bcon_inner(
     #[case] x0: Vector,
     #[case] bound_constrained_method: BoundConstrainedMethod,
     #[case] xmin_tol: f64,
@@ -651,6 +651,59 @@ fn test_bound_constrained_quadratic_bound_constrained_circle_bound(
         fmin_tol,
     );
     assert_counts(&ret, exp_num_fun_evals, exp_num_grad_evals);
+}
+//}}}
+//{{{ test: test_quadratic_tight_grad_atol_below_old_hardcoded_floor_converges
+// Regression test for the AL inner-tolerance schedule fix: `set_inner_tolerances`
+// used to clamp the inner atol to a hardcoded [1e-6, 1e-2], so a user-requested
+// `grad_atol` tighter than 1e-6 could never actually be delivered no matter how
+// long the outer loop ran. This asks for 1e-8 (tighter than that old floor) on a
+// well-conditioned single-bound quadratic and checks the solve both converges and
+// actually reaches that tighter accuracy, rather than silently stalling at 1e-6.
+#[test]
+fn test_quadratic_tight_grad_atol_below_old_hardcoded_floor_converges()
+{
+    let quad = Quadratic {
+        xmin: colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
+    };
+    let mut ieq_constraints = BoundsConstraints::new(5);
+    ieq_constraints.add_bounds(0, Some(20.0), None);
+
+    let opts = ConstrainedMethod::AugmentedLagrangian(AugmentedLagrangianOptions::new(
+        ConstriainedOptions {
+            base_opts: UnonstrainedOptions {
+                grad_rtol: 0.0,
+                grad_atol: 1e-8,
+                max_iter: 1000,
+                make_counting: true,
+            },
+            constraint_tol: 1e-8,
+        },
+        AugmentedLagrangianInnerMethod::Unconstrained(UnconstrainedMethod::QuasiNewton(
+            THUENTE_BFGS,
+        )),
+    ));
+
+    let ret = constrained_minimize(
+        quad,
+        None,
+        None::<NoConstraints>,
+        Some(ieq_constraints),
+        colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
+        opts,
+    )
+    .expect(
+        "AL should reach a grad_atol tighter than the old hardcoded 1e-6 inner-tolerance floor",
+    );
+
+    println!("ret = {ret:?}");
+    assert_answer(
+        &ret,
+        &colvec(&[20.0, 10.0, 10.0, 10.0, 10.0]),
+        100.0,
+        1e-6,
+        1e-6,
+    );
 }
 //}}}
 //}}}
@@ -789,6 +842,166 @@ fn test_quartic_with_bound_constraints_matches_reference(
     assert_counts(&ret, exp_num_fun_evals, exp_num_grad_evals);
 }
 //}}}
+//{{{ test: bound constrained with bound-constrained inner
+#[rstest]
+#[case::quartic_asa_nocedal_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), BoundConstrainedMethod::Asa(ASA_NOCEDAL_PR),  1e-2, 1e-2,  500, 450)]
+#[case::quartic_bfsgb_nocedal(colvec(&[20.0, 11.0, 11.0, 11.0, 11.0]), BoundConstrainedMethod::Bfgsb(BFGSB_NOCEDAL),  1e-2, 1e-2,  20, 20)]
+fn test_quartic_with_bound_constraints_and_bcon_inner_matches_reference(
+    #[case] x0: Vector,
+    #[case] bound_constrained_method: BoundConstrainedMethod,
+    #[case] xmin_tol: f64,
+    #[case] fmin_tol: f64,
+    #[case] exp_num_fun_evals: usize,
+    #[case] exp_num_grad_evals: usize,
+)
+{
+    let quart = Quartic {
+        xmin: colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
+    };
+
+    let mut bound_constraints = BoundsConstraints::new(5);
+    bound_constraints.add_bounds(0, Some(20.0), None);
+
+    let mut method = bcon_auglag_method(bound_constrained_method);
+    method.con_opts_mut().constraint_tol = 1e-3;
+    method.con_opts_mut().base_opts.grad_rtol = 1e-4;
+
+    let ret = constrained_minimize(
+        quart,
+        Some(bound_constraints),
+        None::<NoConstraints>,
+        None::<NoConstraints>,
+        x0,
+        method,
+    )
+    .unwrap();
+
+    println!("ret = {ret:?}");
+    let exp_fmin = 10000.0;
+    assert_answer(
+        &ret,
+        &colvec(&[20.0, 10.0, 10.0, 10.0, 10.0]),
+        exp_fmin,
+        xmin_tol,
+        fmin_tol,
+    );
+    assert_counts(&ret, exp_num_fun_evals, exp_num_grad_evals);
+}
+//}}}
+//{{{ test: hsphere constrained
+#[rstest]
+#[case::quartic_thuente_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(THUENTE_BFGS),  1e-2, 1e-2, 125, 200)]
+#[case::quartic_nocedal_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(NOCEDAL_BFGS),  1e-2, 1e-2, 200, 205)]
+#[case::quartic_thuente_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_FR),  1e-2, 1e-2, 250, 315)]
+#[case::quartic_nocedal_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_FR),  1e-2, 1e-2, 475, 200)]
+#[case::quartic_thuente_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_PR),  1e-2, 1e-2, 135, 190)]
+#[case::quartic_nocedal_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_PR),  1e-2, 1e-2, 9000, 2500)]
+fn test_quartic_hsphere_constrained_ucon_inner_matches_reference(
+    #[case] x0: Vector,
+    #[case] unconstrained_method: UnconstrainedMethod,
+    #[case] xmin_tol: f64,
+    #[case] fmin_tol: f64,
+    #[case] exp_num_fun_evals: usize,
+    #[case] exp_num_grad_evals: usize,
+)
+{
+    let quart = Quartic {
+        xmin: colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
+    };
+
+    let mut method = uncon_auglag_method(unconstrained_method);
+    method.con_opts_mut().constraint_tol = 1e-3;
+    method.con_opts_mut().base_opts.grad_rtol = 1e-4;
+
+    let ieq_constraints = HyperSphereBound {
+        center: colvec(&[20.0, 20.0, 20.0, 20.0, 20.0]),
+        radius: 10.0,
+    };
+
+    let ret = constrained_minimize(
+        quart,
+        None,
+        None::<NoConstraints>,
+        Some(ieq_constraints),
+        x0,
+        method,
+    )
+    .unwrap();
+
+    println!("\n\nret = {ret:?}\n\n");
+    let exp_fmin = 4668.737080010094;
+    assert_answer(
+        &ret,
+        &colvec(&[
+            15.52786404500042,
+            15.52786404500042,
+            15.52786404500042,
+            15.52786404500042,
+            15.52786404500042,
+        ]),
+        exp_fmin,
+        xmin_tol,
+        fmin_tol,
+    );
+    assert_counts(&ret, exp_num_fun_evals, exp_num_grad_evals);
+}
+//}}}
+//{{{ test: hsphere and bound constrained with bound-constrained inner
+#[rstest]
+#[case::quartic_asa_nocedal_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), BoundConstrainedMethod::Asa(ASA_NOCEDAL_PR),  1e-2, 1e-2,  725, 260)]
+#[case::quartic_bfsgb_nocedal(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), BoundConstrainedMethod::Bfgsb(BFGSB_NOCEDAL),  1e-2, 1e-2,  300, 185)]
+fn test_quartic_hsphere_and_bound_constrained_bcon_inner_matches_reference(
+    #[case] x0: Vector,
+    #[case] bound_constrained_method: BoundConstrainedMethod,
+    #[case] xmin_tol: f64,
+    #[case] fmin_tol: f64,
+    #[case] exp_num_fun_evals: usize,
+    #[case] exp_num_grad_evals: usize,
+)
+{
+    let quart = Quartic {
+        xmin: colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
+    };
+
+    let mut bound_constraints = BoundsConstraints::new(5);
+    for i in 0..x0.len()
+    {
+        bound_constraints.add_bounds(i, Some(15.0), Some(20.0));
+    }
+
+    let ieq_constraints = HyperSphereBound {
+        center: colvec(&[20.0, 20.0, 20.0, 20.0, 20.0]),
+        radius: 10.0,
+    };
+
+    let ret = constrained_minimize(
+        quart,
+        Some(bound_constraints),
+        None::<NoConstraints>,
+        Some(ieq_constraints),
+        x0,
+        bcon_auglag_method(bound_constrained_method),
+    )
+    .unwrap();
+
+    println!("\n\nret = {ret:?}\n\n");
+    let exp_fmin = 4668.737080010094;
+    assert_answer(
+        &ret,
+        &colvec(&[
+            15.52786404500042,
+            15.52786404500042,
+            15.52786404500042,
+            15.52786404500042,
+            15.52786404500042,
+        ]),
+        exp_fmin,
+        xmin_tol,
+        fmin_tol,
+    );
+    assert_counts(&ret, exp_num_fun_evals, exp_num_grad_evals);
+}
+//}}}
 //}}}
 //{{{ collection: rosenbrock
 //{{{ struct Rosenbrock
@@ -870,59 +1083,6 @@ fn test_rosenbrock_without_constraints_matches_unconstrained_reference(
     println!("ret = {ret:?}");
     assert_answer(&ret, &colvec(&[1.0, 1.0]), 0.0, 1e-3, 1e-5);
     assert_counts(&ret, exp_num_fun_evals, exp_num_grad_evals);
-}
-//}}}
-//{{{ test: tight_grad_atol_below_old_hardcoded_floor_converges
-// Regression test for the AL inner-tolerance schedule fix: `set_inner_tolerances`
-// used to clamp the inner atol to a hardcoded [1e-6, 1e-2], so a user-requested
-// `grad_atol` tighter than 1e-6 could never actually be delivered no matter how
-// long the outer loop ran. This asks for 1e-8 (tighter than that old floor) on a
-// well-conditioned single-bound quadratic and checks the solve both converges and
-// actually reaches that tighter accuracy, rather than silently stalling at 1e-6.
-#[test]
-fn tight_grad_atol_below_old_hardcoded_floor_converges()
-{
-    let quad = Quadratic {
-        xmin: colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
-    };
-    let mut ieq_constraints = BoundsConstraints::new(5);
-    ieq_constraints.add_bounds(0, Some(20.0), None);
-
-    let opts = ConstrainedMethod::AugmentedLagrangian(AugmentedLagrangianOptions::new(
-        ConstriainedOptions {
-            base_opts: UnonstrainedOptions {
-                grad_rtol: 0.0,
-                grad_atol: 1e-8,
-                max_iter: 1000,
-                make_counting: true,
-            },
-            constraint_tol: 1e-8,
-        },
-        AugmentedLagrangianInnerMethod::Unconstrained(UnconstrainedMethod::QuasiNewton(
-            THUENTE_BFGS,
-        )),
-    ));
-
-    let ret = constrained_minimize(
-        quad,
-        None,
-        None::<NoConstraints>,
-        Some(ieq_constraints),
-        colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
-        opts,
-    )
-    .expect(
-        "AL should reach a grad_atol tighter than the old hardcoded 1e-6 inner-tolerance floor",
-    );
-
-    println!("ret = {ret:?}");
-    assert_answer(
-        &ret,
-        &colvec(&[20.0, 10.0, 10.0, 10.0, 10.0]),
-        100.0,
-        1e-6,
-        1e-6,
-    );
 }
 //}}}
 //}}}
