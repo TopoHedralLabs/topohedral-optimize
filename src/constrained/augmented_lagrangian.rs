@@ -5,13 +5,11 @@
 
 //{{{ crate imports
 use crate::{
-    bound_constrained::{
-        self, minimize as bcon_minimize, BoundConstrainedError, BoundConstrainedMethod,
-    },
+    bound_constrained::{minimize as bcon_minimize, BoundConstrainedMethod},
     common::{self, arc_real_fn, ConvergedReason, CountingRealFn, IterData, Returns},
-    constrained::{ConstrainedError, ConstrainedMethod, ConstriainedOptions},
+    constrained::{ConstrainedError, ConstriainedOptions},
     constraints::BoundsConstraints,
-    unconstrained::{minimize as uncon_minimize, UnconstrainedError, UnconstrainedMethod},
+    unconstrained::{minimize as uncon_minimize, UnconstrainedMethod},
     Matrix, Minimizer, RealFn, RealVectorFn, Vector,
 };
 use core::f64;
@@ -21,7 +19,6 @@ use std::{
     collections::HashMap,
     sync::{Arc, Mutex},
 };
-use thiserror::Error;
 //}}}
 //{{{ dep imports
 #[allow(unused_imports)]

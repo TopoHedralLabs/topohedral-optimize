@@ -10,7 +10,6 @@ use crate::{
         ConstriainedOptions,
     },
     constraints::BoundsConstraints,
-    unconstrained::UnconstrainedMethod,
     Minimizer, RealFn, RealVectorFn, Vector,
 };
 //}}}

@@ -52,7 +52,7 @@ pub fn minimize<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn>(
     if method.con_opts().base_opts.make_counting
     {
         let counting_fcn = arc_real_fn(CountingRealFn::new(fcn));
-        let mut minimizer = factory::create(
+        let minimizer = factory::create(
             counting_fcn.clone(),
             bounds,
             eq_constraints,
@@ -68,8 +68,7 @@ pub fn minimize<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn>(
     }
     else
     {
-        let mut minimizer =
-            factory::create(fcn, bounds, eq_constraints, ieq_constraints, x0, method);
+        let minimizer = factory::create(fcn, bounds, eq_constraints, ieq_constraints, x0, method);
         minimizer?.minimize()
     }
 }

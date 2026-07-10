@@ -26,7 +26,7 @@ use topohedral_optimize::{BaseOptions, RealFn, RealVectorFn, Vector};
 use ctor::ctor;
 use rstest::rstest;
 use topohedral_linalg::{DVector, VecType};
-use topohedral_linalg::{SubViewableMut, TransformOps, VectorOps};
+use topohedral_linalg::{SubViewableMut, VectorOps};
 use topohedral_tracing::*;
 //}}}
 
@@ -156,14 +156,6 @@ fn bcon_auglag_method(mut bcon_method: BoundConstrainedMethod) -> ConstrainedMet
     ))
 }
 //}}}
-//{{{ const: BASE_OPTS
-const BASE_OPTS: BaseOptions = BaseOptions {
-    grad_rtol: 1e-6,
-    grad_atol: 1e-8,
-    max_iter: 100,
-    make_counting: false,
-};
-//}}}
 //{{{ const: THUENTE_OPTS_09
 const THUENTE_OPTS_09: ThuenteOptions = ThuenteOptions {
     ls_opts: LineSearchOptions {
@@ -175,30 +167,7 @@ const THUENTE_OPTS_09: ThuenteOptions = ThuenteOptions {
     maxiter: 100,
 };
 //}}}
-//{{{ const: THUENTE_OPTS_04
-const THUENTE_OPTS_04: ThuenteOptions = ThuenteOptions {
-    ls_opts: LineSearchOptions {
-        c1: 1e-4,
-        c2: 0.4,
-        step_min: 1e-8,
-        step_max: 1e5,
-    },
-    maxiter: 100,
-};
-//}}}
-//{{{ const: NOCEDAL_OPTS_09
-const NOCEDAL_OPTS_09: NocedalOptions = NocedalOptions {
-    ls_opts: LineSearchOptions {
-        c1: 1e-4,
-        c2: 0.9,
-        step_min: 1e-8,
-        step_max: 1e5,
-    },
-    maxiter: 100,
-    zoom_maxiter: 10,
-};
-//}}}
-//{{{ const: THUENTE_OPTS_04
+//{{{ const: NOCEDAL_OPTS_04
 const NOCEDAL_OPTS_04: NocedalOptions = NocedalOptions {
     ls_opts: LineSearchOptions {
         c1: 1e-4,
@@ -342,7 +311,7 @@ impl RealVectorFn for HyperSphereBound
 
     fn dimension_range(&self) -> usize
     {
-        return 1;
+        1
     }
 
     fn eval(
