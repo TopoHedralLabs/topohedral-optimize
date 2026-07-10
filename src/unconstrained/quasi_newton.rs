@@ -170,6 +170,7 @@ impl<F: RealFn> QuasiNewton<F>
 impl<F: RealFn> Minimizer for QuasiNewton<F>
 {
     type Error = Error;
+    type Returns = Returns;
 
     #[trace_fn]
     fn minimize(&mut self) -> Result<Returns, Self::Error>

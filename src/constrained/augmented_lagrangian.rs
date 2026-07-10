@@ -1082,6 +1082,7 @@ fn inner_minimize<F: RealFn>(
 impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> Minimizer for AugmentedLagrangian<F1, F2, F3>
 {
     type Error = ConstrainedError;
+    type Returns = Returns;
 
     #[trace_fn]
     fn minimize(&mut self) -> Result<Returns, Self::Error>

@@ -81,12 +81,25 @@ pub struct Returns
     pub num_grad_evals: usize,
 }
 //}}}
+//{{{ struct: ScalarReturns
+#[derive(Clone, Debug)]
+pub struct ScalarReturns
+{
+    pub xmin: f64,
+    pub fmin: f64,
+    pub reason: ConvergedReason,
+    pub num_iterations: usize,
+    pub num_fun_evals: usize,
+    pub num_grad_evals: usize,
+}
+//}}}
 //{{{ trait: Minimizer
 pub trait Minimizer
 {
     type Error;
+    type Returns;
 
-    fn minimize(&mut self) -> Result<Returns, Self::Error>;
+    fn minimize(&mut self) -> Result<Self::Returns, Self::Error>;
 }
 //}}}
 //{{{ struct: IterData

@@ -182,6 +182,7 @@ impl<F: RealFn> ConjugateGradient<F>
 impl<F: RealFn> Minimizer for ConjugateGradient<F>
 {
     type Error = Error;
+    type Returns = Returns;
 
     #[trace_fn]
     fn minimize(&mut self) -> Result<Returns, Self::Error>

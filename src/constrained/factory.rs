@@ -10,7 +10,7 @@ use crate::{
         ConstriainedOptions,
     },
     constraints::BoundsConstraints,
-    Minimizer, RealFn, RealVectorFn, Vector,
+    Minimizer, RealFn, RealVectorFn, Returns, Vector,
 };
 //}}}
 //{{{ std imports
@@ -57,7 +57,7 @@ pub fn create<'a, F1: RealFn + 'a, F2: RealVectorFn + 'a, F3: RealVectorFn + 'a>
     ieq_constraints: Option<F3>,
     x0: Vector,
     method: Method,
-) -> Result<Box<dyn Minimizer<Error = Error> + 'a>, Error>
+) -> Result<Box<dyn Minimizer<Error = Error, Returns = Returns> + 'a>, Error>
 {
     match method
     {

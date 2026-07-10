@@ -459,6 +459,7 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
 impl<F: RealFn> Minimizer for ActiveSetAlgorithm<F>
 {
     type Error = super::common::Error;
+    type Returns = crate::Returns;
 
     #[trace_fn]
     fn minimize(&mut self) -> Result<crate::Returns, Self::Error>

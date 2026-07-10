@@ -37,5 +37,6 @@ pub mod constrained;
 pub mod constraints;
 pub mod line_search;
 pub mod quadratic_model;
+pub mod scalar;
 pub mod unconstrained;
 //}}}

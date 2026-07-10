@@ -9,7 +9,7 @@ use super::bfgsb::{Bfgsb, Options as BfgsbOptions};
 use super::common::Error;
 use crate::bound_constrained::BoundConstrainedOptions;
 use crate::constraints::BoundsConstraints;
-use crate::{Minimizer, RealFn, Vector};
+use crate::{Minimizer, RealFn, Returns, Vector};
 //}}}
 //{{{ std imports
 //}}}
@@ -52,7 +52,7 @@ pub fn create<'a, F: RealFn + 'a>(
     bounds: BoundsConstraints,
     x0: Vector,
     method: Method,
-) -> Box<dyn Minimizer<Error = Error> + 'a>
+) -> Box<dyn Minimizer<Error = Error, Returns = Returns> + 'a>
 {
     match method
     {

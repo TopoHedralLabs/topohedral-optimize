@@ -444,6 +444,7 @@ impl<F: RealFn> Bfgsb<F>
 impl<F: RealFn> Minimizer for Bfgsb<F>
 {
     type Error = Error;
+    type Returns = crate::Returns;
 
     #[trace_fn]
     fn minimize(&mut self) -> Result<crate::Returns, Self::Error>
