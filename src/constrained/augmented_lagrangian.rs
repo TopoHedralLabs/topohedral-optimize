@@ -5,9 +5,11 @@
 
 //{{{ crate imports
 use crate::{
-    common::{arc_real_fn, ConvergedReason, CountingRealFn, IterData, Returns},
+    bound_constrained::{minimize as bcon_minimize, BoundConstrainedMethod},
+    common::{self, arc_real_fn, ConvergedReason, CountingRealFn, IterData, Returns},
     constrained::{ConstrainedError, ConstriainedOptions},
-    unconstrained::{minimize, UnconstrainedMethod, UnconstrainedReturns},
+    constraints::BoundsConstraints,
+    unconstrained::{minimize as uncon_minimize, UnconstrainedMethod},
     Matrix, Minimizer, RealFn, RealVectorFn, Vector,
 };
 use core::f64;
@@ -28,9 +30,19 @@ use topohedral_tracing::*;
 //}}}
 //--------------------------------------------------------------------------------------------------
 
+//{{{ collection: constants
+const DEFUALT_INITIAL_PENALTY: f64 = 1.0;
+const DEFUALT_CONSTRAINT_IMPROVEMENT_FACTOR: f64 = 0.9;
+const DEFAULT_PENALTY_GROWTH_FACTOR: f64 = 2.5;
+/// Ceiling for ω_k (inner stationarity tolerance) on the very first outer
+/// iteration — matches the old `set_inner_tolerances` atol upper clamp.
+/// From the second outer iteration on, the previous ω_k becomes the ceiling
+/// instead, which is what makes the sequence monotone non-increasing.
+const OMEGA_INIT_CEIL: f64 = 1e-2;
+//}}}
 //{{{ enum: LagrangianType
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-enum LagrangianType
+pub enum LagrangianType
 {
     AugmentedLagrangian,
     Lagrangian,
@@ -42,7 +54,7 @@ enum LagrangianType
 pub struct Options
 {
     pub constrained_opts: ConstriainedOptions,
-    pub uncon_method: UnconstrainedMethod,
+    pub inner_method: InnerMethod,
     pub initial_penalty: f64,
     pub constraint_improvement_factor: f64,
     pub penalty_growth_factor: f64,
@@ -54,36 +66,33 @@ impl Options
     #[trace_fn]
     pub fn new(
         constrained_opts: ConstriainedOptions,
-        uncon_method: UnconstrainedMethod,
-        initial_penalty: f64,
-        constraint_improvement_factor: f64,
-        penalty_growth_factor: f64,
+        inner_method: InnerMethod,
     ) -> Self
     {
         Self {
             constrained_opts,
-            uncon_method,
-            initial_penalty,
-            constraint_improvement_factor,
-            penalty_growth_factor,
+            inner_method,
+            initial_penalty: DEFUALT_INITIAL_PENALTY,
+            constraint_improvement_factor: DEFUALT_CONSTRAINT_IMPROVEMENT_FACTOR,
+            penalty_growth_factor: DEFAULT_PENALTY_GROWTH_FACTOR,
         }
     }
 
     #[trace_fn]
-    pub(crate) fn uncon_method_mut(&mut self) -> &mut UnconstrainedMethod
+    pub(crate) fn inner_method_mut(&mut self) -> &mut InnerMethod
     {
-        &mut self.uncon_method
+        &mut self.inner_method
     }
 
     #[trace_fn]
-    pub(crate) fn uncon_method(&self) -> &UnconstrainedMethod
+    pub(crate) fn inner_method(&self) -> &InnerMethod
     {
-        &self.uncon_method
+        &self.inner_method
     }
 }
 //}}}
 
-//{{{ struct: ConstraintData
+//{{{ struct: LagrangianPenaltyData
 #[derive(Debug, Clone)]
 struct LagrangianPenaltyData<F: RealVectorFn>
 {
@@ -95,7 +104,7 @@ struct LagrangianPenaltyData<F: RealVectorFn>
     pub max_violations: Vec<(f64, bool)>,
 }
 //}}}
-//{{{ impl: ConstraintData
+//{{{ impl: LagrangianPenaltyData
 impl<F: RealVectorFn> LagrangianPenaltyData<F>
 {
     //{{{ fn: new
@@ -752,7 +761,16 @@ pub struct AugmentedLagrangian<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn>
 {
     fcn: Arc<Mutex<CountingRealFn<AugmentedLagrangianFcn<F1, F2, F3>>>>,
     x_init: Vector,
+    bounds: Option<BoundsConstraints>,
     opts: Options,
+    omega_k: f64,
+    /// Scheduling-only ramp used by `compute_omega_k`; grows every outer
+    /// iteration unconditionally. Deliberately decoupled from the real
+    /// per-constraint penalties (`EqPenalty`/`IeqPenalty`), which only grow
+    /// when a constraint fails to improve and can otherwise stay fixed
+    /// forever — seeding ω_k's floor off the real penalty would then let it
+    /// get stuck loose indefinitely.
+    mu_k: f64,
 }
 //}}}
 //{{{ impl: AugmentedLagrangian
@@ -762,14 +780,13 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
     #[trace_fn]
     pub fn new(
         fcn: F1,
+        bounds: Option<BoundsConstraints>,
         eq_constraints: Option<F2>,
         ieq_constraints: Option<F3>,
         x0: Vector,
         opts: Options,
     ) -> Self
     {
-        assert!(!opts.uncon_method.uncon_opts().make_counting);
-
         //{{{ trace
         trace!(target: "aug", "Creating new Augmented Lagrangian function");
         //}}}
@@ -785,16 +802,17 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
         let _ = fcn_shared.eval(&x0);
         let _ = fcn_shared.grad(&x0);
 
+        let user_omega = opts.constrained_opts.base_opts.grad_atol;
+        let mu0 = opts.initial_penalty;
         Self {
             fcn: fcn_shared,
             x_init: x0,
+            bounds,
             opts,
+            omega_k: OMEGA_INIT_CEIL.max(user_omega),
+            mu_k: mu0,
         }
     }
-    //}}}
-    //{{{ fn: set_innter_rtol
-    #[trace_fn]
-    fn set_uncon_options(&mut self) {}
     //}}}
     //{{{ fn: is_converged
     #[trace_fn]
@@ -830,15 +848,26 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
             let cached_values = classical_auglag.get_cached_values();
             let norm_grad_f = cached_values.fcn_grad.abs_max().unwrap();
             let norm_grad_penalty = cached_values.all_constraint_grad.abs_max().unwrap();
-            let norm_grad_auglag = cached_values.auglag_grad.abs_max().unwrap();
+            let stationarity_gradient = if let Some(bounds) = &self.bounds
+            {
+                bounds.projected_direction(&iter_k.x, &(-cached_values.auglag_grad.clone()), 1.0)
+            }
+            else
+            {
+                cached_values.auglag_grad.clone()
+            };
+            let _norm_grad_auglag = cached_values.auglag_grad.abs_max().unwrap();
+            let norm_projected_grad_auglag = stationarity_gradient.abs_max().unwrap_or(0.0);
 
-            let residual_stationarity = norm_grad_auglag;
-            let residual_stationarity_scaled = norm_grad_auglag / 1.0f64.max(norm_grad_f).max(norm_grad_penalty);
+            let residual_stationarity = norm_projected_grad_auglag;
+            let residual_stationarity_scaled =
+                norm_projected_grad_auglag / 1.0f64.max(norm_grad_f).max(norm_grad_penalty);
             let residual_primal = norm_eq.max(norm_ieq);
             //{{{ trace
             info!(target: "aug", "||∇P|| = {norm_grad_penalty:.4e} ||∇F|| = {norm_grad_f:.4} ||h|| = {norm_eq:.4e} ||g|| = {norm_ieq:.4e}");
-            info!(target: "aug", "||∇L|| = {norm_grad_auglag:.4e})");
-            info!(target: "aug", "||∇L|| / max(1, ||∇F||, ||∇P||) = {residual_stationarity_scaled:.4e}");
+            info!(target: "aug", "||∇L|| = {_norm_grad_auglag:.4e})");
+            info!(target: "aug", "||∇L_proj|| = {norm_projected_grad_auglag:.4e})");
+            info!(target: "aug", "||∇L_proj|| / max(1, ||∇F||, ||∇P||) = {residual_stationarity_scaled:.4e}");
             //}}}
             let ctol = self.opts.constrained_opts.constraint_tol;
             let rtol = self.opts.constrained_opts.base_opts.grad_rtol;
@@ -898,7 +927,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
         &mut self,
         constraint_improvement_factor: f64,
         penalty_increase_factor: f64,
-        uncon_ret: UnconstrainedReturns,
+        uncon_ret: Returns,
     ) -> IterData
     {
         self.fcn.lock().unwrap().with_inner_mut(|fcn| {
@@ -927,58 +956,125 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
         IterData::new(self.fcn.clone(), &uncon_ret.xmin)
     }
     //}}}
+    /// Computes this outer iteration's inner stationarity tolerance ω_k and
+    /// advances the stored ceiling for the next call.
+    ///
+    /// `ω_k` follows the classical LANCELOT/Birgin–Martínez ramp
+    /// `0.1 * (1/μ_k)^1.5`, clamped to `[user_grad_atol, previous ω_k]`. That
+    /// makes the sequence monotone non-increasing (never loosens between
+    /// outer iterations), reach tolerances tighter than the old hardcoded
+    /// 1e-6 floor when the user asks for them via `grad_atol`, and — because
+    /// `μ_k` (see the `mu_k` field) grows by a fixed factor every outer
+    /// iteration unconditionally — land on `user_grad_atol` within a bounded
+    /// number of iterations regardless of problem-specific behavior.
+    ///
+    /// Earlier versions scaled this off `max(‖c‖∞, 1/μ_k)`, tying it to the
+    /// live constraint residual. Two failure modes ruled that out:
+    /// - Seeding the floor off the *real* per-constraint penalty stalled
+    ///   forever, since `update_max_violations` only grows a constraint's
+    ///   penalty when that constraint fails to improve — one that's already
+    ///   comfortably satisfied can leave its penalty fixed indefinitely.
+    /// - Seeding it off the live residual instead (even via a scheduling-only
+    ///   `μ_k`) let `ω_k` keep chasing the residual down long after outer
+    ///   stationarity was already satisfied and only feasibility was still
+    ///   converging (which happens on its own schedule via the multiplier
+    ///   update, not by solving the inner problem tighter) — for
+    ///   ill-conditioned inner subproblems (e.g. quartics, or gradients with
+    ///   O(10) magnitude requiring near-cancellation to resolve an O(1e-8)
+    ///   residual) this pushed past the inner solver's achievable precision
+    ///   and the line search failed outright. A pure μ_k ramp, independent
+    ///   of the live residual, avoids both.
     #[trace_fn]
-    fn set_inner_tolerances(&self) -> UnconstrainedMethod
+    fn compute_omega_k(&mut self) -> f64
     {
-        let mut uncon_method = self.opts.uncon_method.clone();
-        uncon_method.uncon_opts_mut().grad_rtol = 0.0;
+        let user_omega = self.opts.constrained_opts.base_opts.grad_atol;
+        let prev_omega_k = self.omega_k;
+        let mu_k = self.mu_k;
+        self.mu_k *= self.opts.penalty_growth_factor;
 
-        self.fcn.lock().unwrap().with_inner_mut(|fcn| {
-            if !fcn.is_constrained()
+        let omega_target = 0.1 * (1.0 / mu_k).powf(1.5);
+        let omega_k = omega_target.max(user_omega).min(prev_omega_k);
+
+        self.omega_k = omega_k;
+        //{{{ trace
+        info!(target: "aug", "Inner ω_k = {omega_k:.4e} (prev = {prev_omega_k:.4e}, user floor = {user_omega:.4e})");
+        //}}}
+        omega_k
+    }
+
+    #[trace_fn]
+    fn set_inner_tolerances(&mut self) -> InnerMethod
+    {
+        let inner_method = self.opts.inner_method.clone();
+        let is_constrained = self
+            .fcn
+            .lock()
+            .unwrap()
+            .with_inner_mut(|fcn| fcn.is_constrained());
+
+        match inner_method
+        {
+            InnerMethod::Unconstrained(mut uncon_method) =>
             {
-                uncon_method.uncon_opts_mut().grad_rtol =
-                    self.opts.constrained_opts.base_opts.grad_rtol;
-                uncon_method.uncon_opts_mut().grad_atol =
-                    self.opts.constrained_opts.base_opts.grad_atol;
-                return;
+                if !is_constrained
+                {
+                    uncon_method.uncon_opts_mut().grad_rtol =
+                        self.opts.constrained_opts.base_opts.grad_rtol;
+                    uncon_method.uncon_opts_mut().grad_atol =
+                        self.opts.constrained_opts.base_opts.grad_atol;
+                }
+                else
+                {
+                    let omega_k = self.compute_omega_k();
+                    uncon_method.uncon_opts_mut().grad_rtol = 0.0;
+                    uncon_method.uncon_opts_mut().grad_atol = omega_k;
+                }
+                InnerMethod::Unconstrained(uncon_method)
             }
-
-            let (norm_eq, max_penalty_eq) = if let Some(eq_penalty) = &fcn.eq_penalty
+            InnerMethod::BoundConstrained(mut bcon_method) =>
             {
-                (
-                    eq_penalty.data.values.abs_max().unwrap(),
-                    eq_penalty.data.penalties.allmax().unwrap(),
-                )
+                if !is_constrained
+                {
+                    bcon_method.bound_opts_mut().base_opts.grad_rtol =
+                        self.opts.constrained_opts.base_opts.grad_rtol;
+                    bcon_method.bound_opts_mut().base_opts.grad_atol =
+                        self.opts.constrained_opts.base_opts.grad_atol;
+                }
+                else
+                {
+                    let omega_k = self.compute_omega_k();
+                    bcon_method.bound_opts_mut().base_opts.grad_rtol = 0.0;
+                    bcon_method.bound_opts_mut().base_opts.grad_atol = omega_k;
+                }
+                InnerMethod::BoundConstrained(bcon_method)
             }
-            else
-            {
-                (0.0, 1.0)
-            };
-            let (norm_ieq, max_penalty_ieq) = if let Some(ieq_penalty) = &fcn.ieq_penalty
-            {
-                (
-                    ieq_penalty.data.values.posed().abs_max().unwrap(),
-                    ieq_penalty.data.penalties.allmax().unwrap(),
-                )
-            }
-            else
-            {
-                (0.0, 1.0)
-            };
-
-            let residual_primal = norm_eq.max(norm_ieq);
-            let penalty_max = max_penalty_eq.max(max_penalty_ieq);
-            let atol_min = 1e-6;
-            let atol_max = 1e-2;
-            let atol = (0.1 * (residual_primal.max(1.0 / penalty_max)).powf(1.5))
-                .clamp(atol_min, atol_max);
-            //{{{ trace
-            info!(target: "aug", "Setting innner atol to {atol:.4e}");
-            //}}}
-            uncon_method.uncon_opts_mut().grad_atol = atol;
-        });
-
-        uncon_method
+        }
+    }
+}
+//}}}
+//{{{ enum: InnerMethod
+#[derive(Clone)]
+pub enum InnerMethod
+{
+    Unconstrained(UnconstrainedMethod),
+    BoundConstrained(BoundConstrainedMethod),
+}
+//}}}
+//{{{ fn: inner_minimize
+fn inner_minimize<F: RealFn>(
+    fcn: F,
+    bounds: Option<BoundsConstraints>,
+    x0: Vector,
+    inner_method: InnerMethod,
+) -> Result<common::Returns, ConstrainedError>
+{
+    match inner_method
+    {
+        InnerMethod::Unconstrained(uncon_method) => Ok(uncon_minimize(fcn, x0, uncon_method)?),
+        InnerMethod::BoundConstrained(bcon_method) =>
+        {
+            Ok(bcon_minimize(fcn, bounds.unwrap(), x0, bcon_method)?)
+        }
     }
 }
 //}}}
@@ -1000,7 +1096,49 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> Minimizer for AugmentedLagr
         {
             self.print_status(k, &iter_k);
             let uncon_method = self.set_inner_tolerances();
-            let ret = minimize(self.fcn.clone(), iter_prev_k.x.clone(), uncon_method)?;
+            let _omega_k = self.omega_k;
+            let ret = match inner_minimize(
+                self.fcn.clone(),
+                self.bounds.clone(),
+                iter_prev_k.x.clone(),
+                uncon_method,
+            )
+            {
+                Ok(ret) => ret,
+                // A line-search failure here (typically "no decreasing step found")
+                // usually means the inner iterate is already stationary to numerical
+                // precision for the requested ω_k — the augmented Lagrangian's
+                // penalty-gradient term can dominate the objective's own gradient
+                // near the optimum, so resolving a further decrease runs into
+                // floating-point cancellation before ω_k reaches its target. Treat
+                // the unmoved iterate as this step's result (the outer `is_converged`
+                // check still gates whether that's actually good enough) instead of
+                // aborting the whole outer solve; if the inner solver is genuinely
+                // stuck rather than just precision-limited, this degrades to
+                // `MaxIterations` once the outer loop stops making progress, rather
+                // than masking a real failure as success.
+                Err(_err) =>
+                {
+                    //{{{ trace
+                    info!(target: "aug", "Inner solve failed at ω_k = {_omega_k:.4e}: {_err:?} — treating {k}'s starting iterate as this step's result");
+                    //}}}
+                    let fmin = self
+                        .fcn
+                        .lock()
+                        .unwrap()
+                        .inner_mut()
+                        .fcn
+                        .eval(&iter_prev_k.x);
+                    Returns {
+                        xmin: iter_prev_k.x.clone(),
+                        fmin,
+                        reason: ConvergedReason::Atol,
+                        num_iterations: 0,
+                        num_fun_evals: 0,
+                        num_grad_evals: 0,
+                    }
+                }
+            };
             iter_k = self.update_lagrangian(alpha, beta, ret);
             iter_prev_k.copy_from(&iter_k);
             if let Some(reason) = self.is_converged(&iter_k)

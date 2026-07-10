@@ -93,8 +93,8 @@ fn kkt_residual<F: RealFn>(
 //{{{ fun: asa_options
 fn asa_options(max_iter: u64) -> AsaOptions
 {
-    AsaOptions {
-        bound_opts: BoundConstrainedOptions {
+    AsaOptions::new(
+        BoundConstrainedOptions {
             base_opts: BaseOptions {
                 grad_rtol: 1e-8,
                 grad_atol: 1e-8,
@@ -103,7 +103,7 @@ fn asa_options(max_iter: u64) -> AsaOptions
             },
             constraint_tol: 1e-8,
         },
-        unconstrained_method: UnconstrainedMethod::QuasiNewton(QuasiNewtonOptions {
+        UnconstrainedMethod::QuasiNewton(QuasiNewtonOptions {
             uncon_opts: UnonstrainedOptions {
                 grad_rtol: 1e-8,
                 grad_atol: 1e-8,
@@ -122,16 +122,7 @@ fn asa_options(max_iter: u64) -> AsaOptions
             method: UpdateMethod::BFGS,
             restart: 10,
         }),
-        mu: 0.1,
-        rho: 0.5,
-        n1: 2,
-        n2: 1,
-        memory: 8,
-        delta: 1e-4,
-        eta: 0.5,
-        alpha_min: 1e-20,
-        alpha_max: 1e20,
-    }
+    )
 }
 //}}}
 //{{{ fun: solve_asa
@@ -385,5 +376,43 @@ fn asa_minimizes_nnls_style_spd_quadratic_with_many_active_lower_bounds()
     assert_relative_eq!(ret.fmin, expected_fcn.eval(&expected_x), epsilon = 1e-8);
     assert_eq!(active_count, n / 2);
     assert!(kkt_residual(fcn, &ret.xmin, &[Some(0.0); 20], &[None; 20]) <= 1e-6);
+}
+//}}}
+//{{{ test: large-n shifted quadratic with a mix of active/inactive bounds
+// Regression test for the ASA mixed-norm stopping-criterion bug: `is_converged`
+// used to compare an L2 per-iteration residual against an L∞ initial reference
+// (`norm_grad_fx_init`), making the rtol test up to sqrt(n) harder to satisfy as
+// n grows. This mirrors `asa_minimizes_shifted_quadratic_with_active_upper_bound`
+// but at n = 500, so a reintroduced dimension-dependent rtol would make it
+// converge far more slowly (or not at all within a reasonable iteration budget)
+// relative to the n = 5 case, rather than asserting a specific iteration count.
+#[test]
+fn asa_minimizes_large_n_shifted_quadratic_with_mixed_active_bounds()
+{
+    let n = 500;
+    let mut target = DVector::<f64>::zeros_vec(n, VecType::Col);
+    for i in 0..n
+    {
+        target[i] = i as f64;
+    }
+    let fcn = ShiftedQuadratic { target };
+    let x0 = DVector::<f64>::from_value_vec(125.0, n, VecType::Col);
+    let upper = 250.0;
+    let bounds = add_uniform_bounds(n, Some(0.0), Some(upper));
+
+    let ret = solve_asa(fcn.clone(), x0, bounds, 2000);
+
+    let mut expected_x = DVector::<f64>::zeros_vec(n, VecType::Col);
+    for i in 0..n
+    {
+        expected_x[i] = (i as f64).min(upper);
+    }
+    let mut expected_fcn = fcn.clone();
+
+    assert_vector_close(&ret.xmin, &expected_x, 1e-5);
+    assert_relative_eq!(ret.fmin, expected_fcn.eval(&expected_x), epsilon = 1e-6);
+    let lower_bounds: Vec<Option<f64>> = vec![Some(0.0); n];
+    let upper_bounds: Vec<Option<f64>> = vec![Some(upper); n];
+    assert!(kkt_residual(fcn, &ret.xmin, &lower_bounds, &upper_bounds) <= 1e-6);
 }
 //}}}

@@ -14,7 +14,7 @@ use crate::{ConvergedReason, IterData, Minimizer, RealFn, Returns};
 //{{{ std imports
 #[allow(unused_imports)]
 use topohedral_linalg::MatrixOps;
-use topohedral_linalg::{MatMul, VectorOps};
+use topohedral_linalg::{MatMul, ReduceOps, VectorOps};
 //}}}
 //{{{ dep imports
 use topohedral_tracing::*;
@@ -60,7 +60,7 @@ impl<F: RealFn> QuasiNewton<F>
     ) -> Self
     {
         let grad_0 = fcn.grad(&x0);
-        let norm_grad_0 = grad_0.norm();
+        let norm_grad_0 = grad_0.abs_max().unwrap_or(0.0);
         let n = x0.len();
         Self {
             fcn,
@@ -159,7 +159,8 @@ impl<F: RealFn> QuasiNewton<F>
         trace!(target: "qn", "Current solution: {}", current_iter.x.clone().transpose());
         info!(target: "qn", "Current values: {current_iter}");
         info!(target: "qn","Convergence measures:");
-        let _grad_ratio = current_iter.norm_grad_fx / self.norm_grad_fx_init;
+        let stationarity = current_iter.grad_fx.abs_max().unwrap_or(0.0);
+        let _grad_ratio = stationarity / self.norm_grad_fx_init;
         info!(target: "qn", "||∇f(k)|| / ||∇f(0)|| = {_grad_ratio:.4e}");
         //}}}
     }
@@ -230,15 +231,16 @@ impl<F: RealFn> Minimizer for QuasiNewton<F>
             self.quadratic_model
                 .update_iterate(&iter_k.x, iter_k.fx, &iter_k.grad_fx);
 
-            if let Some(reason) = self.is_converged(iter_k.norm_grad_fx)
+            let stationarity = iter_k.grad_fx.abs_max().unwrap_or(0.0);
+            if let Some(reason) = self.is_converged(stationarity)
             {
                 //{{{ trace
                 info!(target: "qn", "=============================================");
                 info!(target: "qn", "Converging with reason {reason:?}");
                 info!(target: "qn","Convergence measures:");
-                let _grad_ratio = iter_k.norm_grad_fx / self.norm_grad_fx_init;
+                let _grad_ratio = stationarity / self.norm_grad_fx_init;
                 info!(target: "qn", "||∇f(k)|| / ||∇f(0)|| = {_grad_ratio:.4e}");
-                info!(target: "qn", "||∇f(k)|| = {:.4e}", iter_k.norm_grad_fx);
+                info!(target: "qn", "||∇f(k)|| = {:.4e}", stationarity);
                 trace!(target: "qn", "fx = {:.4e} x = {}", iter_k.fx, iter_k.x.clone().transpose());
                 info!(target: "qn", "=============================================");
                 //}}}

@@ -3,7 +3,10 @@
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
-use crate::common::{arc_real_fn, CountingRealFn, RealFn, RealVectorFn, Vector};
+use crate::{
+    common::{arc_real_fn, CountingRealFn, RealFn, RealVectorFn, Vector},
+    constraints::BoundsConstraints,
+};
 //}}}
 //{{{ std imports
 //}}}
@@ -27,7 +30,8 @@ pub use common::{Error as ConstrainedError, Options as ConstriainedOptions};
 //}}}
 //{{{ pub use: augmented_lagrangian exports
 pub use augmented_lagrangian::{
-    AugmentedLagrangian, AugmentedLagrangianFcn, Options as AugmentedLagrangianOptions,
+    AugmentedLagrangian, AugmentedLagrangianFcn, InnerMethod as AugmentedLagrangianInnerMethod,
+    Options as AugmentedLagrangianOptions,
 };
 //}}}
 //{{{ pub use: factory export
@@ -38,6 +42,7 @@ pub use factory::Method as ConstrainedMethod;
 #[trace_fn]
 pub fn minimize<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn>(
     fcn: F1,
+    bounds: Option<BoundsConstraints>,
     eq_constraints: Option<F2>,
     ieq_constraints: Option<F3>,
     x0: Vector,
@@ -47,14 +52,15 @@ pub fn minimize<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn>(
     if method.con_opts().base_opts.make_counting
     {
         let counting_fcn = arc_real_fn(CountingRealFn::new(fcn));
-        let mut minimizer = factory::create(
+        let minimizer = factory::create(
             counting_fcn.clone(),
+            bounds,
             eq_constraints,
             ieq_constraints,
             x0,
             method,
         );
-        let mut ret = minimizer.minimize()?;
+        let mut ret = minimizer?.minimize()?;
         let counting_fcn_lock = counting_fcn.lock().unwrap();
         ret.num_fun_evals = counting_fcn_lock.num_func_evals;
         ret.num_grad_evals = counting_fcn_lock.num_grad_evals;
@@ -62,8 +68,8 @@ pub fn minimize<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn>(
     }
     else
     {
-        let mut minimizer = factory::create(fcn, eq_constraints, ieq_constraints, x0, method);
-        minimizer.minimize()
+        let minimizer = factory::create(fcn, bounds, eq_constraints, ieq_constraints, x0, method);
+        minimizer?.minimize()
     }
 }
 //}}}

@@ -306,9 +306,9 @@ fn test_qudratic(
         xmin:  colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
         fmin: 0.0,
         reason: UnconstrainedConvergedReason::Rtol,
-        num_iterations: 57,
-        num_fun_evals: 63,
-        num_grad_evals: 121,
+        num_iterations: 58,
+        num_fun_evals: 65,
+        num_grad_evals: 124,
     }
 )]
 //}}}

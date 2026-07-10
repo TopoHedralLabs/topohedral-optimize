@@ -15,6 +15,8 @@ use crate::{IterData, Minimizer, RealFn, Vector};
 //{{{ std imports
 //}}}
 //{{{ dep imports
+#[allow(unused_imports)]
+use topohedral_linalg::MatrixOps;
 use topohedral_linalg::VecType::Col;
 use topohedral_linalg::{MatMul, ReduceOps, SubViewable, SubViewableMut, VectorOps};
 use topohedral_tracing::*;
@@ -46,9 +48,25 @@ fn cauchy_point(
 
     let mut dir = -gk.clone();
     let mut bound_statuses = bounds.bound_statuses(xk, Some(&dir));
+    let _free_count_initial = bound_statuses
+        .iter()
+        .filter(|status| **status == BoundStatus::Free)
+        .count();
+
+    //{{{ trace
+    debug!(
+        target: "bfgsb",
+        "Computing Cauchy point: n = {}, initial free variables = {_free_count_initial}, ||g|| = {:.4e}",
+        xk.len(),
+        gk.norm()
+    );
+    //}}}
 
     if !bound_statuses.contains(&BoundStatus::Free)
     {
+        //{{{ trace
+        debug!(target: "bfgsb", "All descent components are fixed at bounds; Cauchy point is current iterate");
+        //}}}
         return CauchyPoint {
             cauchy_point: xk.clone(),
             cauchy_curvature: Vector::zeros_vec(xk.len(), Col),
@@ -85,6 +103,13 @@ fn cauchy_point(
     let mut dalpha_min = -dm_dalpha / d2m_dalpha2;
 
     let cauchy_path = bounds.cauchy_path(xk, &dir);
+    let _path_len = cauchy_path.len();
+    //{{{ trace
+    trace!(
+        target: "bfgsb",
+        "Cauchy path has {_path_len} breakpoints; initial alpha_min = {dalpha_min:.4e}, m'(0) = {dm_dalpha:.4e}, m''(0) = {d2m_dalpha2:.4e}"
+    );
+    //}}}
     let mut alpha_old = 0.0;
     for path_point in &cauchy_path
     {
@@ -98,6 +123,9 @@ fn cauchy_point(
 
         if dalpha_min < d_alpha
         {
+            //{{{ trace
+            trace!(target: "bfgsb", "Cauchy minimizer occurs before next bound: dalpha_min = {dalpha_min:.4e}, d_alpha = {d_alpha:.4e}");
+            //}}}
             break;
         }
 
@@ -115,6 +143,9 @@ fn cauchy_point(
             }
             _ => panic!("Variable not at bound"),
         };
+        //{{{ trace
+        trace!(target: "bfgsb", "Cauchy path hit bound for variable {vi_i} at alpha = {alpha_i:.4e}");
+        //}}}
         let gi = gk[vi_i];
         bmatk_x_minus_xk += d_alpha * bmatk_d.clone();
 
@@ -139,6 +170,19 @@ fn cauchy_point(
         }
     }
     bmatk_x_minus_xk += dalpha_min * bmatk_d;
+    let _active_count = bound_statuses
+        .iter()
+        .filter(|status| **status != BoundStatus::Free)
+        .count();
+    let _cauchy_step: Vector = (&x_cauchy - xk).into();
+    let _cauchy_step_norm = _cauchy_step.norm();
+
+    //{{{ trace
+    debug!(
+        target: "bfgsb",
+        "Cauchy point complete: alpha_total = {alpha_total:.4e}, active variables = {_active_count}, ||x_c - x|| = {_cauchy_step_norm:.4e}"
+    );
+    //}}}
 
     CauchyPoint {
         cauchy_point: x_cauchy,
@@ -176,9 +220,17 @@ fn subspace_minimize(
             (*status == BoundStatus::Free).then_some(variable_index)
         })
         .collect();
+    let _free_count = free_variable_indices.len();
+
+    //{{{ trace
+    debug!(target: "bfgsb", "Subspace minimization over {_free_count} free variables");
+    //}}}
 
     if free_variable_indices.is_empty()
     {
+        //{{{ trace
+        debug!(target: "bfgsb", "No free variables in subspace; using Cauchy point");
+        //}}}
         return cauchy_point.cauchy_point.clone();
     }
 
@@ -188,6 +240,10 @@ fn subspace_minimize(
     {
         reduced_gradient[i] = -(gk[*free_idx] + bmat_x_minus_xk[*free_idx]);
     }
+    let _reduced_grad_norm = reduced_gradient.norm();
+    //{{{ trace
+    trace!(target: "bfgsb", "Reduced subspace gradient norm = {_reduced_grad_norm:.4e}");
+    //}}}
 
     let reduced_bmat = bmatk
         .subview_indices(&free_variable_indices, &free_variable_indices)
@@ -196,6 +252,9 @@ fn subspace_minimize(
     let Ok(reduced_direction) = reduced_bmat.solve(&reduced_gradient)
     else
     {
+        //{{{ trace
+        debug!(target: "bfgsb", "Subspace linear solve failed; using Cauchy point");
+        //}}}
         return cauchy_point.cauchy_point.clone();
     };
     let mut full_direction = Vector::zeros_vec(xk.len(), Col);
@@ -206,6 +265,11 @@ fn subspace_minimize(
     let alpha_min = bounds.max_feasible_step(x_cauchy, &full_direction).min(1.0);
     let mut out: Vector = (x_cauchy + alpha_min * &full_direction).into();
     bounds.clamp(&mut out);
+    let _subspace_step: Vector = (&out - x_cauchy).into();
+    let _subspace_step_norm = _subspace_step.norm();
+    //{{{ trace
+    debug!(target: "bfgsb", "Subspace minimization accepted alpha = {alpha_min:.4e}, ||z - x_c|| = {_subspace_step_norm:.4e}");
+    //}}}
     out
 }
 //}}}
@@ -234,6 +298,9 @@ fn capped_line_search_method(
     let mut method = method.clone();
     if step_max.is_finite()
     {
+        //{{{ trace
+        debug!(target: "bfgsb", "Capping line-search step_max at {step_max:.4e}");
+        //}}}
         match &mut method
         {
             LineSearchMethod::Thuente(opts) =>
@@ -286,6 +353,12 @@ impl<F: RealFn> Bfgsb<F>
         let projected_grad_0 = projected_gradient_inf_norm(&bounds, &x0, &grad_0);
 
         let n = x0.len();
+        //{{{ trace
+        info!(target: "bfgsb", "Initializing BFGS-B");
+        trace!(target: "bfgsb", "Initial solution: {}", x0.clone().transpose());
+        info!(target: "bfgsb", "Initial ||∇f_proj||_∞ = {projected_grad_0:.4e}");
+        trace!(target: "bfgsb", "Problem dimension = {n}");
+        //}}}
         Self {
             fcn,
             bounds,
@@ -303,16 +376,67 @@ impl<F: RealFn> Bfgsb<F>
     ) -> Option<ConvergedReason>
     {
         let rtol = self.opts.bound_opts.base_opts.grad_rtol;
+        let _grad_ratio = if self.norm_grad_fx_init > 0.0
+        {
+            grad_norm / self.norm_grad_fx_init
+        }
+        else
+        {
+            0.0
+        };
+
+        //{{{ trace
+        trace!(
+            target: "bfgsb",
+            "Checking convergence: ||∇f_proj|| / ||∇f_proj(0)|| = {_grad_ratio:.4e}, ||∇f_proj|| = {grad_norm:.4e}"
+        );
+        //}}}
+
         if self.norm_grad_fx_init > 0.0 && (grad_norm / self.norm_grad_fx_init) < rtol
         {
+            //{{{ trace
+            trace!(target: "bfgsb", "Rtol reached");
+            //}}}
             return Some(ConvergedReason::Rtol);
         }
         let atol_converged = grad_norm < self.opts.bound_opts.base_opts.grad_atol;
         if atol_converged
         {
+            //{{{ trace
+            trace!(target: "bfgsb", "Atol reached");
+            //}}}
             return Some(ConvergedReason::Atol);
         }
         None
+    }
+
+    fn print_status(
+        &self,
+        _k: u64,
+        current_iter: &IterData,
+    )
+    {
+        //{{{ trace
+        info!(target: "bfgsb", "======================================================================== i = {_k}");
+        trace!(target: "bfgsb", "Current solution: {}", current_iter.x.clone().transpose());
+        info!(target: "bfgsb", "Current values: {current_iter}");
+        info!(target: "bfgsb", "Convergence measures:");
+        let _projected_grad =
+            self.bounds
+                .projected_direction(&current_iter.x, &(-current_iter.grad_fx.clone()), 1.0);
+        let _projected_grad_norm = _projected_grad.abs_max().unwrap_or(0.0);
+        let _grad_ratio = if self.norm_grad_fx_init > 0.0
+        {
+            _projected_grad_norm / self.norm_grad_fx_init
+        }
+        else
+        {
+            0.0
+        };
+        info!(target: "bfgsb", "||∇f_proj(k)|| / ||∇f_proj(0)|| = {_grad_ratio:.4e}");
+        info!(target: "bfgsb", "||∇f_proj(k)|| = {_projected_grad_norm:.4e}");
+        trace!(target: "bfgsb", "∇f_proj: {}", _projected_grad.transpose());
+        //}}}
     }
 }
 //}}}
@@ -331,10 +455,26 @@ impl<F: RealFn> Minimizer for Bfgsb<F>
         let max_iter = self.opts.bound_opts.base_opts.max_iter;
         let ftol = self.opts.bound_opts.constraint_tol.max(f64::EPSILON);
 
+        info!(target: "bfgsb", "Starting BFGS-B iterations with max_iter = {max_iter}, ftol = {ftol:.4e}");
+
         for k in 0..max_iter
         {
+            let iter_k = IterData {
+                x: xk.clone(),
+                fx: fk,
+                grad_fx: gk.clone(),
+                norm_grad_fx: gk.norm(),
+            };
+            self.print_status(k, &iter_k);
+
             if let Some(reason) = self.is_converged(projected_grad_norm)
             {
+                //{{{ trace
+                info!(target: "bfgsb", "=============================================");
+                info!(target: "bfgsb", "Converging with reason {reason:?}");
+                trace!(target: "bfgsb", "fx = {:.4e} x = {}", fk, xk.clone().transpose());
+                info!(target: "bfgsb", "=============================================");
+                //}}}
                 return Ok(crate::Returns {
                     fmin: fk,
                     xmin: xk,
@@ -346,9 +486,22 @@ impl<F: RealFn> Minimizer for Bfgsb<F>
             }
 
             self.quadratic_model.update_iterate(&xk, fk, &gk);
+            //{{{ trace
+            trace!(target: "bfgsb", "Updated quadratic model iterate: f = {fk:.4e}, ||g|| = {:.4e}", gk.norm());
+            //}}}
             let cp = cauchy_point(&self.bounds, &self.quadratic_model);
 
             let has_free = cp.bound_statuses.contains(&BoundStatus::Free);
+            let _active_count = cp
+                .bound_statuses
+                .iter()
+                .filter(|status| **status != BoundStatus::Free)
+                .count();
+            let _free_count = cp.bound_statuses.len() - _active_count;
+
+            //{{{ trace
+            debug!(target: "bfgsb", "Cauchy point status: active variables = {_active_count}, free variables = {_free_count}");
+            //}}}
 
             let z = if has_free
             {
@@ -362,11 +515,22 @@ impl<F: RealFn> Minimizer for Bfgsb<F>
             let mut dir: Vector = (&z - &xk).into();
             let mut gd = gk.dot(&dir);
             let descent_tol = f64::EPSILON * fk.abs().max(1.0);
+            let _dir_norm = dir.norm();
+            //{{{ trace
+            debug!(target: "bfgsb", "Candidate direction: ||d|| = {_dir_norm:.4e}, gᵀd = {gd:.4e}, descent_tol = {descent_tol:.4e}");
+            //}}}
             if gd >= -descent_tol
             {
+                //{{{ trace
+                debug!(target: "bfgsb", "Candidate direction is not sufficiently descending; resetting model and trying projected-gradient fallback");
+                //}}}
                 self.quadratic_model.reset();
                 let fallback_dir = self.bounds.projected_direction(&xk, &(-gk.clone()), 1.0);
                 let fallback_gd = gk.dot(&fallback_dir);
+                let _fallback_norm = fallback_dir.norm();
+                //{{{ trace
+                debug!(target: "bfgsb", "Fallback direction: ||d|| = {_fallback_norm:.4e}, gᵀd = {fallback_gd:.4e}");
+                //}}}
                 if fallback_gd < -descent_tol
                 {
                     dir = fallback_dir;
@@ -378,6 +542,12 @@ impl<F: RealFn> Minimizer for Bfgsb<F>
             {
                 if let Some(reason) = self.is_converged(projected_grad_norm)
                 {
+                    //{{{ trace
+                    info!(target: "bfgsb", "=============================================");
+                    info!(target: "bfgsb", "Converging with reason {reason:?} after failed descent check");
+                    trace!(target: "bfgsb", "fx = {:.4e} x = {}", fk, xk.clone().transpose());
+                    info!(target: "bfgsb", "=============================================");
+                    //}}}
                     return Ok(crate::Returns {
                         fmin: fk,
                         xmin: xk,
@@ -387,14 +557,26 @@ impl<F: RealFn> Minimizer for Bfgsb<F>
                         num_grad_evals: 0,
                     });
                 }
+                //{{{ trace
+                debug!(target: "bfgsb", "No descending direction found and convergence check failed");
+                //}}}
                 return Err(Error::LineSearch(LineSearchError::NoStepFound));
             }
 
             let max_feasible_alpha = self.bounds.max_feasible_step(&xk, &dir);
+            //{{{ trace
+            debug!(target: "bfgsb", "Maximum feasible line-search step = {max_feasible_alpha:.4e}");
+            //}}}
             if max_feasible_alpha <= 0.0
             {
                 if let Some(reason) = self.is_converged(projected_grad_norm)
                 {
+                    //{{{ trace
+                    info!(target: "bfgsb", "=============================================");
+                    info!(target: "bfgsb", "Converging with reason {reason:?} after nonpositive feasible step");
+                    trace!(target: "bfgsb", "fx = {:.4e} x = {}", fk, xk.clone().transpose());
+                    info!(target: "bfgsb", "=============================================");
+                    //}}}
                     return Ok(crate::Returns {
                         fmin: fk,
                         xmin: xk,
@@ -404,6 +586,9 @@ impl<F: RealFn> Minimizer for Bfgsb<F>
                         num_grad_evals: 0,
                     });
                 }
+                //{{{ trace
+                debug!(target: "bfgsb", "Line-search direction has no positive feasible step");
+                //}}}
                 return Err(Error::LineSearch(LineSearchError::NoStepFound));
             }
 
@@ -417,13 +602,9 @@ impl<F: RealFn> Minimizer for Bfgsb<F>
             }
             .max(1e-30);
 
-            let iter_k = IterData {
-                x: xk.clone(),
-                fx: fk,
-                grad_fx: gk.clone(),
-                norm_grad_fx: gk.norm(),
-            };
-
+            //{{{ trace
+            debug!(target: "bfgsb", "Starting line search: alpha_init = {alpha_init:.4e}, gᵀd = {gd:.4e}");
+            //}}}
             let search_result = ls::search(
                 self.fcn.clone(),
                 &iter_k,
@@ -437,11 +618,26 @@ impl<F: RealFn> Minimizer for Bfgsb<F>
             {
                 if !self.quadratic_model.had_first_update
                 {
+                    //{{{ trace
+                    debug!(target: "bfgsb", "Line search failed before first Hessian update; returning NoStepFound");
+                    //}}}
                     return Err(Error::LineSearch(LineSearchError::NoStepFound));
                 }
+                //{{{ trace
+                debug!(target: "bfgsb", "Line search failed; resetting quadratic model and retrying next iteration");
+                //}}}
                 self.quadratic_model.reset();
                 continue;
             };
+
+            //{{{ trace
+            debug!(
+                target: "bfgsb",
+                "Line search accepted point: f = {:.4e}, ||∇f|| = {:.4e}",
+                search_result.fx,
+                search_result.norm_grad_fx
+            );
+            //}}}
 
             let mut xk_new = search_result.x;
             self.bounds.clamp(&mut xk_new);
@@ -450,15 +646,29 @@ impl<F: RealFn> Minimizer for Bfgsb<F>
             let sk: Vector = (&xk_new - &xk).into();
             let yk: Vector = (&gk_new - &gk).into();
             let rel_red = (fk - fk_new) / fk.abs().max(fk_new.abs()).max(1.0);
+            let _step_norm = sk.norm();
+            let _yk_norm = yk.norm();
 
             xk = xk_new;
             fk = fk_new;
             gk = gk_new;
             projected_grad_norm = projected_gradient_inf_norm(&self.bounds, &xk, &gk);
-            self.quadratic_model.try_update(&sk, &yk, Direct);
+            let _hessian_updated = self.quadratic_model.try_update(&sk, &yk, Direct);
+            //{{{ trace
+            debug!(
+                target: "bfgsb",
+                "Accepted iterate: f = {fk:.4e}, rel_red = {rel_red:.4e}, ||s|| = {_step_norm:.4e}, ||y|| = {_yk_norm:.4e}, ||∇f_proj|| = {projected_grad_norm:.4e}, Hessian updated = {_hessian_updated}"
+            );
+            //}}}
 
             if let Some(reason) = self.is_converged(projected_grad_norm)
             {
+                //{{{ trace
+                info!(target: "bfgsb", "=============================================");
+                info!(target: "bfgsb", "Converging with reason {reason:?}");
+                trace!(target: "bfgsb", "fx = {:.4e} x = {}", fk, xk.clone().transpose());
+                info!(target: "bfgsb", "=============================================");
+                //}}}
                 return Ok(crate::Returns {
                     fmin: fk,
                     xmin: xk,
@@ -471,6 +681,12 @@ impl<F: RealFn> Minimizer for Bfgsb<F>
 
             if rel_red <= ftol
             {
+                //{{{ trace
+                info!(target: "bfgsb", "=============================================");
+                info!(target: "bfgsb", "Converging by relative function reduction: rel_red = {rel_red:.4e}, ftol = {ftol:.4e}");
+                trace!(target: "bfgsb", "fx = {:.4e} x = {}", fk, xk.clone().transpose());
+                info!(target: "bfgsb", "=============================================");
+                //}}}
                 return Ok(crate::Returns {
                     fmin: fk,
                     xmin: xk,
@@ -482,6 +698,9 @@ impl<F: RealFn> Minimizer for Bfgsb<F>
             }
         }
 
+        //{{{ trace
+        info!(target: "bfgsb", "Did not converge within {max_iter} iterations");
+        //}}}
         Err(Error::MaxIterations(max_iter as usize))
     }
 }
