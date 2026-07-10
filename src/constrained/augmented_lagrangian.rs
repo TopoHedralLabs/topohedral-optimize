@@ -33,16 +33,16 @@ use topohedral_tracing::*;
 //}}}
 //--------------------------------------------------------------------------------------------------
 
+//{{{ collection: constants
 const DEFUALT_INITIAL_PENALTY: f64 = 1.0;
 const DEFUALT_CONSTRAINT_IMPROVEMENT_FACTOR: f64 = 0.9;
 const DEFAULT_PENALTY_GROWTH_FACTOR: f64 = 2.5;
-
 /// Ceiling for ω_k (inner stationarity tolerance) on the very first outer
 /// iteration — matches the old `set_inner_tolerances` atol upper clamp.
 /// From the second outer iteration on, the previous ω_k becomes the ceiling
 /// instead, which is what makes the sequence monotone non-increasing.
 const OMEGA_INIT_CEIL: f64 = 1e-2;
-
+//}}}
 //{{{ enum: LagrangianType
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum LagrangianType
@@ -51,13 +51,6 @@ pub enum LagrangianType
     Lagrangian,
 }
 //}}}
-
-#[derive(Clone)]
-pub enum InnerMethod
-{
-    Unconstrained(UnconstrainedMethod),
-    BoundConstrained(BoundConstrainedMethod),
-}
 
 //{{{ struct Options
 #[derive(Clone)]
@@ -1016,7 +1009,11 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
     fn set_inner_tolerances(&mut self) -> InnerMethod
     {
         let inner_method = self.opts.inner_method.clone();
-        let is_constrained = self.fcn.lock().unwrap().with_inner_mut(|fcn| fcn.is_constrained());
+        let is_constrained = self
+            .fcn
+            .lock()
+            .unwrap()
+            .with_inner_mut(|fcn| fcn.is_constrained());
 
         match inner_method
         {
@@ -1058,7 +1055,15 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
     }
 }
 //}}}
-
+//{{{ enum: InnerMethod
+#[derive(Clone)]
+pub enum InnerMethod
+{
+    Unconstrained(UnconstrainedMethod),
+    BoundConstrained(BoundConstrainedMethod),
+}
+//}}}
+//{{{ fn: inner_minimize
 fn inner_minimize<F: RealFn>(
     fcn: F,
     bounds: Option<BoundsConstraints>,
@@ -1075,7 +1080,7 @@ fn inner_minimize<F: RealFn>(
         }
     }
 }
-
+//}}}
 //{{{ impl: Minimizer for AugmentedLagrangian
 impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> Minimizer for AugmentedLagrangian<F1, F2, F3>
 {
@@ -1120,7 +1125,13 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> Minimizer for AugmentedLagr
                     //{{{ trace
                     info!(target: "aug", "Inner solve failed at ω_k = {_omega_k:.4e}: {_err:?} — treating {k}'s starting iterate as this step's result");
                     //}}}
-                    let fmin = self.fcn.lock().unwrap().inner_mut().fcn.eval(&iter_prev_k.x);
+                    let fmin = self
+                        .fcn
+                        .lock()
+                        .unwrap()
+                        .inner_mut()
+                        .fcn
+                        .eval(&iter_prev_k.x);
                     Returns {
                         xmin: iter_prev_k.x.clone(),
                         fmin,
