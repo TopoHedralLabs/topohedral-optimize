@@ -1055,7 +1055,7 @@ impl RealFn for Rosenbrock
     }
 }
 //}}}
-//{{{ test: unconstrained
+//{{{ test: test_rosenbrock_uncon
 #[rstest]
 #[case::rosenbrock_thuente_bfgs(colvec(&[0.0, 3.0]), UnconstrainedMethod::QuasiNewton(THUENTE_BFGS),  52, 84)]
 #[case::rosenbrock_nocedal_bfgs(colvec(&[0.0, 3.0]), UnconstrainedMethod::QuasiNewton(NOCEDAL_BFGS),  74, 83)]
@@ -1063,7 +1063,7 @@ impl RealFn for Rosenbrock
 #[case::rosenbrock_nocedal_fr(colvec(&[0.0, 3.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_FR),   235, 220)]
 #[case::rosenbrock_thuente_pr(colvec(&[0.0, 3.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_PR),   319, 473)]
 #[case::rosenbrock_nocedal_pr(colvec(&[0.0, 3.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_PR),   199, 165)]
-fn test_rosenbrock_without_constraints_matches_unconstrained_reference(
+fn test_rosenbrock_uncon(
     #[case] x0: Vector,
     #[case] unconstrained_method: UnconstrainedMethod,
     #[case] exp_num_fun_evals: usize,
@@ -1082,6 +1082,78 @@ fn test_rosenbrock_without_constraints_matches_unconstrained_reference(
     .unwrap();
     println!("ret = {ret:?}");
     assert_answer(&ret, &colvec(&[1.0, 1.0]), 0.0, 1e-3, 1e-5);
+    assert_counts(&ret, exp_num_fun_evals, exp_num_grad_evals);
+}
+//}}}
+//{{{ test: test_rosenbrock_bcon_1
+#[rstest]
+#[case::rosenbrock_thuente_bfgs(colvec(&[-1.0, 3.0]), UnconstrainedMethod::QuasiNewton(THUENTE_BFGS),  113, 183)]
+#[case::rosenbrock_nocedal_bfgs(colvec(&[5.0, 3.0]), UnconstrainedMethod::QuasiNewton(NOCEDAL_BFGS),  114, 122)]
+#[case::rosenbrock_thuente_fr(colvec(&[-2.0, 3.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_FR),   342, 532)]
+#[case::rosenbrock_nocedal_fr(colvec(&[-3.0, 3.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_FR),   245, 197)]
+#[case::rosenbrock_thuente_pr(colvec(&[-3.0, 3.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_PR),   319, 473)]
+#[case::rosenbrock_nocedal_pr(colvec(&[-10.0, -10.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_PR),   199, 165)]
+fn test_rosenbrock_bcon_1(
+    #[case] x0: Vector,
+    #[case] unconstrained_method: UnconstrainedMethod,
+    #[case] exp_num_fun_evals: usize,
+    #[case] exp_num_grad_evals: usize,
+)
+{
+    let rosenbrock = Rosenbrock::new();
+
+    let ieq_constraints = HyperSphereBound {
+        center: colvec(&[2.0, 2.0]),
+        radius: 3.0,
+    };
+
+    let ret = constrained_minimize(
+        rosenbrock,
+        None,
+        None::<NoConstraints>,
+        Some(ieq_constraints),
+        x0,
+        uncon_auglag_method(unconstrained_method),
+    )
+    .unwrap();
+    println!("ret = {ret:?}");
+    assert_answer(&ret, &colvec(&[1.0, 1.0]), 0.0, 1e-3, 1e-5);
+    assert_counts(&ret, exp_num_fun_evals, exp_num_grad_evals);
+}
+//}}}
+//{{{ test: test_rosenbrock_bcon_2
+#[rstest]
+#[case::rosenbrock_thuente_bfgs(colvec(&[-1.0, 3.0]), UnconstrainedMethod::QuasiNewton(THUENTE_BFGS),  250, 416)]
+#[case::rosenbrock_nocedal_bfgs(colvec(&[5.0, 3.0]), UnconstrainedMethod::QuasiNewton(NOCEDAL_BFGS),  348, 383)]
+#[case::rosenbrock_thuente_fr(colvec(&[-2.0, 3.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_FR),   864, 1430)]
+#[case::rosenbrock_nocedal_fr(colvec(&[-3.0, 3.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_FR),   878, 828)]
+#[case::rosenbrock_thuente_pr(colvec(&[-3.0, 3.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_PR),   1386, 2244)]
+#[case::rosenbrock_nocedal_pr(colvec(&[-10.0, -10.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_PR),   935, 772)]
+fn test_rosenbrock_bcon_2(
+    #[case] x0: Vector,
+    #[case] unconstrained_method: UnconstrainedMethod,
+    #[case] exp_num_fun_evals: usize,
+    #[case] exp_num_grad_evals: usize,
+)
+{
+    let rosenbrock = Rosenbrock::new();
+
+    let ieq_constraints = HyperSphereBound {
+        center: colvec(&[0.0, 0.0]),
+        radius: 0.5,
+    };
+
+    let ret = constrained_minimize(
+        rosenbrock,
+        None,
+        None::<NoConstraints>,
+        Some(ieq_constraints),
+        x0,
+        uncon_auglag_method(unconstrained_method),
+    )
+    .unwrap();
+    println!("ret = {ret:?}");
+    assert_answer(&ret, &colvec(&[0.455649, 0.205874]), 0.296621, 1e-3, 1e-5);
     assert_counts(&ret, exp_num_fun_evals, exp_num_grad_evals);
 }
 //}}}
