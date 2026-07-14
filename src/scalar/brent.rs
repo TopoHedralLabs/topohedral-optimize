@@ -7,7 +7,7 @@
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
-use super::common::{bracket, BracketOptions, BracketResult, Error as ScalarError};
+use super::common::{resolve_bracket, Bracket, BracketOptions, BracketResult, Error as ScalarError};
 use crate::{common::ScalarReturns, ConvergedReason, Minimizer, RealFn1};
 //}}}
 //{{{ std imports
@@ -17,23 +17,6 @@ use topohedral_tracing::{trace, trace_fn};
 //}}}
 //--------------------------------------------------------------------------------------------------
 
-//{{{ enum: Bracket
-/// Specifies how the initial bracketing triple is obtained.
-#[derive(Copy, Clone, Default)]
-pub enum Bracket
-{
-    /// Search for a bracket automatically, starting from the default points `(0, 1)`.
-    #[default]
-    Auto,
-    /// Search for a bracket starting downhill from the two given points.
-    Points(f64, f64),
-    /// Use an explicit three-point bracket `(xa, xb, xc)`.
-    ///
-    /// Validated so that, after ordering `xa` and `xc`, `xb` lies strictly
-    /// between them and `f(xb) < f(xa)` and `f(xb) < f(xc)`.
-    Triple(f64, f64, f64),
-}
-//}}}
 //{{{ struct: Options
 #[derive(Copy, Clone)]
 pub struct Options
@@ -80,40 +63,6 @@ impl<F: RealFn1> Brent<F>
     {
         Self { fcn, bracket, opts }
     }
-
-    #[trace_fn]
-    fn get_bracket_info(&mut self) -> Result<BracketResult, ScalarError>
-    {
-        match self.bracket
-        {
-            Bracket::Auto => bracket(&mut self.fcn, 0.0, 1.0, BracketOptions::default()),
-            Bracket::Points(xa, xb) => bracket(&mut self.fcn, xa, xb, BracketOptions::default()),
-            Bracket::Triple(xa0, xb, xc0) =>
-            {
-                let (xa, xc) = if xa0 > xc0 { (xc0, xa0) } else { (xa0, xc0) };
-                if !(xa < xb && xb < xc)
-                {
-                    return Err(ScalarError::InvalidBracketOrder(xa, xb, xc));
-                }
-                let fa = self.fcn.eval(xa);
-                let fb = self.fcn.eval(xb);
-                let fc = self.fcn.eval(xc);
-                if !(fb < fa && fb < fc)
-                {
-                    return Err(ScalarError::InvalidBracketValues);
-                }
-                Ok(BracketResult {
-                    xa,
-                    xb,
-                    xc,
-                    fa,
-                    fb,
-                    fc,
-                    num_fun_evals: 3,
-                })
-            }
-        }
-    }
 }
 //}}}
 //{{{ impl: Minimizer for Brent
@@ -135,7 +84,7 @@ impl<F: RealFn1> Minimizer for Brent<F>
             fb,
             mut num_fun_evals,
             ..
-        } = self.get_bracket_info()?;
+        } = resolve_bracket(&mut self.fcn, self.bracket, BracketOptions::default())?;
 
         //{{{ trace
         trace!(target: "scalar", "brent: bracket xa = {xa:.4e}, xb = {xb:.4e}, xc = {xc:.4e}");
