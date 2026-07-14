@@ -240,6 +240,74 @@ pub fn bracket<F: RealFn1>(
     })
 }
 //}}}
+//{{{ enum: Bracket
+/// Specifies how the initial bracketing triple for [`resolve_bracket`] is obtained.
+#[derive(Copy, Clone, Default)]
+pub enum Bracket
+{
+    /// Search for a bracket automatically, starting from the default points `(0, 1)`.
+    #[default]
+    Auto,
+    /// Search for a bracket starting downhill from the two given points.
+    Points(f64, f64),
+    /// Use an explicit three-point bracket `(xa, xb, xc)`.
+    ///
+    /// Validated so that, after ordering `xa` and `xc`, `xb` lies strictly
+    /// between them and `f(xb) < f(xa)` and `f(xb) < f(xc)`.
+    Triple(f64, f64, f64),
+}
+//}}}
+//{{{ fun: resolve_bracket
+/// Resolves a [`Bracket`] specification into a validated [`BracketResult`].
+///
+/// For [`Bracket::Auto`] and [`Bracket::Points`], delegates to [`bracket`]. For
+/// [`Bracket::Triple`], validates the triple directly rather than searching.
+///
+/// # Errors
+///
+/// - [`Error::InvalidBracketOrder`] if, after ordering `xa` and `xc`, `xb`
+///   does not lie strictly between them.
+/// - [`Error::InvalidBracketValues`] if `f(xb)` is not lower than both
+///   `f(xa)` and `f(xc)`.
+/// - Any error from [`bracket`] for the `Auto`/`Points` variants.
+#[trace_fn]
+pub fn resolve_bracket<F: RealFn1>(
+    f: &mut F,
+    spec: Bracket,
+    opts: BracketOptions,
+) -> Result<BracketResult, Error>
+{
+    match spec
+    {
+        Bracket::Auto => bracket(f, 0.0, 1.0, opts),
+        Bracket::Points(xa, xb) => bracket(f, xa, xb, opts),
+        Bracket::Triple(xa0, xb, xc0) =>
+        {
+            let (xa, xc) = if xa0 > xc0 { (xc0, xa0) } else { (xa0, xc0) };
+            if !(xa < xb && xb < xc)
+            {
+                return Err(Error::InvalidBracketOrder(xa, xb, xc));
+            }
+            let fa = f.eval(xa);
+            let fb = f.eval(xb);
+            let fc = f.eval(xc);
+            if !(fb < fa && fb < fc)
+            {
+                return Err(Error::InvalidBracketValues);
+            }
+            Ok(BracketResult {
+                xa,
+                xb,
+                xc,
+                fa,
+                fb,
+                fc,
+                num_fun_evals: 3,
+            })
+        }
+    }
+}
+//}}}
 //{{{ mod: tests
 #[cfg(test)]
 mod tests
