@@ -13,47 +13,26 @@ use topohedral_tracing::{trace, trace_fn};
 //}}}
 //--------------------------------------------------------------------------------------------------
 
+const DEFUALT_XTOL: f64 = 1e-5;
+const DEFUALT_MAX_ITER: usize = 100;
+
 //{{{ struct: Options
 #[derive(Copy, Clone)]
 pub struct Options
 {
+    /// Bounds
+    pub bounds: (f64, f64),
     /// Absolute tolerance on `x` used as the termination criterion.
     pub xatol: f64,
     /// Maximum number of function evaluations.
     pub max_iter: usize,
 }
 //}}}
-//{{{ impl: Default for Options
-impl Default for Options
+impl Options
 {
-    fn default() -> Self
-    {
-        Self {
-            xatol: 1e-5,
-            max_iter: 500,
-        }
-    }
-}
-//}}}
-//{{{ struct: Bounded
-/// Bounded minimization of a scalar function over a finite interval `[lower, upper]`.
-pub struct Bounded<F: RealFn1>
-{
-    fcn: F,
-    lower: f64,
-    upper: f64,
-    opts: Options,
-}
-//}}}
-//{{{ impl: Bounded
-impl<F: RealFn1> Bounded<F>
-{
-    #[trace_fn]
     pub fn new(
-        fcn: F,
         lower: f64,
         upper: f64,
-        opts: Options,
     ) -> Result<Self, ScalarError>
     {
         if !lower.is_finite() || !upper.is_finite()
@@ -65,11 +44,30 @@ impl<F: RealFn1> Bounded<F>
             return Err(ScalarError::InvalidBounds(lower, upper));
         }
         Ok(Self {
-            fcn,
-            lower,
-            upper,
-            opts,
+            bounds: (lower, upper),
+            xatol: DEFUALT_XTOL,
+            max_iter: DEFUALT_MAX_ITER,
         })
+    }
+}
+//{{{ struct: Bounded
+/// Bounded minimization of a scalar function over a finite interval `[lower, upper]`.
+pub struct Bounded<F: RealFn1>
+{
+    fcn: F,
+    opts: Options,
+}
+//}}}
+//{{{ impl: Bounded
+impl<F: RealFn1> Bounded<F>
+{
+    #[trace_fn]
+    pub fn new(
+        fcn: F,
+        opts: Options,
+    ) -> Self
+    {
+        Self { fcn, opts }
     }
 }
 //}}}
@@ -86,8 +84,8 @@ impl<F: RealFn1> Minimizer for Bounded<F>
         let golden_mean = 0.5 * (3.0 - 5.0_f64.sqrt());
 
         // `a`/`b` are the shrinking bracket, initially the full bounds.
-        let mut a = self.lower;
-        let mut b = self.upper;
+        let mut a = self.opts.bounds.0;
+        let mut b = self.opts.bounds.1;
         let mut fulc = a + golden_mean * (b - a);
         let mut nfc = fulc;
         let mut xf = fulc;
@@ -286,7 +284,7 @@ mod tests
     fn test_bounded_parabola()
     {
         let f = ScalarFunction::new(parabola);
-        let mut minimizer = Bounded::new(f, -4.0, 4.0, Options::default()).unwrap();
+        let mut minimizer = Bounded::new(f, Options::new(-4.0, 4.0).unwrap());
         let res = minimizer.minimize().unwrap();
         assert!((res.xmin - 1.0).abs() < 1e-4);
         assert!(res.fmin < 1e-8);
@@ -296,8 +294,8 @@ mod tests
     fn test_bounded_cosine()
     {
         let f = ScalarFunction::new(f64::cos);
-        let mut minimizer =
-            Bounded::new(f, 0.0, 2.0 * std::f64::consts::PI, Options::default()).unwrap();
+        let pi = std::f64::consts::PI;
+        let mut minimizer = Bounded::new(f, Options::new(0.0, 2.0 * pi).unwrap());
         let res = minimizer.minimize().unwrap();
         assert!((res.xmin - std::f64::consts::PI).abs() < 1e-4);
     }
@@ -308,7 +306,7 @@ mod tests
         // The parabola's minimum is at x = 1, which lies outside [3, 4], so the
         // bounded minimizer should clamp to the lower bound.
         let f = ScalarFunction::new(parabola);
-        let mut minimizer = Bounded::new(f, 3.0, 4.0, Options::default()).unwrap();
+        let mut minimizer = Bounded::new(f, Options::new(3.0, 4.0).unwrap());
         let res = minimizer.minimize().unwrap();
         assert!((res.xmin - 3.0).abs() < 1e-3);
     }
@@ -316,8 +314,7 @@ mod tests
     #[test]
     fn test_bounded_invalid_bounds()
     {
-        let f = ScalarFunction::new(parabola);
-        let result = Bounded::new(f, 4.0, 3.0, Options::default());
+        let result = Options::new(4.0, 3.0);
         assert!(
             matches!(result, Err(ScalarError::InvalidBounds(lo, hi)) if lo == 4.0 && hi == 3.0)
         );
@@ -326,8 +323,7 @@ mod tests
     #[test]
     fn test_bounded_non_finite_bounds()
     {
-        let f = ScalarFunction::new(parabola);
-        let result = Bounded::new(f, f64::NEG_INFINITY, 4.0, Options::default());
+        let result = Options::new(f64::NEG_INFINITY, 4.0);
         assert!(matches!(result, Err(ScalarError::NonFiniteBounds(_, _))));
     }
 
@@ -335,11 +331,10 @@ mod tests
     fn test_bounded_max_iterations_exceeded()
     {
         let f = ScalarFunction::new(parabola);
-        let opts = Options {
-            xatol: 1e-12,
-            max_iter: 2,
-        };
-        let mut minimizer = Bounded::new(f, -4.0, 4.0, opts).unwrap();
+        let mut opts = Options::new(-4.0, 4.0).unwrap();
+        opts.xatol = 1e-12;
+        opts.max_iter = 2;
+        let mut minimizer = Bounded::new(f, opts);
         let result = minimizer.minimize();
         assert!(matches!(result, Err(ScalarError::MaxIterations(2))));
     }

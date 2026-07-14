@@ -7,7 +7,9 @@
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
-use super::common::{resolve_bracket, Bracket, BracketOptions, BracketResult, Error as ScalarError};
+use super::common::{
+    resolve_bracket, Bracket, BracketOptions, BracketResult, Error as ScalarError,
+};
 use crate::{common::ScalarReturns, ConvergedReason, Minimizer, RealFn1};
 //}}}
 //{{{ std imports
@@ -17,28 +19,32 @@ use topohedral_tracing::{trace, trace_fn};
 //}}}
 //--------------------------------------------------------------------------------------------------
 
+const DEFUALT_XTOL: f64 = 1e-5;
+const DEFUALT_MAX_ITER: usize = 100;
+
 //{{{ struct: Options
 #[derive(Copy, Clone)]
 pub struct Options
 {
+    /// Initial bracket
+    pub bracket: Bracket,
     /// Relative tolerance on `x` used as the termination criterion.
     pub xtol: f64,
     /// Maximum number of iterations.
     pub max_iter: usize,
 }
 //}}}
-//{{{ impl: Default for Options
-impl Default for Options
+impl Options
 {
-    fn default() -> Self
+    pub fn new(bracket: Bracket) -> Self
     {
         Self {
-            xtol: 1.48e-8,
-            max_iter: 500,
+            bracket,
+            xtol: DEFUALT_XTOL,
+            max_iter: DEFUALT_MAX_ITER,
         }
     }
 }
-//}}}
 //{{{ struct: Brent
 /// Unbounded minimization of a scalar function using Brent's method.
 ///
@@ -47,7 +53,6 @@ impl Default for Options
 pub struct Brent<F: RealFn1>
 {
     fcn: F,
-    bracket: Bracket,
     opts: Options,
 }
 //}}}
@@ -57,11 +62,10 @@ impl<F: RealFn1> Brent<F>
     #[trace_fn]
     pub fn new(
         fcn: F,
-        bracket: Bracket,
         opts: Options,
     ) -> Self
     {
-        Self { fcn, bracket, opts }
+        Self { fcn, opts }
     }
 }
 //}}}
@@ -84,7 +88,7 @@ impl<F: RealFn1> Minimizer for Brent<F>
             fb,
             mut num_fun_evals,
             ..
-        } = resolve_bracket(&mut self.fcn, self.bracket, BracketOptions::default())?;
+        } = resolve_bracket(&mut self.fcn, self.opts.bracket, BracketOptions::default())?;
 
         //{{{ trace
         trace!(target: "scalar", "brent: bracket xa = {xa:.4e}, xb = {xb:.4e}, xc = {xc:.4e}");
@@ -136,7 +140,9 @@ impl<F: RealFn1> Minimizer for Brent<F>
                 deltax = rat;
 
                 // Check parabolic fit.
-                if p > tmp2 * (a - x) && p < tmp2 * (b - x) && p.abs() < (0.5 * tmp2 * dx_temp).abs()
+                if p > tmp2 * (a - x)
+                    && p < tmp2 * (b - x)
+                    && p.abs() < (0.5 * tmp2 * dx_temp).abs()
                 {
                     rat = p / tmp2;
                     let u = x + rat;
@@ -154,7 +160,14 @@ impl<F: RealFn1> Minimizer for Brent<F>
 
             let u = if rat.abs() < tol1
             {
-                if rat >= 0.0 { x + tol1 } else { x - tol1 }
+                if rat >= 0.0
+                {
+                    x + tol1
+                }
+                else
+                {
+                    x - tol1
+                }
             }
             else
             {
@@ -294,7 +307,7 @@ mod tests
     fn test_brent_parabola_two_point_bracket()
     {
         let f = ScalarFunction::new(parabola);
-        let mut minimizer = Brent::new(f, Bracket::Points(0.0, 1.0), Options::default());
+        let mut minimizer = Brent::new(f, Options::new(Bracket::Points(0.0, 1.0)));
         let res = minimizer.minimize().unwrap();
         assert!((res.xmin - 1.0).abs() < 1e-6);
     }
@@ -303,7 +316,7 @@ mod tests
     fn test_brent_parabola_three_point_bracket()
     {
         let f = ScalarFunction::new(parabola);
-        let mut minimizer = Brent::new(f, Bracket::Triple(-1.0, 0.5, 3.0), Options::default());
+        let mut minimizer = Brent::new(f, Options::new(Bracket::Triple(-1.0, 0.5, 3.0)));
         let res = minimizer.minimize().unwrap();
         assert!((res.xmin - 1.0).abs() < 1e-6);
     }
@@ -312,7 +325,7 @@ mod tests
     fn test_brent_parabola_auto_bracket()
     {
         let f = ScalarFunction::new(parabola);
-        let mut minimizer = Brent::new(f, Bracket::Auto, Options::default());
+        let mut minimizer = Brent::new(f, Options::new(Bracket::Auto));
         let res = minimizer.minimize().unwrap();
         assert!((res.xmin - 1.0).abs() < 1e-6);
     }
@@ -321,7 +334,7 @@ mod tests
     fn test_brent_quartic()
     {
         let f = ScalarFunction::new(quartic);
-        let mut minimizer = Brent::new(f, Bracket::Points(0.0, 1.0), Options::default());
+        let mut minimizer = Brent::new(f, Options::new(Bracket::Points(0.0, 1.0)));
         let res = minimizer.minimize().unwrap();
         assert!((res.xmin - 2.0).abs() < 1e-2);
         assert!((res.fmin - 3.0).abs() < 1e-3);
@@ -331,9 +344,12 @@ mod tests
     fn test_brent_invalid_triple_order()
     {
         let f = ScalarFunction::new(parabola);
-        let mut minimizer = Brent::new(f, Bracket::Triple(0.0, 0.9, 0.5), Options::default());
+        let mut minimizer = Brent::new(f, Options::new(Bracket::Triple(0.0, 0.9, 0.5)));
         let result = minimizer.minimize();
-        assert!(matches!(result, Err(ScalarError::InvalidBracketOrder(_, _, _))));
+        assert!(matches!(
+            result,
+            Err(ScalarError::InvalidBracketOrder(_, _, _))
+        ));
     }
 
     #[test]
@@ -341,7 +357,7 @@ mod tests
     {
         // Monotone function: f(xb) is not below both f(xa) and f(xc).
         let f = ScalarFunction::new(|x: f64| x);
-        let mut minimizer = Brent::new(f, Bracket::Triple(0.0, 0.5, 1.0), Options::default());
+        let mut minimizer = Brent::new(f, Options::new(Bracket::Triple(0.0, 0.5, 1.0)));
         let result = minimizer.minimize();
         assert!(matches!(result, Err(ScalarError::InvalidBracketValues)));
     }
@@ -350,11 +366,10 @@ mod tests
     fn test_brent_max_iterations_exceeded()
     {
         let f = ScalarFunction::new(parabola);
-        let opts = Options {
-            xtol: 1e-14,
-            max_iter: 2,
-        };
-        let mut minimizer = Brent::new(f, Bracket::Points(0.0, 1.0), opts);
+        let mut opts = Options::new(Bracket::Points(0.0, 1.0));
+        opts.xtol = 1e-14;
+        opts.max_iter = 2;
+        let mut minimizer = Brent::new(f, opts);
         let result = minimizer.minimize();
         assert!(matches!(result, Err(ScalarError::MaxIterations(2))));
     }
