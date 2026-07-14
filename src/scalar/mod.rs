@@ -4,7 +4,7 @@
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
-use crate::common::{RealFn1, ScalarReturns};
+use crate::common::RealFn1;
 //}}}
 //{{{ std imports
 //}}}
@@ -18,6 +18,9 @@ mod common;
 mod factory;
 mod golden;
 
+//{{{ pub use: crate common exports
+pub use crate::common::ScalarReturns;
+//}}}
 //{{{ pub use: bounded exports
 pub use bounded::{Bounded, Options as BoundedOptions};
 //}}}
