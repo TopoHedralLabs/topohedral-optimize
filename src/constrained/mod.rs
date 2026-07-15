@@ -4,7 +4,7 @@
 
 //{{{ crate imports
 use crate::{
-    common::{arc_real_fn, CountingRealFn, RealFn, RealVectorFn, Vector},
+    common::{arc_real_fn, CountingRealFn, RealFn, RealVectorFn, VectorReturns, Vector},
     constraints::BoundsConstraints,
 };
 //}}}
@@ -22,10 +22,6 @@ mod factory;
 //}}}
 
 //{{{ pub use: common exports
-pub use crate::common::{
-    ConvergedReason as ConstrainedConvergedReason, Minimizer as ConstrainedMinimizer,
-    Returns as ConstrainedReturns,
-};
 pub use common::{Error as ConstrainedError, Options as ConstriainedOptions};
 //}}}
 //{{{ pub use: augmented_lagrangian exports
@@ -47,7 +43,7 @@ pub fn minimize<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn>(
     ieq_constraints: Option<F3>,
     x0: Vector,
     method: ConstrainedMethod,
-) -> Result<ConstrainedReturns, ConstrainedError> {
+) -> Result<VectorReturns, ConstrainedError> {
     if method.con_opts().base_opts.make_counting {
         let counting_fcn = arc_real_fn(CountingRealFn::new(fcn));
         let minimizer = factory::create(

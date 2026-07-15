@@ -421,10 +421,10 @@ impl<F: RealFn> ActiveSetAlgorithm<F> {
 //{{{ impl: Minimizer for ActiveSetAlgorithm
 impl<F: RealFn> Minimizer for ActiveSetAlgorithm<F> {
     type Error = super::common::Error;
-    type Returns = crate::Returns;
+    type Returns = crate::VectorReturns;
 
     #[trace_fn]
-    fn minimize(&mut self) -> Result<crate::Returns, Self::Error> {
+    fn minimize(&mut self) -> Result<crate::VectorReturns, Self::Error> {
         let mut iter_k_prev = IterData::new(self.fcn.clone(), &self.x_init);
         let mut iter_k = IterData::new(self.fcn.clone(), &self.x_init);
         let mut phase = Phase::Ngpa;
@@ -446,7 +446,7 @@ impl<F: RealFn> Minimizer for ActiveSetAlgorithm<F> {
                 trace!(target: "asa", "fx = {:.4e} x = {}", iter_k.fx, iter_k.x.clone().transpose());
                 info!(target: "asa", "=============================================");
                 //}}}
-                return Ok(crate::Returns {
+                return Ok(crate::VectorReturns {
                     xmin: iter_k.x,
                     fmin: iter_k.fx,
                     reason,
@@ -664,7 +664,7 @@ impl<F: RealFn> Minimizer for ActiveSetAlgorithm<F> {
             "Finished ASA loop without explicit convergence; returning final iterate after {} iterations",
             self.opts.bound_opts.base_opts.max_iter
         );
-        Ok(crate::Returns {
+        Ok(crate::VectorReturns {
             xmin: iter_k.x,
             fmin: iter_k.fx,
             reason: ConvergedReason::Atol,

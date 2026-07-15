@@ -6,7 +6,7 @@
 //{{{ crate imports
 use crate::{
     bound_constrained::{minimize as bcon_minimize, BoundConstrainedMethod},
-    common::{self, arc_real_fn, ConvergedReason, CountingRealFn, IterData, Returns},
+    common::{self, arc_real_fn, ConvergedReason, CountingRealFn, IterData, VectorReturns},
     constrained::{ConstrainedError, ConstriainedOptions},
     constraints::BoundsConstraints,
     unconstrained::{minimize as uncon_minimize, UnconstrainedMethod},
@@ -839,7 +839,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
         &mut self,
         constraint_improvement_factor: f64,
         penalty_increase_factor: f64,
-        uncon_ret: Returns,
+        uncon_ret: VectorReturns,
     ) -> IterData {
         self.fcn.lock().unwrap().with_inner_mut(|fcn| {
             if let Some(eq_penalty) = &mut fcn.eq_penalty {
@@ -963,7 +963,7 @@ fn inner_minimize<F: RealFn>(
     bounds: Option<BoundsConstraints>,
     x0: Vector,
     inner_method: InnerMethod,
-) -> Result<common::Returns, ConstrainedError> {
+) -> Result<common::VectorReturns, ConstrainedError> {
     match inner_method {
         InnerMethod::Unconstrained(uncon_method) => Ok(uncon_minimize(fcn, x0, uncon_method)?),
         InnerMethod::BoundConstrained(bcon_method) => {
@@ -975,10 +975,10 @@ fn inner_minimize<F: RealFn>(
 //{{{ impl: Minimizer for AugmentedLagrangian
 impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> Minimizer for AugmentedLagrangian<F1, F2, F3> {
     type Error = ConstrainedError;
-    type Returns = Returns;
+    type Returns = VectorReturns;
 
     #[trace_fn]
-    fn minimize(&mut self) -> Result<Returns, Self::Error> {
+    fn minimize(&mut self) -> Result<VectorReturns, Self::Error> {
         let alpha = self.opts.constraint_improvement_factor;
         let beta = self.opts.penalty_growth_factor;
         let n_iter = self.opts.constrained_opts.base_opts.max_iter;
@@ -1019,7 +1019,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> Minimizer for AugmentedLagr
                         .inner_mut()
                         .fcn
                         .eval(&iter_prev_k.x);
-                    Returns {
+                    VectorReturns {
                         xmin: iter_prev_k.x.clone(),
                         fmin,
                         reason: ConvergedReason::Atol,
@@ -1041,7 +1041,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> Minimizer for AugmentedLagr
                 //}}}
                 let fmin = self.fcn.lock().unwrap().inner_mut().fcn.eval(&iter_k.x);
                 let xmin = iter_k.x;
-                return Ok(Returns {
+                return Ok(VectorReturns {
                     fmin,
                     xmin,
                     reason,

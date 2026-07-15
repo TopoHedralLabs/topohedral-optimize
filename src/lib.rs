@@ -22,21 +22,52 @@
 //}}}
 //--------------------------------------------------------------------------------------------------
 //{{{ mod: submodules
+mod bound_constrained;
 mod common;
+mod constrained;
+mod constraints;
+mod line_search;
+mod quadratic_model;
+mod scalar;
+mod unconstrained;
+//}}}
+//{{{ pub use: bound_constrained exports
+pub use bound_constrained::{
+    minimize as bound_constrained_minimize, AsaOptions, BfgsbOptions, BoundConstrainedError,
+    BoundConstrainedMethod, BoundConstrainedOptions,
+};
 //}}}
 //{{{ pub use: common exports
 pub use common::{
     arc_real_vector_fn, rc_real_fn, rc_real_vector_fn, ArcRealVectorFn, BaseOptions,
-    ConvergedReason, IterData, Matrix, Minimizer, RcRealFn, RcRealVectorFn, RealFn, RealFn1,
-    RealVectorFn, Returns, Vector,
+    ConvergedReason, IterData, Matrix, RcRealFn, RcRealVectorFn, RealFn, RealFn1, RealVectorFn,
+    ScalarReturns, Vector, VectorReturns,
 };
 //}}}
-//{{{ pub mod: public modules
-pub mod bound_constrained;
-pub mod constrained;
-pub mod constraints;
-pub mod line_search;
-pub mod quadratic_model;
-pub mod scalar;
-pub mod unconstrained;
+//{{{ pub use: constrained
+pub use constrained::{
+    minimize as constrained_minimize, AugmentedLagrangianInnerMethod, AugmentedLagrangianOptions,
+    ConstrainedError, ConstrainedMethod, ConstriainedOptions,
+};
+//}}}
+//{{{ pub use constraints
+pub use constraints::{BoundsConstraints, NoConstraints};
+//}}}
+//{{{ pub use line_search
+pub use line_search::{
+    search as lsearch, search1d as lsearch1d, LineSearchError, LineSearchMethod, LineSearchOptions,
+};
+//}}}
+//{{{ pub use scalar
+pub use scalar::{
+    bracket, minimize as scalar_minimze, BoundedOptions, BracketOptions, BracketResult,
+    BrentOptions, GoldenOptions, ScalarError, ScalarMethod,
+};
+//}}}
+//{{{ pub use unconstrained
+pub use unconstrained::{
+    minimize as unconstrained_minimize, ConjugateGradientOptions,
+    Direction as ConjugateGradientDirection, QuasiNewtonOptions, UnconstrainedError,
+    UnconstrainedMethod, UnconstrainedOptions, UpdateMethod as QuasiNewtonUpdateMethod,
+};
 //}}}

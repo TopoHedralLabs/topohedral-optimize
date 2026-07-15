@@ -6,7 +6,8 @@
 //{{{ crate imports
 
 use crate::common::{arc_real_fn, CountingRealFn};
-use crate::common::{RealFn, Vector};
+use crate::common::{RealFn, Returns, Vector};
+use crate::VectorReturns;
 //}}}
 //{{{ std imports
 //}}}
@@ -22,10 +23,7 @@ mod factory;
 mod quasi_newton;
 //}}}
 //{{{ pub use: common exports
-pub use crate::common::{
-    ConvergedReason as UnconstrainedConvergedReason, IterData, Returns as UnconstrainedReturns,
-};
-pub use common::{Error as UnconstrainedError, Options as UnonstrainedOptions};
+pub use common::{Error as UnconstrainedError, Options as UnconstrainedOptions};
 //}}}
 //{{{ pub use: conjugate_gradient exports
 pub use conjugate_gradient::{Direction, Options as ConjugateGradientOptions};
@@ -42,7 +40,7 @@ pub fn minimize<F: RealFn>(
     fcn: F,
     x0: Vector,
     method: UnconstrainedMethod,
-) -> Result<UnconstrainedReturns, UnconstrainedError> {
+) -> Result<VectorReturns, UnconstrainedError> {
     if method.uncon_opts().make_counting {
         let counting_fcn = arc_real_fn(CountingRealFn::new(fcn));
         let mut minimizer = factory::create(counting_fcn.clone(), x0, method);

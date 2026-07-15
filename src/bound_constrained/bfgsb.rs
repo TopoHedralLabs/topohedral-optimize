@@ -403,10 +403,10 @@ impl<F: RealFn> Bfgsb<F> {
 //{{{ impl Minimizer for Bfgsb
 impl<F: RealFn> Minimizer for Bfgsb<F> {
     type Error = Error;
-    type Returns = crate::Returns;
+    type Returns = crate::VectorReturns;
 
     #[trace_fn]
-    fn minimize(&mut self) -> Result<crate::Returns, Self::Error> {
+    fn minimize(&mut self) -> Result<crate::VectorReturns, Self::Error> {
         let mut xk = self.x_init.clone();
         let mut fk = self.fcn.eval(&xk);
         let mut gk = self.fcn.grad(&xk);
@@ -432,7 +432,7 @@ impl<F: RealFn> Minimizer for Bfgsb<F> {
                 trace!(target: "bfgsb", "fx = {:.4e} x = {}", fk, xk.clone().transpose());
                 info!(target: "bfgsb", "=============================================");
                 //}}}
-                return Ok(crate::Returns {
+                return Ok(crate::VectorReturns {
                     fmin: fk,
                     xmin: xk,
                     reason,
@@ -498,7 +498,7 @@ impl<F: RealFn> Minimizer for Bfgsb<F> {
                     trace!(target: "bfgsb", "fx = {:.4e} x = {}", fk, xk.clone().transpose());
                     info!(target: "bfgsb", "=============================================");
                     //}}}
-                    return Ok(crate::Returns {
+                    return Ok(crate::VectorReturns {
                         fmin: fk,
                         xmin: xk,
                         reason,
@@ -525,7 +525,7 @@ impl<F: RealFn> Minimizer for Bfgsb<F> {
                     trace!(target: "bfgsb", "fx = {:.4e} x = {}", fk, xk.clone().transpose());
                     info!(target: "bfgsb", "=============================================");
                     //}}}
-                    return Ok(crate::Returns {
+                    return Ok(crate::VectorReturns {
                         fmin: fk,
                         xmin: xk,
                         reason,
@@ -610,7 +610,7 @@ impl<F: RealFn> Minimizer for Bfgsb<F> {
                 trace!(target: "bfgsb", "fx = {:.4e} x = {}", fk, xk.clone().transpose());
                 info!(target: "bfgsb", "=============================================");
                 //}}}
-                return Ok(crate::Returns {
+                return Ok(crate::VectorReturns {
                     fmin: fk,
                     xmin: xk,
                     reason,
@@ -627,7 +627,7 @@ impl<F: RealFn> Minimizer for Bfgsb<F> {
                 trace!(target: "bfgsb", "fx = {:.4e} x = {}", fk, xk.clone().transpose());
                 info!(target: "bfgsb", "=============================================");
                 //}}}
-                return Ok(crate::Returns {
+                return Ok(crate::VectorReturns {
                     fmin: fk,
                     xmin: xk,
                     reason: ConvergedReason::Rtol,

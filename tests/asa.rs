@@ -8,7 +8,7 @@ use topohedral_optimize::line_search::{LineSearchMethod, LineSearchOptions, Thue
 use topohedral_optimize::unconstrained::{
     QuasiNewtonOptions, UnconstrainedMethod, UnonstrainedOptions, UpdateMethod,
 };
-use topohedral_optimize::{BaseOptions, RealFn, Returns, Vector};
+use topohedral_optimize::{BaseOptions, RealFn, Vector, VectorReturns};
 //}}}
 //{{{ std imports
 //}}}
@@ -117,7 +117,7 @@ fn solve_asa<F: RealFn>(
     x0: Vector,
     bounds: BoundsConstraints,
     max_iter: u64,
-) -> Returns {
+) -> VectorReturns {
     bound_constrained_minimize(
         fcn,
         bounds,

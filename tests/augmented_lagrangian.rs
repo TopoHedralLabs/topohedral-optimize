@@ -4,7 +4,7 @@ use topohedral_optimize::bound_constrained::{
 //{{{ crate imports
 use topohedral_optimize::constrained::{
     minimize as constrained_minimize, AugmentedLagrangianInnerMethod, AugmentedLagrangianOptions,
-    ConstrainedMethod, ConstrainedReturns, ConstriainedOptions,
+    ConstrainedMethod, ConstriainedOptions,
 };
 use topohedral_optimize::constraints::{BoundsConstraints, NoConstraints};
 use topohedral_optimize::line_search::{
@@ -14,7 +14,7 @@ use topohedral_optimize::unconstrained::{
     ConjugateGradientOptions, Direction, QuasiNewtonOptions, UnconstrainedMethod,
     UnonstrainedOptions, UpdateMethod,
 };
-use topohedral_optimize::{BaseOptions, RealFn, RealVectorFn, Vector};
+use topohedral_optimize::{BaseOptions, RealFn, RealVectorFn, VectorReturns, Vector};
 //}}}
 //{{{ std imports
 //}}}
@@ -73,7 +73,7 @@ fn vec_reldiff(
 //}}}
 //{{{ fun: assert_answer
 fn assert_answer(
-    ret: &ConstrainedReturns,
+    ret: &VectorReturns,
     exp_xmin: &Vector,
     exp_fmin: f64,
     xmin_tol: f64,
@@ -88,7 +88,7 @@ fn assert_answer(
 //}}}
 //{{{ fun: assert_counts
 fn assert_counts(
-    ret: &ConstrainedReturns,
+    ret: &VectorReturns,
     exp_num_fun_evals: usize,
     exp_num_grad_evals: usize,
 ) {

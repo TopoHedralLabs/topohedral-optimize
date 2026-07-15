@@ -7,7 +7,7 @@ use topohedral_optimize::bound_constrained::{
 };
 use topohedral_optimize::constraints::BoundsConstraints;
 use topohedral_optimize::line_search::{LineSearchMethod, LineSearchOptions, NocedalOptions};
-use topohedral_optimize::{BaseOptions, Matrix, RealFn, Returns, Vector};
+use topohedral_optimize::{BaseOptions, Matrix, RealFn, VectorReturns, Vector};
 use topohedral_tracing::*;
 
 #[ctor]
@@ -79,7 +79,7 @@ fn solve_bfgsb<F: RealFn>(
     pgtol: f64,
     ftol: f64,
     max_iter: u64,
-) -> Returns {
+) -> VectorReturns {
     bound_constrained_minimize(
         fcn,
         bounds,

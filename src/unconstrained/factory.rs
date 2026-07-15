@@ -9,7 +9,7 @@ use super::conjugate_gradient::ConjugateGradient;
 use super::conjugate_gradient::Options as ConjugateGradientOptions;
 use super::quasi_newton::Options as QuasiNewtonOptions;
 use super::quasi_newton::QuasiNewton;
-use crate::{Minimizer, RealFn, Returns, Vector};
+use crate::{Minimizer, RealFn, VectorReturns, Vector};
 //}}}
 //{{{ std imports
 //}}}
@@ -50,7 +50,7 @@ pub fn create<'a, F: RealFn + 'a>(
     fcn: F,
     x0: Vector,
     method: Method,
-) -> Box<dyn Minimizer<Error = Error, Returns = Returns> + 'a> {
+) -> Box<dyn Minimizer<Error = Error, Returns = VectorReturns> + 'a> {
     match method {
         Method::ConjugateGradient(opts) => Box::new(ConjugateGradient::new(fcn, x0, opts)),
         Method::QuasiNewton(opts) => Box::new(QuasiNewton::new(fcn, x0, opts)),

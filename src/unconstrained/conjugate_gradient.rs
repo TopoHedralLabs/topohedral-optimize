@@ -7,7 +7,7 @@
 use super::common::Error;
 use crate::common::BaseOptions;
 use crate::line_search::{self as ls, LineSearchMethod};
-use crate::{ConvergedReason, IterData, Minimizer, RealFn, Returns, Vector};
+use crate::{ConvergedReason, IterData, Minimizer, RealFn, VectorReturns, Vector};
 //}}}
 //{{{ std imports
 //}}}
@@ -165,10 +165,10 @@ impl<F: RealFn> ConjugateGradient<F> {
 //{{{ impl: Minimizer for ConjugateGradient
 impl<F: RealFn> Minimizer for ConjugateGradient<F> {
     type Error = Error;
-    type Returns = Returns;
+    type Returns = VectorReturns;
 
     #[trace_fn]
-    fn minimize(&mut self) -> Result<Returns, Self::Error> {
+    fn minimize(&mut self) -> Result<VectorReturns, Self::Error> {
         let mut iter_k = IterData::new(self.fcn.clone(), &self.x_init);
 
         let mut iter_k_prev = iter_k.clone();
@@ -215,7 +215,7 @@ impl<F: RealFn> Minimizer for ConjugateGradient<F> {
                 trace!(target: "cg", "fx = {:.4e} x = {}", iter_k.fx, iter_k.x.clone().transpose());
                 info!(target: "cg", "=============================================");
                 //}}}
-                return Ok(Returns {
+                return Ok(VectorReturns {
                     fmin: iter_k.fx,
                     xmin: iter_k.x,
                     reason,

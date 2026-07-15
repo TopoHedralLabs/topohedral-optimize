@@ -65,10 +65,10 @@ pub struct BaseOptions {
     pub make_counting: bool,
 }
 //}}}
-//{{{ struct: Returns
+//{{{ struct Returns
 #[derive(Clone, Debug)]
-pub struct Returns {
-    pub xmin: Vector,
+pub struct Returns<T> {
+    pub xmin: T,
     pub fmin: f64,
     pub reason: ConvergedReason,
     pub num_iterations: usize,
@@ -76,19 +76,12 @@ pub struct Returns {
     pub num_grad_evals: usize,
 }
 //}}}
-//{{{ struct: ScalarReturns
-#[derive(Clone, Debug)]
-pub struct ScalarReturns {
-    pub xmin: f64,
-    pub fmin: f64,
-    pub reason: ConvergedReason,
-    pub num_iterations: usize,
-    pub num_fun_evals: usize,
-    pub num_grad_evals: usize,
-}
+//{{{ type: Returns aliases
+pub type ScalarReturns = Returns<f64>;
+pub type VectorReturns = Returns<Vector>;
 //}}}
 //{{{ trait: Minimizer
-pub trait Minimizer {
+pub(crate) trait Minimizer {
     type Error;
     type Returns;
 

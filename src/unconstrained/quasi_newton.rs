@@ -9,7 +9,7 @@ use crate::common::Vector;
 use crate::line_search as ls;
 use crate::line_search::LineSearchMethod;
 use crate::quadratic_model::{QuadraticModel, UpdateType::Inverse};
-use crate::{ConvergedReason, IterData, Minimizer, RealFn, Returns};
+use crate::{ConvergedReason, IterData, Minimizer, RealFn, VectorReturns};
 //}}}
 //{{{ std imports
 #[allow(unused_imports)]
@@ -152,10 +152,10 @@ impl<F: RealFn> QuasiNewton<F> {
 //{{{ impl: Minimizer for QuasiNewton
 impl<F: RealFn> Minimizer for QuasiNewton<F> {
     type Error = Error;
-    type Returns = Returns;
+    type Returns = VectorReturns;
 
     #[trace_fn]
-    fn minimize(&mut self) -> Result<Returns, Self::Error> {
+    fn minimize(&mut self) -> Result<VectorReturns, Self::Error> {
         let mut iter_k = IterData::new(self.fcn.clone(), &self.x_init);
         let mut iter_prev_k = iter_k.clone();
         iter_prev_k.fx = iter_k.fx + 0.5 * iter_k.norm_grad_fx;
@@ -222,7 +222,7 @@ impl<F: RealFn> Minimizer for QuasiNewton<F> {
                 trace!(target: "qn", "fx = {:.4e} x = {}", iter_k.fx, iter_k.x.clone().transpose());
                 info!(target: "qn", "=============================================");
                 //}}}
-                return Ok(Returns {
+                return Ok(VectorReturns {
                     fmin: iter_k.fx,
                     xmin: iter_k.x,
                     reason,
