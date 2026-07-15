@@ -6,7 +6,7 @@
 //{{{ crate imports
 
 use crate::common::{arc_real_fn, CountingRealFn};
-use crate::common::{RealFn, Returns, Vector};
+use crate::common::{RealFn, Vector};
 use crate::VectorReturns;
 //}}}
 //{{{ std imports

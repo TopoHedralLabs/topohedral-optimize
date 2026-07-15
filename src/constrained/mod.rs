@@ -4,7 +4,7 @@
 
 //{{{ crate imports
 use crate::{
-    common::{arc_real_fn, CountingRealFn, RealFn, RealVectorFn, VectorReturns, Vector},
+    common::{arc_real_fn, CountingRealFn, RealFn, RealVectorFn, Vector, VectorReturns},
     constraints::BoundsConstraints,
 };
 //}}}
@@ -26,8 +26,7 @@ pub use common::{Error as ConstrainedError, Options as ConstriainedOptions};
 //}}}
 //{{{ pub use: augmented_lagrangian exports
 pub use augmented_lagrangian::{
-    AugmentedLagrangian, AugmentedLagrangianFcn, InnerMethod as AugmentedLagrangianInnerMethod,
-    Options as AugmentedLagrangianOptions,
+    InnerMethod as AugmentedLagrangianInnerMethod, Options as AugmentedLagrangianOptions,
 };
 //}}}
 //{{{ pub use: factory export

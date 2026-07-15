@@ -4,13 +4,14 @@
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
+use crate::common::Minimizer;
 use crate::{
     constrained::{
         augmented_lagrangian::AugmentedLagrangian, common::Error, AugmentedLagrangianOptions,
         ConstriainedOptions,
     },
     constraints::BoundsConstraints,
-    Minimizer, RealFn, RealVectorFn, VectorReturns, Vector,
+    RealFn, RealVectorFn, Vector, VectorReturns,
 };
 //}}}
 //{{{ std imports

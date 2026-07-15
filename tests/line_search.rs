@@ -1,8 +1,8 @@
 //{{{ crate imports
-use topohedral_optimize::line_search::{
-    search1d, LineSearchMethod, LineSearchOptions, NocedalOptions, ThuenteOptions,
+use topohedral_optimize::{
+    lsearch1d as search1d, LineSearchMethod, LineSearchOptions, NocedalOptions, RealFn1,
+    ThuenteOptions,
 };
-use topohedral_optimize::RealFn1;
 //}}}
 //{{{ std imports
 //}}}

@@ -9,7 +9,8 @@ use super::conjugate_gradient::ConjugateGradient;
 use super::conjugate_gradient::Options as ConjugateGradientOptions;
 use super::quasi_newton::Options as QuasiNewtonOptions;
 use super::quasi_newton::QuasiNewton;
-use crate::{Minimizer, RealFn, VectorReturns, Vector};
+use crate::common::Minimizer;
+use crate::{RealFn, Vector, VectorReturns};
 //}}}
 //{{{ std imports
 //}}}

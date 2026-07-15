@@ -8,8 +8,9 @@ use super::asa::{ActiveSetAlgorithm, Options as AsaOptions};
 use super::bfgsb::{Bfgsb, Options as BfgsbOptions};
 use super::common::Error;
 use crate::bound_constrained::BoundConstrainedOptions;
+use crate::common::Minimizer;
 use crate::constraints::BoundsConstraints;
-use crate::{Minimizer, RealFn, VectorReturns, Vector};
+use crate::{RealFn, Vector, VectorReturns};
 //}}}
 //{{{ std imports
 //}}}

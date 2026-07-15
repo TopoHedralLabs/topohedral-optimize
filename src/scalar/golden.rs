@@ -9,7 +9,10 @@
 use super::common::{
     resolve_bracket, Bracket, BracketOptions, BracketResult, Error as ScalarError,
 };
-use crate::{common::ScalarReturns, ConvergedReason, Minimizer, RealFn1};
+use crate::{
+    common::{Minimizer, ScalarReturns},
+    ConvergedReason, RealFn1,
+};
 //}}}
 //{{{ std imports
 //}}}

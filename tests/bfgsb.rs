@@ -1,13 +1,11 @@
 use approx::assert_relative_eq;
 use ctor::ctor;
 use topohedral_linalg::{DMatrix, DVector, MatMul, ReduceOps, VecType, VectorOps};
-use topohedral_optimize::bound_constrained::{
-    minimize as bound_constrained_minimize, BfgsbOptions, BoundConstrainedMethod,
-    BoundConstrainedOptions,
+use topohedral_optimize::{
+    bound_constrained_minimize, BaseOptions, BfgsbOptions, BoundConstrainedMethod,
+    BoundConstrainedOptions, BoundsConstraints, LineSearchMethod, LineSearchOptions, Matrix,
+    NocedalOptions, RealFn, Vector, VectorReturns,
 };
-use topohedral_optimize::constraints::BoundsConstraints;
-use topohedral_optimize::line_search::{LineSearchMethod, LineSearchOptions, NocedalOptions};
-use topohedral_optimize::{BaseOptions, Matrix, RealFn, VectorReturns, Vector};
 use topohedral_tracing::*;
 
 #[ctor]

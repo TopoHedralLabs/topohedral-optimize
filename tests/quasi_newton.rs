@@ -1,12 +1,10 @@
 //{{{ crate imports
-use topohedral_optimize::line_search::{
-    LineSearchMethod, LineSearchOptions, NocedalOptions, ThuenteOptions,
+use topohedral_optimize::{
+    unconstrained_minimize as minimize, ConvergedReason as UnconstrainedConvergedReason,
+    LineSearchMethod, LineSearchOptions, NocedalOptions, QuasiNewtonOptions,
+    QuasiNewtonUpdateMethod as UpdateMethod, RealFn, ThuenteOptions, UnconstrainedMethod,
+    UnconstrainedOptions as UnonstrainedOptions, Vector, VectorReturns as UnconstrainedReturns,
 };
-use topohedral_optimize::unconstrained::{
-    minimize, QuasiNewtonOptions, UnconstrainedConvergedReason, UnconstrainedMethod,
-    UnconstrainedReturns, UnonstrainedOptions, UpdateMethod,
-};
-use topohedral_optimize::{RealFn, Vector};
 //}}}
 //{{{ std imports
 //}}}

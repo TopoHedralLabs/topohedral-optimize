@@ -1,20 +1,14 @@
-use topohedral_optimize::bound_constrained::{
-    AsaOptions, BfgsbOptions, BoundConstrainedMethod, BoundConstrainedOptions,
-};
+use topohedral_optimize::AsaOptions;
 //{{{ crate imports
-use topohedral_optimize::constrained::{
-    minimize as constrained_minimize, AugmentedLagrangianInnerMethod, AugmentedLagrangianOptions,
-    ConstrainedMethod, ConstriainedOptions,
+use topohedral_optimize::{
+    constrained_minimize, AugmentedLagrangianInnerMethod, AugmentedLagrangianOptions, BaseOptions,
+    BfgsbOptions, BoundConstrainedMethod, BoundConstrainedOptions, BoundsConstraints,
+    ConjugateGradientDirection as Direction, ConjugateGradientOptions, ConstrainedMethod,
+    ConstriainedOptions, LineSearchMethod, LineSearchOptions, NoConstraints, NocedalOptions,
+    QuasiNewtonOptions, QuasiNewtonUpdateMethod as UpdateMethod, RealFn, RealVectorFn,
+    ThuenteOptions, UnconstrainedMethod, UnconstrainedOptions as UnonstrainedOptions, Vector,
+    VectorReturns,
 };
-use topohedral_optimize::constraints::{BoundsConstraints, NoConstraints};
-use topohedral_optimize::line_search::{
-    LineSearchMethod, LineSearchOptions, NocedalOptions, ThuenteOptions,
-};
-use topohedral_optimize::unconstrained::{
-    ConjugateGradientOptions, Direction, QuasiNewtonOptions, UnconstrainedMethod,
-    UnonstrainedOptions, UpdateMethod,
-};
-use topohedral_optimize::{BaseOptions, RealFn, RealVectorFn, VectorReturns, Vector};
 //}}}
 //{{{ std imports
 //}}}

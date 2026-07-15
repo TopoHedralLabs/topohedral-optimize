@@ -4,13 +4,14 @@
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
+use crate::common::Minimizer;
 use crate::{
     bound_constrained::{minimize as bcon_minimize, BoundConstrainedMethod},
     common::{self, arc_real_fn, ConvergedReason, CountingRealFn, IterData, VectorReturns},
     constrained::{ConstrainedError, ConstriainedOptions},
     constraints::BoundsConstraints,
     unconstrained::{minimize as uncon_minimize, UnconstrainedMethod},
-    Matrix, Minimizer, RealFn, RealVectorFn, Vector,
+    Matrix, RealFn, RealVectorFn, Vector,
 };
 use core::f64;
 //}}}

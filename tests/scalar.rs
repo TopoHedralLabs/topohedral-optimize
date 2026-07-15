@@ -3,10 +3,11 @@
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
-use topohedral_optimize::scalar::{
-    minimize, BoundedOptions, Bracket, BrentOptions, GoldenOptions, ScalarError, ScalarMethod,
-};
 use topohedral_optimize::RealFn1;
+use topohedral_optimize::{
+    scalar_minimze as minimize, BoundedOptions, Bracket, BrentOptions, GoldenOptions, ScalarError,
+    ScalarMethod,
+};
 //}}}
 //{{{ std imports
 //}}}

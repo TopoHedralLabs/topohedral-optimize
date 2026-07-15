@@ -5,11 +5,12 @@
 
 //{{{ crate imports
 use super::common::{Error, Options as UnconstrainedOptions};
+use crate::common::Minimizer;
 use crate::common::Vector;
 use crate::line_search as ls;
 use crate::line_search::LineSearchMethod;
 use crate::quadratic_model::{QuadraticModel, UpdateType::Inverse};
-use crate::{ConvergedReason, IterData, Minimizer, RealFn, VectorReturns};
+use crate::{ConvergedReason, IterData, RealFn, VectorReturns};
 //}}}
 //{{{ std imports
 #[allow(unused_imports)]

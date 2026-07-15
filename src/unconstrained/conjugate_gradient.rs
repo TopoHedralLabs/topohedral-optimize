@@ -6,8 +6,9 @@
 //{{{ crate imports
 use super::common::Error;
 use crate::common::BaseOptions;
+use crate::common::Minimizer;
 use crate::line_search::{self as ls, LineSearchMethod};
-use crate::{ConvergedReason, IterData, Minimizer, RealFn, VectorReturns, Vector};
+use crate::{ConvergedReason, IterData, RealFn, Vector, VectorReturns};
 //}}}
 //{{{ std imports
 //}}}

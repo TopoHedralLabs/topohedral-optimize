@@ -1,7 +1,8 @@
 //{{{ crate imports
-use topohedral_optimize::constraints::BoundStatus::{self, AtLower, AtUpper};
-use topohedral_optimize::constraints::{BoundsConstraints, CauchyPathPoint, NoConstraints};
-use topohedral_optimize::{Matrix, RealVectorFn, Vector};
+use topohedral_optimize::BoundStatus::{self, AtLower, AtUpper};
+use topohedral_optimize::{
+    BoundsConstraints, CauchyPathPoint, Matrix, NoConstraints, RealVectorFn, Vector,
+};
 //}}}
 //{{{ std imports
 //}}}

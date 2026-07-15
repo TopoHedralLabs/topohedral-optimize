@@ -51,16 +51,22 @@ pub use constrained::{
 };
 //}}}
 //{{{ pub use constraints
-pub use constraints::{BoundsConstraints, NoConstraints};
+pub use constraints::{
+    BoundSide, BoundSignature, BoundStatus, BoundsConstraints, CauchyPathPoint, NoConstraints,
+};
+//}}}
+//{{{ pub use quadratic_model
+pub use quadratic_model::{QuadraticModel, UpdateType};
 //}}}
 //{{{ pub use line_search
 pub use line_search::{
     search as lsearch, search1d as lsearch1d, LineSearchError, LineSearchMethod, LineSearchOptions,
+    NocedalOptions, ThuenteOptions,
 };
 //}}}
 //{{{ pub use scalar
 pub use scalar::{
-    bracket, minimize as scalar_minimze, BoundedOptions, BracketOptions, BracketResult,
+    bracket, minimize as scalar_minimze, BoundedOptions, Bracket, BracketOptions, BracketResult,
     BrentOptions, GoldenOptions, ScalarError, ScalarMethod,
 };
 //}}}

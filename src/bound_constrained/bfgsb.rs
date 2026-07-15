@@ -7,10 +7,11 @@
 use super::common::Error;
 use crate::bound_constrained::BoundConstrainedOptions;
 use crate::common::ConvergedReason;
+use crate::common::Minimizer;
 use crate::constraints::{BoundStatus, BoundsConstraints, CauchyPathPoint};
 use crate::line_search::{self as ls, LineSearchError, LineSearchMethod};
 use crate::quadratic_model::{QuadraticModel, UpdateType::Direct};
-use crate::{IterData, Minimizer, RealFn, Vector};
+use crate::{IterData, RealFn, Vector};
 //}}}
 //{{{ std imports
 //}}}
