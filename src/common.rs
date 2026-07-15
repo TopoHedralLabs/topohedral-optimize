@@ -254,20 +254,20 @@ impl<F: RealFn> CountingRealFn<F> {
 }
 //}}}
 //{{{ type: aliases for Rc<RefCell<F>> and Arc<Mutex<F>>
-/// Type alias for a function wrapped in Rc<RefCell<F>>
+/// Type alias for a function wrapped in `Rc<RefCell<F>>`.
 pub type RcRealFn<F> = Rc<RefCell<F>>;
-/// Type alias for a function wrapped in Arc<Mutex<F>>
+/// Type alias for a function wrapped in `Arc<Mutex<F>>`.
 pub type ArcRealFn<F> = Arc<Mutex<F>>;
 //}}}
 //{{{ fun: rc_real_fn
-/// Creates a new reference-counted function using Rc<RefCell>
+/// Creates a new reference-counted function using `Rc<RefCell>`.
 #[trace_fn]
 pub fn rc_real_fn<F: RealFn>(fcn: F) -> RcRealFn<F> {
     Rc::new(RefCell::new(fcn))
 }
 //}}}
 //{{{ fun: arc_real_fn
-/// Creates a new thread-safe reference-counted function using Arc<Mutex>
+/// Creates a new thread-safe reference-counted function using `Arc<Mutex>`.
 #[trace_fn]
 pub fn arc_real_fn<F: RealFn>(fcn: F) -> ArcRealFn<F> {
     Arc::new(Mutex::new(fcn))
@@ -359,20 +359,20 @@ where
 }
 //}}}
 //{{{ type: aliases for Rc<RefCell<F>> and Arc<Mutex<F>>
-/// Type alias for a vector-valued function wrapped in Rc<RefCell<F>>
+/// Type alias for a vector-valued function wrapped in `Rc<RefCell<F>>`.
 pub type RcRealVectorFn<F> = Rc<RefCell<F>>;
-/// Type alias for a vector-valued function wrapped in Arc<Mutex<F>>
+/// Type alias for a vector-valued function wrapped in `Arc<Mutex<F>>`.
 pub type ArcRealVectorFn<F> = Arc<Mutex<F>>;
 //}}}
 //{{{ fun: rc_real_vector_fn
-/// Creates a new reference-counted vector-valued function using Rc<RefCell>
+/// Creates a new reference-counted vector-valued function using `Rc<RefCell>`.
 #[trace_fn]
 pub fn rc_real_vector_fn<F: RealVectorFn>(fcn: F) -> RcRealVectorFn<F> {
     Rc::new(RefCell::new(fcn))
 }
 //}}}
 //{{{ fun: arc_real_vector_fn
-/// Creates a new thread-safe reference-counted vector-valued function using Arc<Mutex>
+/// Creates a new thread-safe vector-valued function using `Arc<Mutex>`.
 #[trace_fn]
 pub fn arc_real_vector_fn<F: RealVectorFn>(fcn: F) -> ArcRealVectorFn<F> {
     Arc::new(Mutex::new(fcn))

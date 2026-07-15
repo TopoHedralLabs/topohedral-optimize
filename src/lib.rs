@@ -2,14 +2,14 @@
 //! collection of libraries.
 //!
 //! The library supports:
-//! - Approximate Line-Search algorithms, contained in the [`line_search`] module:
+//! - Approximate line-search algorithms, configured with [`LineSearchMethod`]:
 //!     - More-Thuente
 //!     - Nocedal
-//! - multidimensional, unconstrained optimisation, contained the [`unconstrained`] module, and has
+//! - multidimensional, unconstrained optimisation, configured with [`UnconstrainedMethod`], and has
 //!   the following algorithms:
 //!     - Conjugate Gradient with a selection of direction implementations
 //!     - Quasi-Newton with a selection of Heassian-update implementations
-//! - multidimensionsional, constrained optimisation, contained in the [`constrained`] module with
+//! - multidimensional, constrained optimisation, configured with [`ConstrainedMethod`], with
 //!   the following algorithms:
 //!     - Augmented Lagrangian Method.
 //--------------------------------------------------------------------------------------------------

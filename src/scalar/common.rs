@@ -217,7 +217,7 @@ pub fn bracket<F: RealFn1>(
 }
 //}}}
 //{{{ enum: Bracket
-/// Specifies how the initial bracketing triple for [`resolve_bracket`] is obtained.
+/// Specifies how the initial bracketing triple is obtained.
 #[derive(Copy, Clone, Default)]
 pub enum Bracket {
     /// Search for a bracket automatically, starting from the default points `(0, 1)`.
