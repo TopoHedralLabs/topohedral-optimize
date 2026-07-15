@@ -47,10 +47,8 @@ pub fn minimize<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn>(
     ieq_constraints: Option<F3>,
     x0: Vector,
     method: ConstrainedMethod,
-) -> Result<ConstrainedReturns, ConstrainedError>
-{
-    if method.con_opts().base_opts.make_counting
-    {
+) -> Result<ConstrainedReturns, ConstrainedError> {
+    if method.con_opts().base_opts.make_counting {
         let counting_fcn = arc_real_fn(CountingRealFn::new(fcn));
         let minimizer = factory::create(
             counting_fcn.clone(),
@@ -65,9 +63,7 @@ pub fn minimize<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn>(
         ret.num_fun_evals = counting_fcn_lock.num_func_evals;
         ret.num_grad_evals = counting_fcn_lock.num_grad_evals;
         Ok(ret)
-    }
-    else
-    {
+    } else {
         let minimizer = factory::create(fcn, bounds, eq_constraints, ieq_constraints, x0, method);
         minimizer?.minimize()
     }

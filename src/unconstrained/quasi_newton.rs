@@ -23,16 +23,14 @@ use topohedral_tracing::*;
 
 //{{{ enum: UpdateMethod
 #[derive(Copy, Clone)]
-pub enum UpdateMethod
-{
+pub enum UpdateMethod {
     BFGS,
     DFP,
 }
 //}}}
 //{{{ struct: Options
 #[derive(Clone)]
-pub struct Options
-{
+pub struct Options {
     pub uncon_opts: UnconstrainedOptions,
     pub ls_method: LineSearchMethod,
     pub method: UpdateMethod,
@@ -40,8 +38,7 @@ pub struct Options
 }
 //}}}
 //{{{ struct: QuasiNewton
-pub struct QuasiNewton<F: RealFn>
-{
+pub struct QuasiNewton<F: RealFn> {
     fcn: F,
     x_init: Vector,
     norm_grad_fx_init: f64,
@@ -50,15 +47,13 @@ pub struct QuasiNewton<F: RealFn>
 }
 //}}}
 //{{{ impl: QuasiNewton
-impl<F: RealFn> QuasiNewton<F>
-{
+impl<F: RealFn> QuasiNewton<F> {
     #[trace_fn]
     pub fn new(
         mut fcn: F,
         x0: Vector,
         opts: Options,
-    ) -> Self
-    {
+    ) -> Self {
         let grad_0 = fcn.grad(&x0);
         let norm_grad_0 = grad_0.abs_max().unwrap_or(0.0);
         let n = x0.len();
@@ -77,12 +72,10 @@ impl<F: RealFn> QuasiNewton<F>
         k: u64,
         grad_fk: &Vector,
         dir_k: &mut Vector,
-    )
-    {
+    ) {
         let needs_restart = k.is_multiple_of(self.opts.restart);
         let is_increasing = grad_fk.dot(dir_k) >= 0.0;
-        if needs_restart || is_increasing
-        {
+        if needs_restart || is_increasing {
             *dir_k = -grad_fk.clone();
         }
     }
@@ -91,17 +84,14 @@ impl<F: RealFn> QuasiNewton<F>
     fn is_converged(
         &self,
         grad_norm: f64,
-    ) -> Option<ConvergedReason>
-    {
+    ) -> Option<ConvergedReason> {
         let rtol = self.opts.uncon_opts.grad_rtol;
         let rtol_converged = (grad_norm / self.norm_grad_fx_init) < rtol;
-        if rtol_converged
-        {
+        if rtol_converged {
             return Some(ConvergedReason::Rtol);
         }
         let atol_converged = grad_norm < self.opts.uncon_opts.grad_atol;
-        if atol_converged
-        {
+        if atol_converged {
             return Some(ConvergedReason::Atol);
         }
         None
@@ -114,18 +104,14 @@ impl<F: RealFn> QuasiNewton<F>
         xk: &Vector,
         grad_fk_prev: &Vector,
         grad_fk: &Vector,
-    ) -> bool
-    {
-        match self.opts.method
-        {
-            UpdateMethod::BFGS =>
-            {
+    ) -> bool {
+        match self.opts.method {
+            UpdateMethod::BFGS => {
                 let sk: Vector = (xk - xk_prev).into();
                 let yk: Vector = (grad_fk - grad_fk_prev).into();
                 self.quadratic_model.try_update(&sk, &yk, Inverse)
             }
-            UpdateMethod::DFP =>
-            {
+            UpdateMethod::DFP => {
                 todo!()
             }
         }
@@ -138,10 +124,8 @@ impl<F: RealFn> QuasiNewton<F>
         xk: &Vector,
         grad_fk_prev: &Vector,
         grad_fk: &Vector,
-    ) -> Vector
-    {
-        if !self.update_hessian(xk_prev, xk, grad_fk_prev, grad_fk)
-        {
+    ) -> Vector {
+        if !self.update_hessian(xk_prev, xk, grad_fk_prev, grad_fk) {
             self.quadratic_model.reset();
             return -grad_fk.clone();
         }
@@ -152,8 +136,7 @@ impl<F: RealFn> QuasiNewton<F>
         &self,
         _k: u64,
         current_iter: &IterData,
-    )
-    {
+    ) {
         //{{{ trace
         info!(target: "qn", "======================================================================== i = {_k}");
         trace!(target: "qn", "Current solution: {}", current_iter.x.clone().transpose());
@@ -167,13 +150,12 @@ impl<F: RealFn> QuasiNewton<F>
 }
 //}}}
 //{{{ impl: Minimizer for QuasiNewton
-impl<F: RealFn> Minimizer for QuasiNewton<F>
-{
+impl<F: RealFn> Minimizer for QuasiNewton<F> {
     type Error = Error;
+    type Returns = Returns;
 
     #[trace_fn]
-    fn minimize(&mut self) -> Result<Returns, Self::Error>
-    {
+    fn minimize(&mut self) -> Result<Returns, Self::Error> {
         let mut iter_k = IterData::new(self.fcn.clone(), &self.x_init);
         let mut iter_prev_k = iter_k.clone();
         iter_prev_k.fx = iter_k.fx + 0.5 * iter_k.norm_grad_fx;
@@ -184,8 +166,7 @@ impl<F: RealFn> Minimizer for QuasiNewton<F>
         self.quadratic_model
             .update_iterate(&iter_k.x, iter_k.fx, &iter_k.grad_fx);
 
-        for k in 1..max_iter
-        {
+        for k in 1..max_iter {
             self.print_status(k, &iter_k);
             self.apply_restart(k, &iter_k.grad_fx, &mut dir_k);
 
@@ -203,11 +184,9 @@ impl<F: RealFn> Minimizer for QuasiNewton<F>
                 self.opts.ls_method.clone(),
             );
 
-            iter_k = match search_result
-            {
+            iter_k = match search_result {
                 Ok(iter) => iter,
-                Err(_) =>
-                {
+                Err(_) => {
                     self.quadratic_model.reset();
                     dir_k = -iter_prev_k.grad_fx.clone();
                     let alpha_init =
@@ -232,8 +211,7 @@ impl<F: RealFn> Minimizer for QuasiNewton<F>
                 .update_iterate(&iter_k.x, iter_k.fx, &iter_k.grad_fx);
 
             let stationarity = iter_k.grad_fx.abs_max().unwrap_or(0.0);
-            if let Some(reason) = self.is_converged(stationarity)
-            {
+            if let Some(reason) = self.is_converged(stationarity) {
                 //{{{ trace
                 info!(target: "qn", "=============================================");
                 info!(target: "qn", "Converging with reason {reason:?}");

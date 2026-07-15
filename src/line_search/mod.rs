@@ -49,8 +49,7 @@ pub fn search<F: RealFn>(
     dir: &Vector,
     alpha_init: f64,
     method: LineSearchMethod,
-) -> Result<IterData, LineSearchError>
-{
+) -> Result<IterData, LineSearchError> {
     //{{{ trace
     trace!(target: "ls", "Running with parameters:");
     trace!(target: "ls","iter_data: {iter_data}");
@@ -84,8 +83,7 @@ pub fn search1d<F: RealFn1>(
     mut fcn: F,
     alpha_init: f64,
     method: LineSearchMethod,
-) -> Result<LineSearchReturns, LineSearchError>
-{
+) -> Result<LineSearchReturns, LineSearchError> {
     let phi0 = fcn.eval(0.0);
     let dphi0 = fcn.diff(0.0);
     let mut line_searcher = factory::create(fcn, method);

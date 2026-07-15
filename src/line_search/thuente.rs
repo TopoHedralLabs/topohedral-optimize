@@ -18,30 +18,26 @@ const XTRAPU: f64 = 4.0;
 
 //{{{ struct: Options
 #[derive(Default, Copy, Clone)]
-pub struct Options
-{
+pub struct Options {
     pub ls_opts: com::Options,
     pub maxiter: usize,
 }
 //}}}
 //{{{ struct: Values
 #[derive(Debug, Default, Copy, Clone)]
-struct Values
-{
+struct Values {
     alpha: f64,
     phi: f64,
     dphi: f64,
 }
 //}}}
 //{{{ impl: Values
-impl Values
-{
+impl Values {
     #[trace_fn]
     fn modify_forward(
         &mut self,
         gtest: f64,
-    )
-    {
+    ) {
         self.phi -= self.alpha * gtest;
         self.dphi -= gtest;
     }
@@ -50,8 +46,7 @@ impl Values
     fn modify_back(
         &mut self,
         gtest: f64,
-    )
-    {
+    ) {
         self.phi += self.alpha * gtest;
         self.dphi += gtest;
     }
@@ -59,8 +54,7 @@ impl Values
 //}}}
 //{{{ struct: ThuenteData
 #[derive(Default)]
-struct ThuenteData
-{
+struct ThuenteData {
     finit: f64,
     ginit: f64,
     gtest: f64,
@@ -73,8 +67,7 @@ struct ThuenteData
 //}}}
 //{{{ struct: Thuente
 #[derive(Default)]
-pub struct Thuente<F: RealFn1>
-{
+pub struct Thuente<F: RealFn1> {
     pub opts: Options,
     pub(crate) f: F,
     interval_endpoint1: Values,
@@ -85,15 +78,13 @@ pub struct Thuente<F: RealFn1>
 }
 //}}}
 //{{{ impl: Thuente
-impl<F: RealFn1> Thuente<F>
-{
+impl<F: RealFn1> Thuente<F> {
     //{{{ fn: new
     #[trace_fn]
     pub fn new(
         f: F,
         opts: Options,
-    ) -> Self
-    {
+    ) -> Self {
         Self {
             opts,
             f,
@@ -115,29 +106,25 @@ impl<F: RealFn1> Thuente<F>
     //}}}
     //{{{ fn: interval_width
     #[trace_fn]
-    fn interval_width(&self) -> f64
-    {
+    fn interval_width(&self) -> f64 {
         (self.interval_endpoint1.alpha - self.interval_endpoint2.alpha).abs()
     }
     //}}}
     //{{{ fn: interval_midpoint
     #[trace_fn]
-    fn interval_midpoint(&self) -> f64
-    {
+    fn interval_midpoint(&self) -> f64 {
         0.5 * (self.interval_endpoint1.alpha + self.interval_endpoint2.alpha)
     }
     //}}}
     //{{{ fn: interval_min
     #[trace_fn]
-    fn interval_min(&self) -> f64
-    {
+    fn interval_min(&self) -> f64 {
         f64::min(self.interval_endpoint1.alpha, self.interval_endpoint2.alpha)
     }
     //}}}
     //{{{ fn: interval_max
     #[trace_fn]
-    fn interval_max(&self) -> f64
-    {
+    fn interval_max(&self) -> f64 {
         f64::max(self.interval_endpoint1.alpha, self.interval_endpoint2.alpha)
     }
     //}}}
@@ -148,8 +135,7 @@ impl<F: RealFn1> Thuente<F>
         phi0: f64,
         dphi0: f64,
         alpha1: f64,
-    )
-    {
+    ) {
         let ftol = self.opts.ls_opts.c1;
         let finit = phi0;
         let ginit = dphi0;
@@ -188,15 +174,13 @@ impl<F: RealFn1> Thuente<F>
     fn iter_step(
         &mut self,
         cur_values: &Values,
-    ) -> Values
-    {
+    ) -> Values {
         let finit = self.data.finit;
         let gtest = self.data.gtest;
         self.data.ftest = finit + cur_values.alpha * gtest;
         let ftest = self.data.ftest;
 
-        if self.stage == 1 && cur_values.phi <= ftest && cur_values.dphi >= 0.0
-        {
+        if self.stage == 1 && cur_values.phi <= ftest && cur_values.dphi >= 0.0 {
             self.stage = 2;
         }
 
@@ -230,9 +214,7 @@ impl<F: RealFn1> Thuente<F>
             self.interval_endpoint2.modify_back(gtest);
             self.bracketed = ret.bracket;
             new_step = ret.alpha;
-        }
-        else
-        {
+        } else {
             trace!(target: "ls", "entering stage 2");
             let ret = bracket_step(&StepArgs {
                 interval_endpoint_1: self.interval_endpoint1,
@@ -250,10 +232,8 @@ impl<F: RealFn1> Thuente<F>
         }
 
         // decide if bisection is needed
-        if self.bracketed
-        {
-            if self.interval_width() > 0.66 * self.data.width1
-            {
+        if self.bracketed {
+            if self.interval_width() > 0.66 * self.data.width1 {
                 new_step = self.interval_midpoint();
             }
             self.data.width1 = self.data.width;
@@ -261,13 +241,10 @@ impl<F: RealFn1> Thuente<F>
         }
 
         // Set the minimum and maximum steps allowed for stp.
-        if self.bracketed
-        {
+        if self.bracketed {
             self.data.stmin = self.interval_min();
             self.data.stmax = self.interval_max();
-        }
-        else
-        {
+        } else {
             self.data.stmin = new_step + XTRAPL * (new_step - self.interval_endpoint1.alpha);
             self.data.stmax = new_step + XTRAPU * (new_step - self.interval_endpoint1.alpha);
         }
@@ -280,8 +257,7 @@ impl<F: RealFn1> Thuente<F>
             self.bracketed && (new_step <= self.data.stmin || new_step >= self.data.stmax);
         let interval_too_small =
             self.bracketed && (self.data.stmax - self.data.stmin < 1e-14 * self.data.stmax);
-        if step_out_of_bounds || interval_too_small
-        {
+        if step_out_of_bounds || interval_too_small {
             new_step = self.interval_endpoint1.alpha;
         }
 
@@ -299,8 +275,7 @@ impl<F: RealFn1> Thuente<F>
     fn convergence_reached(
         &self,
         values: &Values,
-    ) -> bool
-    {
+    ) -> bool {
         let &Values {
             alpha,
             phi: f,
@@ -315,8 +290,7 @@ impl<F: RealFn1> Thuente<F>
 }
 //}}}
 //{{{ impl: LineSearch for Thuente
-impl<F: RealFn1> LineSearch for Thuente<F>
-{
+impl<F: RealFn1> LineSearch for Thuente<F> {
     type Function = F;
 
     #[trace_fn]
@@ -325,8 +299,7 @@ impl<F: RealFn1> LineSearch for Thuente<F>
         phi0: f64,
         dphi0: f64,
         alpha1: f64,
-    ) -> Result<Returns, Error>
-    {
+    ) -> Result<Returns, Error> {
         //{{{ trace
         info!(target: "ls", "phi0={phi0:.3e} dphi0={dphi0:.3e} alpha1 = {alpha1:.3e}");
         //}}}
@@ -337,14 +310,12 @@ impl<F: RealFn1> LineSearch for Thuente<F>
             dphi: self.f.diff(alpha1),
         };
 
-        for _iter in 0..self.opts.maxiter
-        {
+        for _iter in 0..self.opts.maxiter {
             //{{{ trace
             trace!(target: "ls", ".................................... iter = {_iter}");
             trace!(target: "ls", "{cur_step:?}");
             //}}}
-            if self.convergence_reached(&cur_step)
-            {
+            if self.convergence_reached(&cur_step) {
                 //{{{ trace
                 trace!(target: "ls", "reached convergence");
                 //}}}
@@ -364,10 +335,8 @@ impl<F: RealFn1> LineSearch for Thuente<F>
 //}}}
 //{{{ fn: bracket_step
 #[trace_fn]
-fn bracket_step(args: &StepArgs) -> StepReturn
-{
-    let (new_step, bracket) = match find_step_case(args)
-    {
+fn bracket_step(args: &StepArgs) -> StepReturn {
+    let (new_step, bracket) = match find_step_case(args) {
         1 => step_case1(args),
         2 => step_case2(args),
         3 => step_case3(args),
@@ -383,21 +352,15 @@ fn bracket_step(args: &StepArgs) -> StepReturn
     };
 
     // update interval containting the minimizer
-    if args.interval_intpoint.phi > args.interval_endpoint_1.phi
-    {
+    if args.interval_intpoint.phi > args.interval_endpoint_1.phi {
         ret.interval_endpoint_1 = args.interval_endpoint_1;
         ret.interval_endpoint_2 = args.interval_intpoint;
-    }
-    else
-    {
+    } else {
         ret.interval_endpoint_1 = args.interval_intpoint;
 
-        if args.deriv_sign_is_opposite()
-        {
+        if args.deriv_sign_is_opposite() {
             ret.interval_endpoint_2 = args.interval_endpoint_1;
-        }
-        else
-        {
+        } else {
             ret.interval_endpoint_2 = args.interval_endpoint_2;
         }
     }
@@ -407,8 +370,7 @@ fn bracket_step(args: &StepArgs) -> StepReturn
 //}}}
 //{{{ struct: StepArgs
 #[derive(Default, Debug)]
-struct StepArgs
-{
+struct StepArgs {
     interval_endpoint_1: Values,
     interval_endpoint_2: Values,
     interval_intpoint: Values,
@@ -416,11 +378,9 @@ struct StepArgs
     step_min: f64,
     step_max: f64,
 }
-impl StepArgs
-{
+impl StepArgs {
     #[trace_fn]
-    fn deriv_sign_is_opposite(&self) -> bool
-    {
+    fn deriv_sign_is_opposite(&self) -> bool {
         let sign_intpint = self.interval_intpoint.dphi.signum();
         let sign_endpoint_1 = self.interval_endpoint_1.dphi.signum();
         sign_intpint * sign_endpoint_1 < 0.0
@@ -429,8 +389,7 @@ impl StepArgs
 //}}}
 //{{{ struct: StepReturn
 #[derive(Default, Debug)]
-struct StepReturn
-{
+struct StepReturn {
     interval_endpoint_1: Values,
     interval_endpoint_2: Values,
     alpha: f64,
@@ -439,18 +398,15 @@ struct StepReturn
 //}}}
 //{{{ fn: find_step_case
 #[trace_fn]
-fn find_step_case(args: &StepArgs) -> u8
-{
+fn find_step_case(args: &StepArgs) -> u8 {
     let cur_phi_is_greater = args.interval_intpoint.phi > args.interval_endpoint_1.phi;
     // case 1: A higher function value. The minimum is bracketed.
-    if cur_phi_is_greater
-    {
+    if cur_phi_is_greater {
         return 1;
     }
 
     // case 2: Lower function value and derivatives of opposite signs. Min is bracketed
-    if args.deriv_sign_is_opposite()
-    {
+    if args.deriv_sign_is_opposite() {
         return 2;
     }
 
@@ -458,8 +414,7 @@ fn find_step_case(args: &StepArgs) -> u8
         args.interval_intpoint.dphi.abs() < args.interval_endpoint_1.dphi.abs();
     // case 3: Lower function value, derivatives same sign, magnitude of derivative is decreasing
     // in direction of step, bracketing remains unchanged
-    if decreasing_derivative_magnitude
-    {
+    if decreasing_derivative_magnitude {
         return 3;
     }
 
@@ -474,8 +429,7 @@ fn find_step_case(args: &StepArgs) -> u8
 /// cubic step is taken, otherwise the average of the cubic and
 /// quadratic steps is taken.
 #[trace_fn]
-fn step_case1(args: &StepArgs) -> (f64, bool)
-{
+fn step_case1(args: &StepArgs) -> (f64, bool) {
     let &Values {
         alpha: stx,
         phi: fx,
@@ -498,12 +452,9 @@ fn step_case1(args: &StepArgs) -> (f64, bool)
 
     let bracket = true;
     let cubic_step_smaller = (cubic_step - stx).abs() <= (quad_step - stx).abs();
-    let step = if cubic_step_smaller
-    {
+    let step = if cubic_step_smaller {
         cubic_step
-    }
-    else
-    {
+    } else {
         0.5 * (quad_step + cubic_step)
     };
 
@@ -516,8 +467,7 @@ fn step_case1(args: &StepArgs) -> (f64, bool)
 /// stp than the secant step, the cubic step is taken, otherwise the
 /// secant step is taken.
 #[trace_fn]
-fn step_case2(args: &StepArgs) -> (f64, bool)
-{
+fn step_case2(args: &StepArgs) -> (f64, bool) {
     let &Values {
         alpha: stx,
         phi: fx,
@@ -540,12 +490,9 @@ fn step_case2(args: &StepArgs) -> (f64, bool)
 
     let bracket = true;
     let cubic_step_larger = (cubic_step - stp).abs() > (quad_step - stp).abs();
-    let step = if cubic_step_larger
-    {
+    let step = if cubic_step_larger {
         cubic_step
-    }
-    else
-    {
+    } else {
         quad_step
     };
 
@@ -554,8 +501,7 @@ fn step_case2(args: &StepArgs) -> (f64, bool)
 //}}}
 //{{{ fn: step_case_3
 #[trace_fn]
-fn step_case3(args: &StepArgs) -> (f64, bool)
-{
+fn step_case3(args: &StepArgs) -> (f64, bool) {
     let &Values {
         alpha: stx,
         phi: fx,
@@ -588,58 +534,41 @@ fn step_case3(args: &StepArgs) -> (f64, bool)
 
     // The case gamma = 0 only arises if the cubic does not tend
     // to infinity in the direction of the step.
-    let cubic_step = if r < 0.0 && gamma != 0.0
-    {
+    let cubic_step = if r < 0.0 && gamma != 0.0 {
         stp + r * (stx - stp)
-    }
-    else if stp > stx
-    {
+    } else if stp > stx {
         args.step_max
-    }
-    else
-    {
+    } else {
         args.step_min
     };
 
     let quad_step = stp + (dp / (dp - dx)) * (stx - stp);
 
-    let step = if args.bracketed
-    {
+    let step = if args.bracketed {
         // # A minimizer has been bracketed. If the cubic step is
         // # closer to stp than the secant step, the cubic step is
         // # taken, otherwise the secant step is taken.
         let cubic_step_smaller = (cubic_step - stp).abs() < (quad_step - stp).abs();
-        let step_tmp = if cubic_step_smaller
-        {
+        let step_tmp = if cubic_step_smaller {
             cubic_step
-        }
-        else
-        {
+        } else {
             quad_step
         };
 
-        if step_tmp > stx
-        {
+        if step_tmp > stx {
             (stp + 0.66 * (sty - stp)).min(step_tmp)
-        }
-        else
-        {
+        } else {
             (stp + 0.66 * (sty - stp)).max(step_tmp)
         }
-    }
-    else
-    {
+    } else {
         // A minimizer has not been bracketed. If the cubic step is
         // farther from stp than the secant step, the cubic step is
         // taken, otherwise the secant step is taken.
         let cubic_step_larger = (cubic_step - stp).abs() > (quad_step - stp).abs();
 
-        let step_tmp = if cubic_step_larger
-        {
+        let step_tmp = if cubic_step_larger {
             cubic_step
-        }
-        else
-        {
+        } else {
             quad_step
         };
         step_tmp.clamp(args.step_min, args.step_max)
@@ -650,8 +579,7 @@ fn step_case3(args: &StepArgs) -> (f64, bool)
 //}}}
 //{{{ fn: step_case_4
 #[trace_fn]
-fn step_case4(args: &StepArgs) -> (f64, bool)
-{
+fn step_case4(args: &StepArgs) -> (f64, bool) {
     let &Values {
         alpha: stx,
         phi: _,
@@ -668,14 +596,10 @@ fn step_case4(args: &StepArgs) -> (f64, bool)
         dphi: dy,
     } = &args.interval_endpoint_2;
 
-    if !args.bracketed
-    {
-        if stp > stx
-        {
+    if !args.bracketed {
+        if stp > stx {
             return (args.step_max, args.bracketed);
-        }
-        else
-        {
+        } else {
             return (args.step_min, args.bracketed);
         }
     }

@@ -18,8 +18,7 @@ pub type Options = crate::common::BaseOptions;
 //}}}
 //{{{ enum: Error
 #[derive(Error, Debug)]
-pub enum Error
-{
+pub enum Error {
     #[error("Linear search failed with error {0}")]
     LineSearch(#[from] LineSearchError),
     #[error("Maximum iterations of {0} reached")]

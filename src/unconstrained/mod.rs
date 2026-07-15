@@ -42,10 +42,8 @@ pub fn minimize<F: RealFn>(
     fcn: F,
     x0: Vector,
     method: UnconstrainedMethod,
-) -> Result<UnconstrainedReturns, UnconstrainedError>
-{
-    if method.uncon_opts().make_counting
-    {
+) -> Result<UnconstrainedReturns, UnconstrainedError> {
+    if method.uncon_opts().make_counting {
         let counting_fcn = arc_real_fn(CountingRealFn::new(fcn));
         let mut minimizer = factory::create(counting_fcn.clone(), x0, method);
         let mut ret = minimizer.minimize()?;
@@ -53,9 +51,7 @@ pub fn minimize<F: RealFn>(
         ret.num_fun_evals = counting_fcn_lock.num_func_evals;
         ret.num_grad_evals = counting_fcn_lock.num_grad_evals;
         Ok(ret)
-    }
-    else
-    {
+    } else {
         let mut minimizer = factory::create(fcn, x0, method);
         minimizer.minimize()
     }

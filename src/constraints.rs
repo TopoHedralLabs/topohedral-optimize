@@ -17,8 +17,7 @@ use topohedral_tracing::*;
 
 //{{{ struct: CauchyPathPoint
 #[derive(Debug, Clone)]
-pub struct CauchyPathPoint
-{
+pub struct CauchyPathPoint {
     pub alpha: f64,
     pub variable_index: usize,
     pub bound_status: BoundStatus,
@@ -29,17 +28,14 @@ pub struct CauchyPathPoint
 pub struct NoConstraints;
 //}}}
 //{{{ impl: RealVectorFn for NoConstraints
-impl RealVectorFn for NoConstraints
-{
+impl RealVectorFn for NoConstraints {
     #[trace_fn]
-    fn dimension_domain(&self) -> usize
-    {
+    fn dimension_domain(&self) -> usize {
         0
     }
 
     #[trace_fn]
-    fn dimension_range(&self) -> usize
-    {
+    fn dimension_range(&self) -> usize {
         0
     }
 
@@ -48,8 +44,7 @@ impl RealVectorFn for NoConstraints
         &mut self,
         _x: &Vector,
         _val: &mut Vector,
-    )
-    {
+    ) {
     }
 
     #[trace_fn]
@@ -57,44 +52,37 @@ impl RealVectorFn for NoConstraints
         &mut self,
         _x: &Vector,
         _val: &mut Matrix,
-    )
-    {
+    ) {
     }
 }
 //}}}
 //{{{ struct: BoundsConstraints
 #[derive(Debug, Clone)]
-pub struct BoundsConstraints
-{
+pub struct BoundsConstraints {
     num_variables: usize,
     bounds: HashMap<usize, (Option<f64>, Option<f64>)>,
 }
 //}}}
 //{{{ enum: BoundStatus
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum BoundSide
-{
+pub enum BoundSide {
     Lower,
     Upper,
 }
 //}}}
 //{{{ enum: BoundStatus
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum BoundStatus
-{
+pub enum BoundStatus {
     Free,
     AtLower(f64),
     AtUpper(f64),
 }
 //}}}
 //{{{ impl: BoundStatus
-impl BoundStatus
-{
+impl BoundStatus {
     #[trace_fn]
-    pub fn side(&self) -> Option<BoundSide>
-    {
-        match self
-        {
+    pub fn side(&self) -> Option<BoundSide> {
+        match self {
             BoundStatus::Free => None,
             BoundStatus::AtLower(_) => Some(BoundSide::Lower),
             BoundStatus::AtUpper(_) => Some(BoundSide::Upper),
@@ -102,10 +90,8 @@ impl BoundStatus
     }
 
     #[trace_fn]
-    pub fn value(&self) -> Option<f64>
-    {
-        match self
-        {
+    pub fn value(&self) -> Option<f64> {
+        match self {
             BoundStatus::Free => None,
             BoundStatus::AtLower(value) | BoundStatus::AtUpper(value) => Some(*value),
         }
@@ -117,12 +103,10 @@ impl BoundStatus
 pub struct BoundSignature(Box<[(usize, BoundSide)]>);
 //}}}
 //{{{ impl: BoundsConstraints
-impl BoundsConstraints
-{
+impl BoundsConstraints {
     //{{{ fn: new
     #[trace_fn]
-    pub fn new(num_variables: usize) -> Self
-    {
+    pub fn new(num_variables: usize) -> Self {
         Self {
             num_variables,
             bounds: HashMap::<usize, (Option<f64>, Option<f64>)>::new(),
@@ -130,8 +114,7 @@ impl BoundsConstraints
     }
     //}}}
     #[trace_fn]
-    pub fn is_empty(&self) -> bool
-    {
+    pub fn is_empty(&self) -> bool {
         self.bounds.is_empty()
     }
     //{{{ fn: add_bounds
@@ -141,8 +124,7 @@ impl BoundsConstraints
         variable_index: usize,
         lower_bound: Option<f64>,
         upper_bound: Option<f64>,
-    )
-    {
+    ) {
         assert!(variable_index < self.dimension_domain());
         assert!(!self.bounds.contains_key(&variable_index));
         self.bounds
@@ -154,11 +136,9 @@ impl BoundsConstraints
     pub fn get_lower(
         &self,
         idx: usize,
-    ) -> Option<f64>
-    {
+    ) -> Option<f64> {
         let op_bounds_i = self.bounds.get(&idx);
-        if let Some(bounds_i) = op_bounds_i
-        {
+        if let Some(bounds_i) = op_bounds_i {
             return bounds_i.0;
         }
         None
@@ -169,11 +149,9 @@ impl BoundsConstraints
     pub fn get_upper(
         &self,
         idx: usize,
-    ) -> Option<f64>
-    {
+    ) -> Option<f64> {
         let op_bounds_i = self.bounds.get(&idx);
-        if let Some(bounds_i) = op_bounds_i
-        {
+        if let Some(bounds_i) = op_bounds_i {
             return bounds_i.1;
         }
         None
@@ -181,17 +159,13 @@ impl BoundsConstraints
     //}}}
     //{{{ fn: num_ieq_constraints
     #[trace_fn]
-    pub fn num_ieq_constraints(&self) -> usize
-    {
+    pub fn num_ieq_constraints(&self) -> usize {
         let mut num_constraints = 0;
-        for (lower_bound, upper_bound) in self.bounds.values()
-        {
-            if lower_bound.is_some()
-            {
+        for (lower_bound, upper_bound) in self.bounds.values() {
+            if lower_bound.is_some() {
                 num_constraints += 1;
             }
-            if upper_bound.is_some()
-            {
+            if upper_bound.is_some() {
                 num_constraints += 1;
             }
         }
@@ -203,17 +177,13 @@ impl BoundsConstraints
     pub fn clamp(
         &self,
         x: &mut Vector,
-    )
-    {
-        for (variable_index, (opt_low_bound, opt_high_bound)) in self.bounds.iter()
-        {
-            if let Some(low_bound) = opt_low_bound
-            {
+    ) {
+        for (variable_index, (opt_low_bound, opt_high_bound)) in self.bounds.iter() {
+            if let Some(low_bound) = opt_low_bound {
                 let xi = x[*variable_index];
                 (*x)[*variable_index] = xi.max(*low_bound);
             }
-            if let Some(high_bound) = opt_high_bound
-            {
+            if let Some(high_bound) = opt_high_bound {
                 let xi = x[*variable_index];
                 (*x)[*variable_index] = xi.min(*high_bound);
             }
@@ -227,8 +197,7 @@ impl BoundsConstraints
         location: &Vector,
         direction: &Vector,
         alpha: f64,
-    ) -> Vector
-    {
+    ) -> Vector {
         let mut new_location: Vector = (location + alpha * direction).into();
         self.clamp(&mut new_location);
         new_location -= location.clone();
@@ -241,8 +210,7 @@ impl BoundsConstraints
         &self,
         location: &Vector,
         direction: &Vector,
-    ) -> f64
-    {
+    ) -> f64 {
         self.cauchy_path(location, direction)
             .first()
             .map(|point| point.alpha)
@@ -256,21 +224,17 @@ impl BoundsConstraints
         &self,
         location: &Vector,
         direction: &Vector,
-    ) -> Vec<CauchyPathPoint>
-    {
+    ) -> Vec<CauchyPathPoint> {
         let mut x_start = location.clone();
         self.clamp(&mut x_start);
 
         let mut breakpoints = Vec::<CauchyPathPoint>::with_capacity(self.bounds.len());
 
-        for (variable_index, (opt_low_bound, opt_high_bound)) in self.bounds.iter()
-        {
+        for (variable_index, (opt_low_bound, opt_high_bound)) in self.bounds.iter() {
             let vi = *variable_index;
-            if let Some(low_bound) = opt_low_bound
-            {
+            if let Some(low_bound) = opt_low_bound {
                 let gi = direction[vi];
-                if gi < 0.0
-                {
+                if gi < 0.0 {
                     let xi = x_start[vi];
                     breakpoints.push(CauchyPathPoint {
                         alpha: (low_bound - xi) / gi,
@@ -279,11 +243,9 @@ impl BoundsConstraints
                     });
                 }
             }
-            if let Some(high_bound) = opt_high_bound
-            {
+            if let Some(high_bound) = opt_high_bound {
                 let gi = direction[vi];
-                if gi > 0.0
-                {
+                if gi > 0.0 {
                     let xi = x_start[vi];
                     breakpoints.push(CauchyPathPoint {
                         alpha: (high_bound - xi) / gi,
@@ -308,58 +270,44 @@ impl BoundsConstraints
         &self,
         location: &Vector,
         direction: Option<&Vector>,
-    ) -> Vec<BoundStatus>
-    {
+    ) -> Vec<BoundStatus> {
         assert_eq!(location.len(), self.dimension_domain());
         let mut statuses = vec![BoundStatus::Free; self.num_variables];
 
-        if let Some(direction) = direction
-        {
+        if let Some(direction) = direction {
             assert_eq!(direction.len(), self.dimension_domain());
 
             let mut x_clamped = location.clone();
             self.clamp(&mut x_clamped);
 
-            for (variable_index, (opt_low_bound, opt_high_bound)) in self.bounds.iter()
-            {
-                if let Some(low_bound) = opt_low_bound
-                {
+            for (variable_index, (opt_low_bound, opt_high_bound)) in self.bounds.iter() {
+                if let Some(low_bound) = opt_low_bound {
                     let gi = direction[*variable_index];
                     let xi = x_clamped[*variable_index];
-                    if gi < 0.0 && xi == *low_bound
-                    {
+                    if gi < 0.0 && xi == *low_bound {
                         statuses[*variable_index] = BoundStatus::AtLower(*low_bound);
                         continue;
                     }
                 }
-                if let Some(high_bound) = opt_high_bound
-                {
+                if let Some(high_bound) = opt_high_bound {
                     let gi = direction[*variable_index];
                     let xi = x_clamped[*variable_index];
-                    if gi > 0.0 && xi == *high_bound
-                    {
+                    if gi > 0.0 && xi == *high_bound {
                         statuses[*variable_index] = BoundStatus::AtUpper(*high_bound);
                     }
                 }
             }
-        }
-        else
-        {
-            for (variable_index, (opt_low_bound, opt_high_bound)) in self.bounds.iter()
-            {
+        } else {
+            for (variable_index, (opt_low_bound, opt_high_bound)) in self.bounds.iter() {
                 let xi = location[*variable_index];
-                if let Some(low_bound) = opt_low_bound
-                {
-                    if xi <= *low_bound
-                    {
+                if let Some(low_bound) = opt_low_bound {
+                    if xi <= *low_bound {
                         statuses[*variable_index] = BoundStatus::AtLower(*low_bound);
                         continue;
                     }
                 }
-                if let Some(high_bound) = opt_high_bound
-                {
-                    if xi >= *high_bound
-                    {
+                if let Some(high_bound) = opt_high_bound {
+                    if xi >= *high_bound {
                         statuses[*variable_index] = BoundStatus::AtUpper(*high_bound);
                     }
                 }
@@ -374,20 +322,15 @@ impl BoundsConstraints
     pub fn active_signature(
         &self,
         x: &Vector,
-    ) -> BoundSignature
-    {
+    ) -> BoundSignature {
         let mut sig = Vec::<(usize, BoundSide)>::with_capacity(self.bounds.len());
 
-        for (&idx, (lower, upper)) in &self.bounds
-        {
+        for (&idx, (lower, upper)) in &self.bounds {
             let xi = x[idx];
 
-            if lower.is_some_and(|lower| xi <= lower)
-            {
+            if lower.is_some_and(|lower| xi <= lower) {
                 sig.push((idx, BoundSide::Lower));
-            }
-            else if upper.is_some_and(|upper| xi >= upper)
-            {
+            } else if upper.is_some_and(|upper| xi >= upper) {
                 sig.push((idx, BoundSide::Upper));
             }
         }
@@ -402,14 +345,11 @@ impl BoundsConstraints
         &self,
         x: &Vector,
         grad_f: &mut Vector,
-    )
-    {
-        for (&idx, (lower, upper)) in &self.bounds
-        {
+    ) {
+        for (&idx, (lower, upper)) in &self.bounds {
             let xi = x[idx];
 
-            if lower.is_some_and(|lower| xi <= lower) || upper.is_some_and(|upper| xi >= upper)
-            {
+            if lower.is_some_and(|lower| xi <= lower) || upper.is_some_and(|upper| xi >= upper) {
                 (*grad_f)[idx] = 0.0;
             }
         }
@@ -421,8 +361,7 @@ impl BoundsConstraints
         &self,
         x: &Vector,
         grad: &Vector,
-    ) -> Vector
-    {
+    ) -> Vector {
         let mut out = grad.clone();
         self.mask_gradient_in_place(x, &mut out);
         return out;
@@ -434,22 +373,18 @@ impl BoundsConstraints
     pub fn minimum_distance(
         &self,
         x: &Vector,
-    ) -> f64
-    {
+    ) -> f64 {
         let mut min_dist = f64::MAX;
-        for (idx, (opt_lower, opt_upper)) in self.bounds.iter()
-        {
+        for (idx, (opt_lower, opt_upper)) in self.bounds.iter() {
             let xi = x[*idx];
             let mut lower_dist = f64::MAX;
             let mut upper_dist = f64::MAX;
 
-            if let Some(lower) = opt_lower
-            {
+            if let Some(lower) = opt_lower {
                 lower_dist = xi - lower
             }
 
-            if let Some(upper) = opt_upper
-            {
+            if let Some(upper) = opt_upper {
                 upper_dist = upper - xi;
             }
 
@@ -463,22 +398,18 @@ impl BoundsConstraints
     pub fn all_distances(
         &self,
         x: &Vector,
-    ) -> Vector
-    {
+    ) -> Vector {
         let mut distances = Vector::from_value_vec(f64::INFINITY, x.len(), VecType::Col);
-        for (idx, (opt_lower, opt_upper)) in self.bounds.iter()
-        {
+        for (idx, (opt_lower, opt_upper)) in self.bounds.iter() {
             let xi = x[*idx];
             let mut lower_dist = f64::MAX;
             let mut upper_dist = f64::MAX;
 
-            if let Some(lower) = opt_lower
-            {
+            if let Some(lower) = opt_lower {
                 lower_dist = xi - lower
             }
 
-            if let Some(upper) = opt_upper
-            {
+            if let Some(upper) = opt_upper {
                 upper_dist = upper - xi;
             }
 
@@ -490,17 +421,14 @@ impl BoundsConstraints
 }
 //}}}
 //{{{ impl: RealVectorFn for BoundsConstraints
-impl RealVectorFn for BoundsConstraints
-{
+impl RealVectorFn for BoundsConstraints {
     #[trace_fn]
-    fn dimension_domain(&self) -> usize
-    {
+    fn dimension_domain(&self) -> usize {
         self.num_variables
     }
 
     #[trace_fn]
-    fn dimension_range(&self) -> usize
-    {
+    fn dimension_range(&self) -> usize {
         self.num_ieq_constraints()
     }
 
@@ -509,23 +437,19 @@ impl RealVectorFn for BoundsConstraints
         &mut self,
         x: &Vector,
         val: &mut Vector,
-    )
-    {
+    ) {
         assert_eq!(x.len(), self.dimension_domain());
         assert_eq!(val.len(), self.dimension_range());
 
         let mut constraint_index = 0;
-        for (variable_index, (opt_lower, opt_upper)) in self.bounds.iter()
-        {
+        for (variable_index, (opt_lower, opt_upper)) in self.bounds.iter() {
             let xi = x[*variable_index];
-            if let Some(lower) = opt_lower
-            {
+            if let Some(lower) = opt_lower {
                 (*val)[constraint_index] = lower - xi;
                 constraint_index += 1;
             }
 
-            if let Some(upper) = opt_upper
-            {
+            if let Some(upper) = opt_upper {
                 (*val)[constraint_index] = xi - upper;
                 constraint_index += 1;
             }
@@ -537,24 +461,20 @@ impl RealVectorFn for BoundsConstraints
         &mut self,
         x: &Vector,
         val: &mut crate::Matrix,
-    )
-    {
+    ) {
         assert_eq!(x.len(), self.dimension_domain());
         assert_eq!(val.ncols(), self.dimension_range());
         assert_eq!(val.nrows(), self.dimension_domain());
 
         val.fill(0.0);
         let mut constraint_index = 0;
-        for (variable_index, (opt_lower, opt_upper)) in self.bounds.iter()
-        {
-            if opt_lower.is_some()
-            {
+        for (variable_index, (opt_lower, opt_upper)) in self.bounds.iter() {
+            if opt_lower.is_some() {
                 (*val)[(*variable_index, constraint_index)] = -1.0;
                 constraint_index += 1;
             }
 
-            if opt_upper.is_some()
-            {
+            if opt_upper.is_some() {
                 (*val)[(*variable_index, constraint_index)] = 1.0;
                 constraint_index += 1;
             }

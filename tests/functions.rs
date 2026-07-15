@@ -19,18 +19,15 @@ use topohedral_linalg::{MatMul, VectorOps};
 //}}}
 //--------------------------------------------------------------------------------------------------
 
-fn colvec(values: &[f64]) -> Vector
-{
+fn colvec(values: &[f64]) -> Vector {
     DVector::<f64>::from_slice_vec(values, values.len(), VecType::Col)
 }
 
 fn assert_vector_close(
     actual: &Vector,
     expected: &Vector,
-)
-{
-    for (a, e) in actual.iter().zip(expected.iter())
-    {
+) {
+    for (a, e) in actual.iter().zip(expected.iter()) {
         assert_relative_eq!(*a, *e, epsilon = 1e-10);
     }
 }
@@ -40,12 +37,9 @@ fn assert_matrix_close(
     expected: &DMatrix<f64>,
     rows: usize,
     cols: usize,
-)
-{
-    for i in 0..rows
-    {
-        for j in 0..cols
-        {
+) {
+    for i in 0..rows {
+        for j in 0..cols {
             assert_relative_eq!(actual[(i, j)], expected[(i, j)], epsilon = 1e-10);
         }
     }
@@ -53,25 +47,21 @@ fn assert_matrix_close(
 
 //{{{ struct: QuadraticDynamic
 #[derive(Debug, Clone)]
-struct QuadraticDynamic
-{
+struct QuadraticDynamic {
     center: Vector,
     coeffs: DMatrix<f64>,
 }
 //}}}
 //{{{ impl: RealFn for QuadraticDynamic
-impl RealFn for QuadraticDynamic
-{
-    fn dimension(&self) -> usize
-    {
+impl RealFn for QuadraticDynamic {
+    fn dimension(&self) -> usize {
         self.center.len()
     }
 
     fn eval(
         &mut self,
         x: &Vector,
-    ) -> f64
-    {
+    ) -> f64 {
         let x1 = x.clone() - self.center.clone();
         let x2 = (&self.coeffs).matmul(&x1);
         x1.dot(&x2)
@@ -80,27 +70,21 @@ impl RealFn for QuadraticDynamic
     fn grad(
         &mut self,
         x: &Vector,
-    ) -> Vector
-    {
+    ) -> Vector {
         let n = x.len();
         let mut out = DVector::<f64>::zeros_vec(n, VecType::Col);
 
-        for i in 0..n
-        {
+        for i in 0..n {
             out[i] = 2.0 * self.coeffs[(i, i)] * x[i];
-            for j in 0..n
-            {
-                if i != j
-                {
+            for j in 0..n {
+                if i != j {
                     out[i] += (self.coeffs[(i, j)] + self.coeffs[(j, i)]) * x[j];
                 }
             }
         }
 
-        for i in 0..n
-        {
-            for j in 0..n
-            {
+        for i in 0..n {
+            for j in 0..n {
                 out[i] +=
                     self.center[j] * self.coeffs[(j, i)] + self.coeffs[(i, j)] * self.center[j];
             }
@@ -111,10 +95,8 @@ impl RealFn for QuadraticDynamic
 }
 //}}}
 //{{{ impl: QuadraticDynamic
-impl QuadraticDynamic
-{
-    fn new1() -> Self
-    {
+impl QuadraticDynamic {
+    fn new1() -> Self {
         let center = DVector::<f64>::zeros_vec(3, VecType::Col);
         let coeffs =
             DMatrix::<f64>::from_row_slice(&[5.0, 1.0, 2.0, 1.0, 5.0, 3.0, 2.0, 3.0, 5.0], 3, 3);
@@ -125,8 +107,7 @@ impl QuadraticDynamic
 
 //{{{ test: test_quadratic_dynamic_3d
 #[test]
-fn test_quadratic_dynamic_3d()
-{
+fn test_quadratic_dynamic_3d() {
     let mut f = QuadraticDynamic::new1();
 
     let x1 = DVector::<f64>::zeros_vec(3, VecType::Col);
@@ -134,8 +115,7 @@ fn test_quadratic_dynamic_3d()
     assert_relative_eq!(fx1, 0.0, epsilon = 1e-10);
     let grad_fx1 = f.grad(&x1);
     let exp_grad_fx1 = DVector::<f64>::zeros_vec(3, VecType::Col);
-    for (actual, expected) in grad_fx1.iter().zip(exp_grad_fx1.iter())
-    {
+    for (actual, expected) in grad_fx1.iter().zip(exp_grad_fx1.iter()) {
         assert_relative_eq!(*actual, *expected, epsilon = 1e-10);
     }
 
@@ -144,8 +124,7 @@ fn test_quadratic_dynamic_3d()
     assert_relative_eq!(fx2, 27.0);
     let grad_fx2 = f.grad(&x2);
     let exp_grad_fx2 = colvec(&[16.0, 18.0, 20.0]);
-    for (actual, expected) in grad_fx2.iter().zip(exp_grad_fx2.iter())
-    {
+    for (actual, expected) in grad_fx2.iter().zip(exp_grad_fx2.iter()) {
         assert_relative_eq!(*actual, *expected, epsilon = 1e-10);
     }
 }
@@ -153,8 +132,7 @@ fn test_quadratic_dynamic_3d()
 
 //{{{ struct: LinearVectorDynamic
 #[derive(Debug, Clone)]
-struct LinearVectorDynamic
-{
+struct LinearVectorDynamic {
     jacobian: DMatrix<f64>,
     bias: Vector,
     rows: usize,
@@ -162,15 +140,12 @@ struct LinearVectorDynamic
 }
 //}}}
 //{{{ impl: RealVectorFn for LinearVectorDynamic
-impl RealVectorFn for LinearVectorDynamic
-{
-    fn dimension_domain(&self) -> usize
-    {
+impl RealVectorFn for LinearVectorDynamic {
+    fn dimension_domain(&self) -> usize {
         self.cols
     }
 
-    fn dimension_range(&self) -> usize
-    {
+    fn dimension_range(&self) -> usize {
         self.rows
     }
 
@@ -178,13 +153,10 @@ impl RealVectorFn for LinearVectorDynamic
         &mut self,
         x: &Vector,
         val: &mut Vector,
-    )
-    {
-        for i in 0..self.rows
-        {
+    ) {
+        for i in 0..self.rows {
             (*val)[i] = self.bias[i];
-            for j in 0..self.cols
-            {
+            for j in 0..self.cols {
                 (*val)[i] += self.jacobian[(i, j)] * x[j];
             }
         }
@@ -194,12 +166,9 @@ impl RealVectorFn for LinearVectorDynamic
         &mut self,
         _x: &Vector,
         val: &mut DMatrix<f64>,
-    )
-    {
-        for i in 0..self.rows
-        {
-            for j in 0..self.cols
-            {
+    ) {
+        for i in 0..self.rows {
+            for j in 0..self.cols {
                 (*val)[(i, j)] = self.jacobian[(i, j)];
             }
         }
@@ -207,10 +176,8 @@ impl RealVectorFn for LinearVectorDynamic
 }
 //}}}
 //{{{ impl: LinearVectorDynamic
-impl LinearVectorDynamic
-{
-    fn new1() -> Self
-    {
+impl LinearVectorDynamic {
+    fn new1() -> Self {
         let rows = 2;
         let cols = 3;
         let jacobian =
@@ -226,8 +193,7 @@ impl LinearVectorDynamic
 }
 //}}}
 //{{{ fun: run_linear_vector_checks
-fn run_linear_vector_checks<F: RealVectorFn>(mut f: F)
-{
+fn run_linear_vector_checks<F: RealVectorFn>(mut f: F) {
     let x = colvec(&[2.0, -1.0, 3.0]);
     let mut value = DVector::<f64>::zeros_vec(2, VecType::Col);
     let mut jac = DMatrix::<f64>::from_row_slice(&[0.0, 0.0, 0.0, 0.0, 0.0, 0.0], 2, 3);
@@ -243,23 +209,20 @@ fn run_linear_vector_checks<F: RealVectorFn>(mut f: F)
 //}}}
 //{{{ test: test_linear_vector_dynamic
 #[test]
-fn test_linear_vector_dynamic()
-{
+fn test_linear_vector_dynamic() {
     run_linear_vector_checks(LinearVectorDynamic::new1());
 }
 //}}}
 //{{{ test: test_linear_vector_dynamic_rc
 #[test]
-fn test_linear_vector_dynamic_rc()
-{
+fn test_linear_vector_dynamic_rc() {
     let fcn: RcRealVectorFn<LinearVectorDynamic> = rc_real_vector_fn(LinearVectorDynamic::new1());
     run_linear_vector_checks(fcn);
 }
 //}}}
 //{{{ test: test_linear_vector_dynamic_arc
 #[test]
-fn test_linear_vector_dynamic_arc()
-{
+fn test_linear_vector_dynamic_arc() {
     let fcn: ArcRealVectorFn<LinearVectorDynamic> = arc_real_vector_fn(LinearVectorDynamic::new1());
     run_linear_vector_checks(fcn);
 }

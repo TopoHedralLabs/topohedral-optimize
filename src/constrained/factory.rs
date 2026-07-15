@@ -10,7 +10,7 @@ use crate::{
         ConstriainedOptions,
     },
     constraints::BoundsConstraints,
-    Minimizer, RealFn, RealVectorFn, Vector,
+    Minimizer, RealFn, RealVectorFn, Returns, Vector,
 };
 //}}}
 //{{{ std imports
@@ -22,26 +22,20 @@ use topohedral_tracing::trace_fn;
 
 //{{{ enum: Method
 #[derive(Clone)]
-pub enum Method
-{
+pub enum Method {
     AugmentedLagrangian(AugmentedLagrangianOptions),
 }
 //}}}
 //{{{ impl Method
-impl Method
-{
-    pub fn con_opts(&self) -> &ConstriainedOptions
-    {
-        match self
-        {
+impl Method {
+    pub fn con_opts(&self) -> &ConstriainedOptions {
+        match self {
             Method::AugmentedLagrangian(opts) => &opts.constrained_opts,
         }
     }
 
-    pub fn con_opts_mut(&mut self) -> &mut ConstriainedOptions
-    {
-        match self
-        {
+    pub fn con_opts_mut(&mut self) -> &mut ConstriainedOptions {
+        match self {
             Method::AugmentedLagrangian(opts) => &mut opts.constrained_opts,
         }
     }
@@ -57,10 +51,8 @@ pub fn create<'a, F1: RealFn + 'a, F2: RealVectorFn + 'a, F3: RealVectorFn + 'a>
     ieq_constraints: Option<F3>,
     x0: Vector,
     method: Method,
-) -> Result<Box<dyn Minimizer<Error = Error> + 'a>, Error>
-{
-    match method
-    {
+) -> Result<Box<dyn Minimizer<Error = Error, Returns = Returns> + 'a>, Error> {
+    match method {
         Method::AugmentedLagrangian(opts) => Ok(Box::new(AugmentedLagrangian::new(
             fcn,
             bounds,

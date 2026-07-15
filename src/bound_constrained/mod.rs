@@ -42,10 +42,8 @@ pub fn minimize<F1: RealFn>(
     bounds: BoundsConstraints,
     x0: Vector,
     method: BoundConstrainedMethod,
-) -> Result<BoundConstrainedReturns, BoundConstrainedError>
-{
-    if method.bound_opts().base_opts.make_counting
-    {
+) -> Result<BoundConstrainedReturns, BoundConstrainedError> {
+    if method.bound_opts().base_opts.make_counting {
         let counting_fcn = arc_real_fn(CountingRealFn::new(fcn));
         let mut minimizer = create(counting_fcn.clone(), bounds, x0, method);
         let mut ret = minimizer.minimize()?;
@@ -53,9 +51,7 @@ pub fn minimize<F1: RealFn>(
         ret.num_fun_evals = counting_fcn_lock.num_func_evals;
         ret.num_grad_evals = counting_fcn_lock.num_grad_evals;
         Ok(ret)
-    }
-    else
-    {
+    } else {
         let mut minimizer = create(fcn, bounds, x0, method);
         minimizer.minimize()
     }

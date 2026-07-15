@@ -1,7 +1,3 @@
-#![feature(generic_const_exprs)]
-#![allow(incomplete_features)]
-#![allow(clippy::excessive_precision)]
-
 use topohedral_optimize::bound_constrained::{
     AsaOptions, BfgsbOptions, BoundConstrainedMethod, BoundConstrainedOptions,
 };
@@ -32,14 +28,12 @@ use topohedral_tracing::*;
 
 //{{{ fun: init_logger
 #[ctor]
-fn init_logger()
-{
+fn init_logger() {
     init().unwrap();
 }
 //}}}
 //{{{ fun: colvec
-fn colvec(values: &[f64]) -> Vector
-{
+fn colvec(values: &[f64]) -> Vector {
     DVector::<f64>::from_slice_vec(values, values.len(), VecType::Col)
 }
 //}}}
@@ -52,12 +46,10 @@ fn reldiff(
     b: f64,
     atol: f64,
     rtol: f64,
-) -> f64
-{
+) -> f64 {
     let scale = b.abs().max(UNIT_SCALE);
     let tol = atol + rtol * scale;
-    if tol == 0.0
-    {
+    if tol == 0.0 {
         return if a == b { 0.0 } else { f64::INFINITY };
     }
     (a - b).abs() / tol
@@ -69,13 +61,11 @@ fn vec_reldiff(
     b: &Vector,
     atol: f64,
     rtol: f64,
-) -> f64
-{
+) -> f64 {
     let scale = b.norm().max(UNIT_SCALE);
     let tol = atol + rtol * scale;
     let diff = (a.clone() - b.clone()).norm();
-    if tol == 0.0
-    {
+    if tol == 0.0 {
         return if diff == 0.0 { 0.0 } else { f64::INFINITY };
     }
     diff / tol
@@ -88,8 +78,7 @@ fn assert_answer(
     exp_fmin: f64,
     xmin_tol: f64,
     fmin_tol: f64,
-)
-{
+) {
     let xmin_err = vec_reldiff(&ret.xmin, exp_xmin, xmin_tol, xmin_tol);
     let fmin_err = reldiff(ret.fmin, exp_fmin, fmin_tol, fmin_tol);
     println!("xmin_err = {xmin_err:.4e} fmin_err = {fmin_err:.4e}");
@@ -102,8 +91,7 @@ fn assert_counts(
     ret: &ConstrainedReturns,
     exp_num_fun_evals: usize,
     exp_num_grad_evals: usize,
-)
-{
+) {
     assert!(
         ret.num_fun_evals <= exp_num_fun_evals,
         "expected at most {} function evaluations, got {}",
@@ -119,8 +107,7 @@ fn assert_counts(
 }
 //}}}
 //{{{ fun: uncon_auglag_method
-fn uncon_auglag_method(mut unconstrained_method: UnconstrainedMethod) -> ConstrainedMethod
-{
+fn uncon_auglag_method(mut unconstrained_method: UnconstrainedMethod) -> ConstrainedMethod {
     unconstrained_method.uncon_opts_mut().make_counting = false;
 
     ConstrainedMethod::AugmentedLagrangian(AugmentedLagrangianOptions::new(
@@ -138,8 +125,7 @@ fn uncon_auglag_method(mut unconstrained_method: UnconstrainedMethod) -> Constra
 }
 //}}}
 //{{{ fun: bcon_auglag_method
-fn bcon_auglag_method(mut bcon_method: BoundConstrainedMethod) -> ConstrainedMethod
-{
+fn bcon_auglag_method(mut bcon_method: BoundConstrainedMethod) -> ConstrainedMethod {
     bcon_method.bound_opts_mut().base_opts.make_counting = false;
 
     ConstrainedMethod::AugmentedLagrangian(AugmentedLagrangianOptions::new(
@@ -297,20 +283,16 @@ const BFGSB_NOCEDAL: BfgsbOptions = BfgsbOptions {
 
 //{{{ collection: constraints
 #[derive(Debug, Clone)]
-struct HyperSphereBound
-{
+struct HyperSphereBound {
     center: Vector,
     radius: f64,
 }
-impl RealVectorFn for HyperSphereBound
-{
-    fn dimension_domain(&self) -> usize
-    {
+impl RealVectorFn for HyperSphereBound {
+    fn dimension_domain(&self) -> usize {
         self.center.len()
     }
 
-    fn dimension_range(&self) -> usize
-    {
+    fn dimension_range(&self) -> usize {
         1
     }
 
@@ -318,11 +300,9 @@ impl RealVectorFn for HyperSphereBound
         &mut self,
         x: &Vector,
         val: &mut Vector,
-    )
-    {
+    ) {
         let mut value = 0.0;
-        for i in 0..x.len()
-        {
+        for i in 0..x.len() {
             value += (x[i] - self.center[i]).powi(2)
         }
         (*val)[0] = value - self.radius.powi(2);
@@ -332,8 +312,7 @@ impl RealVectorFn for HyperSphereBound
         &mut self,
         x: &Vector,
         val: &mut topohedral_optimize::Matrix,
-    )
-    {
+    ) {
         val.col_mut(0).copy_from(2.0 * (x - &self.center));
     }
 }
@@ -342,28 +321,23 @@ impl RealVectorFn for HyperSphereBound
 //{{{ collection: quadratic
 //{{{ struct: Quadratic
 #[derive(Debug, Clone)]
-struct Quadratic
-{
+struct Quadratic {
     xmin: Vector,
 }
 //}}}
 //{{{ impl: RealFn for Quadratic
-impl RealFn for Quadratic
-{
-    fn dimension(&self) -> usize
-    {
+impl RealFn for Quadratic {
+    fn dimension(&self) -> usize {
         self.xmin.len()
     }
 
     fn eval(
         &mut self,
         x: &Vector,
-    ) -> f64
-    {
+    ) -> f64 {
         let tmp = x.clone() - self.xmin.clone();
         let mut out = 0.0;
-        for i in 0..5
-        {
+        for i in 0..5 {
             out += tmp[i].powi(2);
         }
         out
@@ -372,12 +346,10 @@ impl RealFn for Quadratic
     fn grad(
         &mut self,
         x_in: &Vector,
-    ) -> Vector
-    {
+    ) -> Vector {
         let tmp = x_in.clone() - self.xmin.clone();
         let mut out = DVector::<f64>::zeros_vec(5, VecType::Col);
-        for i in 0..5
-        {
+        for i in 0..5 {
             out[i] = 2.0 * tmp[i];
         }
         out
@@ -396,8 +368,7 @@ fn test_quadratic_unconstrained(
     #[case] unconstrained_method: UnconstrainedMethod,
     #[case] exp_num_fun_evals: usize,
     #[case] exp_num_grad_evals: usize,
-)
-{
+) {
     let quad = Quadratic {
         xmin: colvec(&[1000.0, -100.0, 0.0, 567.0, -23.0]),
     };
@@ -441,8 +412,7 @@ fn test_quadratic_bound_constrained_ucon_inner(
     #[case] fmin_tol: f64,
     #[case] exp_num_fun_evals: usize,
     #[case] exp_num_grad_evals: usize,
-)
-{
+) {
     let quad = Quadratic {
         xmin: colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
     };
@@ -482,8 +452,7 @@ fn test_quadratic_bound_constrained_bcon_inner(
     #[case] fmin_tol: f64,
     #[case] exp_num_fun_evals: usize,
     #[case] exp_num_grad_evals: usize,
-)
-{
+) {
     let quad = Quadratic {
         xmin: colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
     };
@@ -527,8 +496,7 @@ fn test_quadratic_hsphere_constrained_ucon_inner(
     #[case] fmin_tol: f64,
     #[case] exp_num_fun_evals: usize,
     #[case] exp_num_grad_evals: usize,
-)
-{
+) {
     let quad = Quadratic {
         xmin: colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
     };
@@ -577,15 +545,13 @@ fn test_quadratic_hsphere_and_bound_constrained_bcon_inner(
     #[case] fmin_tol: f64,
     #[case] exp_num_fun_evals: usize,
     #[case] exp_num_grad_evals: usize,
-)
-{
+) {
     let quad = Quadratic {
         xmin: colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
     };
 
     let mut bound_constraints = BoundsConstraints::new(5);
-    for i in 0..x0.len()
-    {
+    for i in 0..x0.len() {
         bound_constraints.add_bounds(i, Some(15.0), Some(20.0));
     }
 
@@ -630,8 +596,7 @@ fn test_quadratic_hsphere_and_bound_constrained_bcon_inner(
 // well-conditioned single-bound quadratic and checks the solve both converges and
 // actually reaches that tighter accuracy, rather than silently stalling at 1e-6.
 #[test]
-fn test_quadratic_tight_grad_atol_below_old_hardcoded_floor_converges()
-{
+fn test_quadratic_tight_grad_atol_below_old_hardcoded_floor_converges() {
     let quad = Quadratic {
         xmin: colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
     };
@@ -679,28 +644,23 @@ fn test_quadratic_tight_grad_atol_below_old_hardcoded_floor_converges()
 //{{{ collection: quartic
 //{{{ struct: Quartic
 #[derive(Debug, Clone)]
-struct Quartic
-{
+struct Quartic {
     xmin: Vector,
 }
 //}}}
 //{{{ impl: RealFn for Quartic
-impl RealFn for Quartic
-{
-    fn dimension(&self) -> usize
-    {
+impl RealFn for Quartic {
+    fn dimension(&self) -> usize {
         self.xmin.len()
     }
 
     fn eval(
         &mut self,
         x: &Vector,
-    ) -> f64
-    {
+    ) -> f64 {
         let tmp = x.clone() - self.xmin.clone();
         let mut out = 0.0;
-        for i in 0..5
-        {
+        for i in 0..5 {
             out += tmp[i].powi(4);
         }
         out
@@ -709,12 +669,10 @@ impl RealFn for Quartic
     fn grad(
         &mut self,
         x_in: &Vector,
-    ) -> Vector
-    {
+    ) -> Vector {
         let tmp = x_in.clone() - self.xmin.clone();
         let mut out = DVector::<f64>::zeros_vec(5, VecType::Col);
-        for i in 0..5
-        {
+        for i in 0..5 {
             out[i] = 4.0 * tmp[i].powi(3);
         }
         out
@@ -733,8 +691,7 @@ fn test_quartic_without_constraints_matches_unconstrained_reference(
     #[case] unconstrained_method: UnconstrainedMethod,
     #[case] exp_num_fun_evals: usize,
     #[case] exp_num_grad_evals: usize,
-)
-{
+) {
     let quart = Quartic {
         xmin: colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
     };
@@ -776,8 +733,7 @@ fn test_quartic_with_bound_constraints_matches_reference(
     #[case] fmin_tol: f64,
     #[case] exp_num_fun_evals: usize,
     #[case] exp_num_grad_evals: usize,
-)
-{
+) {
     let quart = Quartic {
         xmin: colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
     };
@@ -822,8 +778,7 @@ fn test_quartic_with_bound_constraints_and_bcon_inner_matches_reference(
     #[case] fmin_tol: f64,
     #[case] exp_num_fun_evals: usize,
     #[case] exp_num_grad_evals: usize,
-)
-{
+) {
     let quart = Quartic {
         xmin: colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
     };
@@ -872,8 +827,7 @@ fn test_quartic_hsphere_constrained_ucon_inner_matches_reference(
     #[case] fmin_tol: f64,
     #[case] exp_num_fun_evals: usize,
     #[case] exp_num_grad_evals: usize,
-)
-{
+) {
     let quart = Quartic {
         xmin: colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
     };
@@ -926,15 +880,13 @@ fn test_quartic_hsphere_and_bound_constrained_bcon_inner_matches_reference(
     #[case] fmin_tol: f64,
     #[case] exp_num_fun_evals: usize,
     #[case] exp_num_grad_evals: usize,
-)
-{
+) {
     let quart = Quartic {
         xmin: colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
     };
 
     let mut bound_constraints = BoundsConstraints::new(5);
-    for i in 0..x0.len()
-    {
+    for i in 0..x0.len() {
         bound_constraints.add_bounds(i, Some(15.0), Some(20.0));
     }
 
@@ -975,34 +927,28 @@ fn test_quartic_hsphere_and_bound_constrained_bcon_inner_matches_reference(
 //{{{ collection: rosenbrock
 //{{{ struct Rosenbrock
 #[derive(Debug, Clone, Copy)]
-struct Rosenbrock
-{
+struct Rosenbrock {
     a: f64,
     b: f64,
 }
 //}}}
 //{{{ impl: Rosenbrock
-impl Rosenbrock
-{
-    fn new() -> Self
-    {
+impl Rosenbrock {
+    fn new() -> Self {
         Self { a: 1.0, b: 100.0 }
     }
 }
 //}}}
 //{{{ impl: RealFn for Rosenbrock
-impl RealFn for Rosenbrock
-{
-    fn dimension(&self) -> usize
-    {
+impl RealFn for Rosenbrock {
+    fn dimension(&self) -> usize {
         2
     }
 
     fn eval(
         &mut self,
         xvec: &Vector,
-    ) -> f64
-    {
+    ) -> f64 {
         let x = xvec[0];
         let y = xvec[1];
         (self.a - x).powi(2) + self.b * (y - x.powi(2)).powi(2)
@@ -1011,8 +957,7 @@ impl RealFn for Rosenbrock
     fn grad(
         &mut self,
         xvec: &Vector,
-    ) -> Vector
-    {
+    ) -> Vector {
         let a = self.a;
         let b = self.b;
         let x = xvec[0];
@@ -1037,8 +982,7 @@ fn test_rosenbrock_uncon(
     #[case] unconstrained_method: UnconstrainedMethod,
     #[case] exp_num_fun_evals: usize,
     #[case] exp_num_grad_evals: usize,
-)
-{
+) {
     let rosenbrock = Rosenbrock::new();
     let ret = constrained_minimize(
         rosenbrock,
@@ -1067,8 +1011,7 @@ fn test_rosenbrock_bcon_1(
     #[case] unconstrained_method: UnconstrainedMethod,
     #[case] exp_num_fun_evals: usize,
     #[case] exp_num_grad_evals: usize,
-)
-{
+) {
     let rosenbrock = Rosenbrock::new();
 
     let ieq_constraints = HyperSphereBound {
@@ -1103,8 +1046,7 @@ fn test_rosenbrock_bcon_2(
     #[case] unconstrained_method: UnconstrainedMethod,
     #[case] exp_num_fun_evals: usize,
     #[case] exp_num_grad_evals: usize,
-)
-{
+) {
     let rosenbrock = Rosenbrock::new();
 
     let ieq_constraints = HyperSphereBound {

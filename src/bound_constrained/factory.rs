@@ -9,7 +9,7 @@ use super::bfgsb::{Bfgsb, Options as BfgsbOptions};
 use super::common::Error;
 use crate::bound_constrained::BoundConstrainedOptions;
 use crate::constraints::BoundsConstraints;
-use crate::{Minimizer, RealFn, Vector};
+use crate::{Minimizer, RealFn, Returns, Vector};
 //}}}
 //{{{ std imports
 //}}}
@@ -19,27 +19,21 @@ use topohedral_tracing::trace_fn;
 //--------------------------------------------------------------------------------------------------
 
 #[derive(Clone)]
-pub enum Method
-{
+pub enum Method {
     Asa(AsaOptions),
     Bfgsb(BfgsbOptions),
 }
 
-impl Method
-{
-    pub fn bound_opts(&self) -> &BoundConstrainedOptions
-    {
-        match self
-        {
+impl Method {
+    pub fn bound_opts(&self) -> &BoundConstrainedOptions {
+        match self {
             Method::Asa(asa_opts) => &asa_opts.bound_opts,
             Method::Bfgsb(bfgsb_opts) => &bfgsb_opts.bound_opts,
         }
     }
 
-    pub fn bound_opts_mut(&mut self) -> &mut BoundConstrainedOptions
-    {
-        match self
-        {
+    pub fn bound_opts_mut(&mut self) -> &mut BoundConstrainedOptions {
+        match self {
             Method::Asa(asa_opts) => &mut asa_opts.bound_opts,
             Method::Bfgsb(bfgsb_opts) => &mut bfgsb_opts.bound_opts,
         }
@@ -52,10 +46,8 @@ pub fn create<'a, F: RealFn + 'a>(
     bounds: BoundsConstraints,
     x0: Vector,
     method: Method,
-) -> Box<dyn Minimizer<Error = Error> + 'a>
-{
-    match method
-    {
+) -> Box<dyn Minimizer<Error = Error, Returns = Returns> + 'a> {
+    match method {
         Method::Asa(opts) => Box::new(ActiveSetAlgorithm::new(fcn, bounds, x0, opts)),
         Method::Bfgsb(opts) => Box::new(Bfgsb::new(fcn, bounds, x0, opts)),
     }

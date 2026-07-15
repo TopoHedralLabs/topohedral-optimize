@@ -14,8 +14,7 @@ use topohedral_tracing::*;
 //}}}
 //--------------------------------------------------------------------------------------------------
 
-pub struct QuadraticModel
-{
+pub struct QuadraticModel {
     pub xk: Vector,
     pub fk: f64,
     pub grad_fk: Vector,
@@ -25,18 +24,15 @@ pub struct QuadraticModel
 }
 
 #[derive(PartialEq, Eq, Copy, Clone)]
-pub enum UpdateType
-{
+pub enum UpdateType {
     Direct,
     Inverse,
     Both,
 }
 
-impl QuadraticModel
-{
+impl QuadraticModel {
     #[trace_fn]
-    pub fn new(n: usize) -> Self
-    {
+    pub fn new(n: usize) -> Self {
         QuadraticModel {
             xk: Vector::zeros_vec(n, Col),
             fk: 0.0,
@@ -48,13 +44,11 @@ impl QuadraticModel
     }
 
     #[trace_fn]
-    pub fn reset(&mut self)
-    {
+    pub fn reset(&mut self) {
         let n = self.xk.len();
         self.hess_k.fill(0.0);
         self.inv_hess_k.fill(0.0);
-        for i in 0..n
-        {
+        for i in 0..n {
             self.hess_k[(i, i)] = 1.0;
             self.inv_hess_k[(i, i)] = 1.0;
         }
@@ -67,8 +61,7 @@ impl QuadraticModel
         xk: &Vector,
         fk: f64,
         grad_fk: &Vector,
-    )
-    {
+    ) {
         self.xk.copy_from(xk);
         self.fk = fk;
         self.grad_fk.copy_from(grad_fk);
@@ -80,38 +73,32 @@ impl QuadraticModel
         delta_x: &Vector,
         delta_grad_fx: &Vector,
         update_type: UpdateType,
-    ) -> bool
-    {
+    ) -> bool {
         let sk = delta_x;
         let yk = delta_grad_fx;
         let sk_dot_yk = sk.dot(yk);
         let yk_dot_yk = yk.dot(yk);
 
-        if sk_dot_yk <= f64::EPSILON * yk_dot_yk.max(1.0)
-        {
+        if sk_dot_yk <= f64::EPSILON * yk_dot_yk.max(1.0) {
             return false;
         }
 
-        if !self.had_first_update
-        {
+        if !self.had_first_update {
             self.first_update(yk_dot_yk, sk_dot_yk, update_type);
         }
 
         let hessk_mult_sk = self.hess_k.matmul(sk);
         let curvature = sk.dot(&hessk_mult_sk);
-        if curvature < 0.0
-        {
+        if curvature < 0.0 {
             return false;
         }
 
         let mut out = true;
 
-        if update_type == UpdateType::Direct || update_type == UpdateType::Both
-        {
+        if update_type == UpdateType::Direct || update_type == UpdateType::Both {
             out = out && self.try_update_direct(delta_x, delta_grad_fx, &hessk_mult_sk);
         }
-        if update_type == UpdateType::Inverse || update_type == UpdateType::Both
-        {
+        if update_type == UpdateType::Inverse || update_type == UpdateType::Both {
             out = out && self.try_update_inverse(delta_x, delta_grad_fx);
         }
         out
@@ -122,24 +109,19 @@ impl QuadraticModel
         yk_dot_yk: f64,
         sk_dot_yk: f64,
         update_type: UpdateType,
-    )
-    {
+    ) {
         let n = self.xk.len();
         let scale = yk_dot_yk / sk_dot_yk;
-        if update_type == UpdateType::Direct || update_type == UpdateType::Both
-        {
+        if update_type == UpdateType::Direct || update_type == UpdateType::Both {
             self.hess_k.fill(0.0);
-            for i in 0..n
-            {
+            for i in 0..n {
                 self.hess_k[(i, i)] = scale;
             }
         }
-        if update_type == UpdateType::Inverse || update_type == UpdateType::Both
-        {
+        if update_type == UpdateType::Inverse || update_type == UpdateType::Both {
             let inv_scale = 1.0 / scale;
             self.inv_hess_k.fill(0.0);
-            for i in 0..n
-            {
+            for i in 0..n {
                 self.inv_hess_k[(i, i)] = inv_scale;
             }
         }
@@ -151,8 +133,7 @@ impl QuadraticModel
         delta_x: &Vector,
         delta_grad_fx: &Vector,
         hess_mult_delta_x: &Vector,
-    ) -> bool
-    {
+    ) -> bool {
         let n = self.xk.len();
         let sk = delta_x;
         let yk = delta_grad_fx;
@@ -160,15 +141,12 @@ impl QuadraticModel
         let sk_b_sk = sk.dot(b_sk);
         let yk_dot_sk = yk.dot(sk);
 
-        if sk_b_sk <= 0.0 || yk_dot_sk <= 0.0
-        {
+        if sk_b_sk <= 0.0 || yk_dot_sk <= 0.0 {
             return false;
         }
 
-        for i in 0..n
-        {
-            for j in 0..n
-            {
+        for i in 0..n {
+            for j in 0..n {
                 self.hess_k[(i, j)] += (yk[i] * yk[j] / yk_dot_sk) - (b_sk[i] * b_sk[j] / sk_b_sk);
             }
         }
@@ -179,14 +157,12 @@ impl QuadraticModel
         &mut self,
         delta_x: &Vector,
         delta_grad_fx: &Vector,
-    ) -> bool
-    {
+    ) -> bool {
         let n = self.xk.len();
         let sk = delta_x;
         let yk = delta_grad_fx;
         let yk_dot_sk = yk.dot(sk);
-        if yk_dot_sk <= 0.0
-        {
+        if yk_dot_sk <= 0.0 {
             return false;
         }
         let rho_k = 1.0 / (sk.dot(yk));

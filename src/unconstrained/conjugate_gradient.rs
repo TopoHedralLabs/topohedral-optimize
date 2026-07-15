@@ -22,8 +22,7 @@ use topohedral_tracing::*;
 
 //{{{ enum: Direction
 #[derive(Copy, Clone)]
-pub enum Direction
-{
+pub enum Direction {
     Steepest,
     FletcherReeves,
     PolakRibiere,
@@ -31,8 +30,7 @@ pub enum Direction
 //}}}
 //{{{ struct: Options
 #[derive(Clone)]
-pub struct Options
-{
+pub struct Options {
     pub uncon_opts: BaseOptions,
     pub ls_method: LineSearchMethod,
     pub direction: Direction,
@@ -40,8 +38,7 @@ pub struct Options
 }
 //}}}
 //{{{ struct: ConjugateGradient
-pub struct ConjugateGradient<F: RealFn>
-{
+pub struct ConjugateGradient<F: RealFn> {
     fcn: F,
     x_init: Vector,
     norm_grad_fx_init: f64,
@@ -49,15 +46,13 @@ pub struct ConjugateGradient<F: RealFn>
 }
 //}}}
 //{{{ impl: ConjugateGradient
-impl<F: RealFn> ConjugateGradient<F>
-{
+impl<F: RealFn> ConjugateGradient<F> {
     #[trace_fn]
     pub fn new(
         mut fcn: F,
         x0: Vector,
         opts: Options,
-    ) -> Self
-    {
+    ) -> Self {
         let grad_0 = fcn.grad(&x0);
         let norm_grad_0 = grad_0.abs_max().unwrap_or(0.0);
         Self {
@@ -74,12 +69,10 @@ impl<F: RealFn> ConjugateGradient<F>
         k: u64,
         grad_fk: &Vector,
         dir_k: &mut Vector,
-    )
-    {
+    ) {
         let needs_restart = k.is_multiple_of(self.opts.restart);
         let is_increasing = grad_fk.dot(dir_k) >= 0.0;
-        if needs_restart || is_increasing
-        {
+        if needs_restart || is_increasing {
             *dir_k = -grad_fk.clone();
         }
     }
@@ -97,32 +90,27 @@ impl<F: RealFn> ConjugateGradient<F>
         norm_grad_fk_prev: f64,
         norm_grad_fk: f64,
         dir_k: &Vector,
-    ) -> Vector
-    {
+    ) -> Vector {
         //{{{ trace
         trace!(target: "cg", "norm_grad_fk1 = {norm_grad_fk_prev:.4e} norm_grad_fk = {norm_grad_fk:.4e}");
         //}}}
 
         // direction updates
-        let beta = match self.opts.direction
-        {
-            Direction::Steepest =>
-            {
+        let beta = match self.opts.direction {
+            Direction::Steepest => {
                 //{{{ trace
                 debug!("Applying Steepest Descent update");
                 //}}}
                 0.0
             }
-            Direction::FletcherReeves =>
-            {
+            Direction::FletcherReeves => {
                 //{{{ trace
                 debug!(target: "cg", "Applying fletcher-reeves update");
                 //}}}
 
                 (norm_grad_fk.powi(2) / norm_grad_fk_prev.powi(2)).max(0.0)
             }
-            Direction::PolakRibiere =>
-            {
+            Direction::PolakRibiere => {
                 //{{{ trace
                 debug!(target: "cg", "Applying polak-ribiere update");
                 //}}}
@@ -144,17 +132,14 @@ impl<F: RealFn> ConjugateGradient<F>
     fn is_converged(
         &self,
         grad_norm: f64,
-    ) -> Option<ConvergedReason>
-    {
+    ) -> Option<ConvergedReason> {
         let rtol = self.opts.uncon_opts.grad_rtol;
         let rtol_converged = (grad_norm / self.norm_grad_fx_init) < rtol;
-        if rtol_converged
-        {
+        if rtol_converged {
             return Some(ConvergedReason::Rtol);
         }
         let atol_converged = grad_norm < self.opts.uncon_opts.grad_atol;
-        if atol_converged
-        {
+        if atol_converged {
             return Some(ConvergedReason::Atol);
         }
         None
@@ -164,8 +149,7 @@ impl<F: RealFn> ConjugateGradient<F>
         &self,
         _k: u64,
         current_iter: &IterData,
-    )
-    {
+    ) {
         //{{{ trace
         info!(target: "cg", "======================================================================== i = {_k}");
         trace!(target: "aug", "Current solution: {}", current_iter.x.clone().transpose());
@@ -179,13 +163,12 @@ impl<F: RealFn> ConjugateGradient<F>
 }
 //}}}
 //{{{ impl: Minimizer for ConjugateGradient
-impl<F: RealFn> Minimizer for ConjugateGradient<F>
-{
+impl<F: RealFn> Minimizer for ConjugateGradient<F> {
     type Error = Error;
+    type Returns = Returns;
 
     #[trace_fn]
-    fn minimize(&mut self) -> Result<Returns, Self::Error>
-    {
+    fn minimize(&mut self) -> Result<Returns, Self::Error> {
         let mut iter_k = IterData::new(self.fcn.clone(), &self.x_init);
 
         let mut iter_k_prev = iter_k.clone();
@@ -194,8 +177,7 @@ impl<F: RealFn> Minimizer for ConjugateGradient<F>
         let mut dir_k = -iter_k.grad_fx.clone();
         let max_iter = self.opts.uncon_opts.max_iter;
 
-        for k in 1..max_iter
-        {
+        for k in 1..max_iter {
             self.print_status(k, &iter_k);
             self.apply_restart(k, &iter_k.grad_fx, &mut dir_k);
 
@@ -222,8 +204,7 @@ impl<F: RealFn> Minimizer for ConjugateGradient<F>
             );
 
             let stationarity = iter_k.grad_fx.abs_max().unwrap_or(0.0);
-            if let Some(reason) = self.is_converged(stationarity)
-            {
+            if let Some(reason) = self.is_converged(stationarity) {
                 //{{{ trace
                 info!(target: "cg", "=============================================");
                 info!(target: "cg", "Converging with reason {reason:?}");

@@ -21,16 +21,14 @@ use topohedral_tracing::trace_fn;
 
 //{{{ struct: Options
 #[derive(Copy, Clone)]
-pub struct Options
-{
+pub struct Options {
     pub base_opts: BaseOptions,
     pub constraint_tol: f64,
 }
 //}}}
 //{{{ enum: Error
 #[derive(Error, Debug)]
-pub enum Error
-{
+pub enum Error {
     #[error("Unconstrianed minimization failed with error {0}")]
     UnconstrainedError(#[from] UnconstrainedError),
     #[error("Maximum iterations of {0} reached")]
@@ -44,23 +42,18 @@ pub enum Error
 pub fn lift(
     bound_statuses: &[BoundStatus],
     x_reduced: &Vector,
-) -> Vector
-{
+) -> Vector {
     let n = bound_statuses.len();
     let mut x_full = Vector::zeros_vec(n, VecType::Col);
     let mut local_index = 0;
 
-    for (global_index, bound_status) in bound_statuses.iter().enumerate()
-    {
-        match bound_status
-        {
-            BoundStatus::Free =>
-            {
+    for (global_index, bound_status) in bound_statuses.iter().enumerate() {
+        match bound_status {
+            BoundStatus::Free => {
                 x_full[global_index] = x_reduced[local_index];
                 local_index += 1;
             }
-            BoundStatus::AtLower(value) | BoundStatus::AtUpper(value) =>
-            {
+            BoundStatus::AtLower(value) | BoundStatus::AtUpper(value) => {
                 x_full[global_index] = *value
             }
         }
@@ -72,8 +65,7 @@ pub fn lift(
 pub fn restrict(
     bound_statuses: &[BoundStatus],
     x_full: &Vector,
-) -> Vector
-{
+) -> Vector {
     let n = bound_statuses
         .iter()
         .filter(|status| **status == BoundStatus::Free)
@@ -82,17 +74,13 @@ pub fn restrict(
     let mut x_reduced = Vector::zeros_vec(n, VecType::Col);
     let mut local_index = 0;
 
-    for (global_index, bound_status) in bound_statuses.iter().enumerate()
-    {
-        match bound_status
-        {
-            BoundStatus::Free =>
-            {
+    for (global_index, bound_status) in bound_statuses.iter().enumerate() {
+        match bound_status {
+            BoundStatus::Free => {
                 x_reduced[local_index] = x_full[global_index];
                 local_index += 1;
             }
-            _ =>
-            {
+            _ => {
                 continue;
             }
         }

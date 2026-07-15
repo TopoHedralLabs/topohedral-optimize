@@ -17,36 +17,31 @@ use topohedral_tracing::*;
 
 //{{{ struct: Options
 #[derive(Copy, Clone, Default, Debug)]
-pub struct Options
-{
+pub struct Options {
     pub ls_opts: com::Options,
     pub maxiter: usize,
     pub zoom_maxiter: usize,
 }
 //}}}
 //{{{ struct: Nocedal
-pub struct Nocedal<F: RealFn1>
-{
+pub struct Nocedal<F: RealFn1> {
     pub opts: Options,
     pub(crate) f: F,
 }
 //}}}
 //{{{ impl: Nocedal
-impl<F: RealFn1> Nocedal<F>
-{
+impl<F: RealFn1> Nocedal<F> {
     #[trace_fn]
     pub fn new(
         f: F,
         opts: Options,
-    ) -> Self
-    {
+    ) -> Self {
         Self { f, opts }
     }
 }
 //}}}
 //{{{ impl: LineSearch for Nocedal
-impl<F: RealFn1> LineSearch for Nocedal<F>
-{
+impl<F: RealFn1> LineSearch for Nocedal<F> {
     type Function = F;
     #[trace_fn]
     fn search(
@@ -54,14 +49,12 @@ impl<F: RealFn1> LineSearch for Nocedal<F>
         phi0: f64,
         dphi0: f64,
         mut alpha1: f64,
-    ) -> Result<Returns, Error>
-    {
+    ) -> Result<Returns, Error> {
         //{{{ trace
         trace!(target: "ls", "Entering with phi0 = {:.4e} dphi0 = {:.4e}", phi0, dphi0);
         //}}}
 
-        if dphi0 > 0.0
-        {
+        if dphi0 > 0.0 {
             return Err(Error::NotDecreasing);
         }
         let c1 = self.opts.ls_opts.c1;
@@ -77,8 +70,7 @@ impl<F: RealFn1> LineSearch for Nocedal<F>
         let mut phi_a1 = self.f.eval(alpha1);
         let max_iter = self.opts.maxiter;
 
-        for i in 0..max_iter
-        {
+        for i in 0..max_iter {
             //{{{ trace
             trace!(target: "ls", "--------------------------------------- nocedal it = {}", i);
             trace!(target: "ls", "alpha0 = {:.4e} alpha1 = {:.4e}", alpha0, alpha1);
@@ -86,8 +78,7 @@ impl<F: RealFn1> LineSearch for Nocedal<F>
             trace!(target: "ls", "dphi_aa0 = {:.4e} dphi1 {:.4e}", dphi_a0, dphi_a1);
             //}}}
 
-            if alpha1 < f64::EPSILON * 100.0
-            {
+            if alpha1 < f64::EPSILON * 100.0 {
                 //{{{ trace
                 error!(target: "ls", "Too small step size detected");
                 //}}}
@@ -119,10 +110,8 @@ impl<F: RealFn1> LineSearch for Nocedal<F>
                     self.opts.zoom_maxiter,
                 );
 
-                let (alpha_tmp, phi_tmp, _dphi_tmp) = match zoom_result
-                {
-                    None =>
-                    {
+                let (alpha_tmp, phi_tmp, _dphi_tmp) = match zoom_result {
+                    None => {
                         //{{{ trace
                         error!(target: "ls","Zoom failed");
                         //}}}
@@ -145,8 +134,7 @@ impl<F: RealFn1> LineSearch for Nocedal<F>
             //{{{ trace
             trace!(target: "ls", "dphi_a1 = {dphi_a1:.4e}");
             //}}}
-            if dphi_a1.abs() <= -c2 * dphi0
-            {
+            if dphi_a1.abs() <= -c2 * dphi0 {
                 //{{{ trace
                 trace!(target: "ls", "Satisfies curvature");
                 trace!(target: "ls","Returning alpha = {:.4e} falpha = {:.4e}", alpha1, phi_a1);
@@ -157,8 +145,7 @@ impl<F: RealFn1> LineSearch for Nocedal<F>
                 });
             }
 
-            if dphi_a1 >= 0.0
-            {
+            if dphi_a1 >= 0.0 {
                 //{{{ trace
                 trace!(target: "ls", "Curvature is positive {:.4e}", dphi_a1);
                 //}}}
@@ -175,17 +162,14 @@ impl<F: RealFn1> LineSearch for Nocedal<F>
                     c2,
                     self.opts.zoom_maxiter,
                 );
-                let (alpha_tmp, phi_tmp, _dphi_tmp) = match zoom_result
-                {
-                    None =>
-                    {
+                let (alpha_tmp, phi_tmp, _dphi_tmp) = match zoom_result {
+                    None => {
                         //{{{  trace
                         error!(target: "ls", "Zoom failed");
                         //}}}
                         return Err(Error::NotDecreasing);
                     }
-                    Some(result) =>
-                    {
+                    Some(result) => {
                         //{{{ trace
                         trace!(target: "ls","Zoom succeeded with result {:.4e} {:.4e} {:.4e}",
                                   result.0, result.1, result.2);
@@ -202,8 +186,7 @@ impl<F: RealFn1> LineSearch for Nocedal<F>
                 });
             }
 
-            if alpha1 >= step_max
-            {
+            if alpha1 >= step_max {
                 //{{{ trace
                 trace!(target: "ls", "Reached maximum step size, returning current alpha");
                 //}}}
@@ -264,8 +247,7 @@ where
     let mut cchk = 0.0;
     let mut qchk = 0.0;
     let _ = qchk;
-    loop
-    {
+    loop {
         //{{{ trace
         debug!(target: "ls", "...............zoom iter = {}", iter);
         trace!(target: "ls", "cchk = {:.4e}  qchk = {:.4e}", cchk, qchk);
@@ -273,12 +255,9 @@ where
 
         let dalpha = a_hi - a_lo;
 
-        let (a, b) = if dalpha < 0.0
-        {
+        let (a, b) = if dalpha < 0.0 {
             (a_hi, a_lo)
-        }
-        else
-        {
+        } else {
             (a_lo, a_hi)
         };
 
@@ -289,8 +268,7 @@ where
         let mut opt_a_j: Option<f64> = None;
 
         // first try cubic interpolation
-        if iter > 0
-        {
+        if iter > 0 {
             //{{{ trace
             trace!(target: "ls", "trying cubic interpolation");
             //}}}
@@ -311,8 +289,7 @@ where
             opt_a_j = quadmin(a_lo, phi_lo, dphi_lo, a_hi, phi_hi);
 
             // finally try bisection
-            if opt_a_j.is_none() || opt_a_j.unwrap() > b - qchk || opt_a_j.unwrap() < a + qchk
-            {
+            if opt_a_j.is_none() || opt_a_j.unwrap() > b - qchk || opt_a_j.unwrap() < a + qchk {
                 //{{{ trace
                 trace!(target: "ls", "Trying bisection");
                 //}}}
@@ -330,8 +307,7 @@ where
         let not_sat_armijo = !satisfies_armijo(c1, a_j, phi0, dphi0, phi_aj);
         let not_decreasing = phi_aj >= phi_lo;
 
-        if not_sat_armijo || not_decreasing
-        {
+        if not_sat_armijo || not_decreasing {
             //{{{ trace
             trace!(target: "ls", "Failed armijo condition with {} {}", not_sat_armijo, not_decreasing);
             //}}}
@@ -339,15 +315,12 @@ where
             a_rec = a_hi;
             a_hi = a_j;
             phi_hi = phi_aj;
-        }
-        else
-        {
+        } else {
             //{{{ trace
             trace!(target: "ls", "Passed armijo condition");
             //}}}
             let dphi_aj = phi_fcn.diff(a_j);
-            if dphi_aj.abs() <= -c2 * dphi0
-            {
+            if dphi_aj.abs() <= -c2 * dphi0 {
                 //{{{ trace
                 trace!(target: "ls","Passed curvature condition");
                 error!(target: "ls", "Returning a_j = {:.4e} phi_aj = {:.4e} dphi_aj = {:.4e}",
@@ -356,15 +329,12 @@ where
                 return Some((a_j, phi_aj, dphi_aj));
             }
 
-            if dphi_aj * (a_hi - a_lo) >= 0.0
-            {
+            if dphi_aj * (a_hi - a_lo) >= 0.0 {
                 phi_rec = phi_hi;
                 a_rec = a_hi;
                 a_hi = a_lo;
                 phi_hi = phi_lo;
-            }
-            else
-            {
+            } else {
                 phi_rec = phi_lo;
                 a_rec = a_lo;
             }
@@ -374,8 +344,7 @@ where
             dphi_lo = dphi_aj;
         }
         iter += 1;
-        if iter == max_iter
-        {
+        if iter == max_iter {
             //{{{ trace
             error!(target: "ls", "Reached max iterations in zoom");
             //}}}
@@ -388,37 +357,31 @@ where
 //-------------------------------------------------------------------------------------------------
 //{{{ mod: tests
 #[cfg(test)]
-mod tests
-{
+mod tests {
     use super::*;
     use approx::assert_relative_eq;
 
-    struct ScalarFunction<F: Fn(f64) -> f64, G: Fn(f64) -> f64>
-    {
+    struct ScalarFunction<F: Fn(f64) -> f64, G: Fn(f64) -> f64> {
         f: F,
         df_dx: G,
     }
 
-    impl<F: Fn(f64) -> f64, G: Fn(f64) -> f64> ScalarFunction<F, G>
-    {
+    impl<F: Fn(f64) -> f64, G: Fn(f64) -> f64> ScalarFunction<F, G> {
         #[trace_fn]
         pub fn new(
             f: F,
             df_dx: G,
-        ) -> Self
-        {
+        ) -> Self {
             Self { f, df_dx }
         }
     }
 
-    impl<F: Fn(f64) -> f64, G: Fn(f64) -> f64> RealFn1 for ScalarFunction<F, G>
-    {
+    impl<F: Fn(f64) -> f64, G: Fn(f64) -> f64> RealFn1 for ScalarFunction<F, G> {
         #[trace_fn]
         fn eval(
             &mut self,
             x: f64,
-        ) -> f64
-        {
+        ) -> f64 {
             (self.f)(x)
         }
 
@@ -426,8 +389,7 @@ mod tests
         fn diff(
             &mut self,
             x: f64,
-        ) -> f64
-        {
+        ) -> f64 {
             (self.df_dx)(x)
         }
     }
@@ -435,8 +397,7 @@ mod tests
     //{{{ collection: zoom tests
     #[test]
     #[trace_fn]
-    fn test_zoom_quad_left()
-    {
+    fn test_zoom_quad_left() {
         let f = |x: f64| (x - 2.0).powi(2);
         let df_dx = |x: f64| 2.0 * (x - 2.0);
         let mut sf = ScalarFunction::new(f, df_dx);
@@ -456,8 +417,7 @@ mod tests
 
     #[test]
     #[trace_fn]
-    fn test_zoom_quad_center()
-    {
+    fn test_zoom_quad_center() {
         let f = |x: f64| (x - 2.0).powi(2);
         let df_dx = |x: f64| 2.0 * (x - 2.0);
         let mut sf = ScalarFunction::new(f, df_dx);
@@ -483,8 +443,7 @@ mod tests
 
     #[test]
     #[trace_fn]
-    fn test_zoom_quad_right_none()
-    {
+    fn test_zoom_quad_right_none() {
         let f = |x: f64| (x - 2.0).powi(2);
         let df_dx = |x: f64| 2.0 * (x - 2.0);
         let mut sf = ScalarFunction::new(f, df_dx);
@@ -506,8 +465,7 @@ mod tests
 
     #[test]
     #[trace_fn]
-    fn test_zoom_quad_right_some()
-    {
+    fn test_zoom_quad_right_some() {
         let f = |x: f64| (x - 2.0).powi(2);
         let df_dx = |x: f64| 2.0 * (x - 2.0);
         let mut sf = ScalarFunction::new(f, df_dx);
