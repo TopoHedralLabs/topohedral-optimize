@@ -38,8 +38,7 @@ const DEFAULT_ALPHA_MAX: f64 = 1e20;
 
 //{{{ struct: Options
 #[derive(Clone)]
-pub struct Options
-{
+pub struct Options {
     pub bound_opts: BoundConstrainedOptions,
     /// Settings for internal minimization
     pub unconstrained_method: UnconstrainedMethod,
@@ -64,13 +63,11 @@ pub struct Options
 }
 //}}}
 //{{{ impl Optoins
-impl Options
-{
+impl Options {
     pub fn new(
         bound_opts: BoundConstrainedOptions,
         unconstrained_method: UnconstrainedMethod,
-    ) -> Self
-    {
+    ) -> Self {
         Self {
             bound_opts,
             unconstrained_method,
@@ -90,23 +87,20 @@ impl Options
 //}}}
 //{{{ struct: BoundedFunction
 #[derive(Debug, Clone)]
-struct RestrictedFunction<F: RealFn>
-{
+struct RestrictedFunction<F: RealFn> {
     fcn: F,
     bound_statuses: Vec<BoundStatus>,
 }
 //}}}
 //{{{ impl BoundedFunction
-impl<F: RealFn> RestrictedFunction<F>
-{
+impl<F: RealFn> RestrictedFunction<F> {
     //{{{ fn: new
     #[trace_fn]
     fn new(
         fcn: F,
         _x: &Vector,
         bound_statuses: Vec<BoundStatus>,
-    ) -> Self
-    {
+    ) -> Self {
         RestrictedFunction {
             fcn,
             bound_statuses,
@@ -116,12 +110,10 @@ impl<F: RealFn> RestrictedFunction<F>
 }
 //}}}
 //{{{ impl: RealFn for BoundedFunction
-impl<F: RealFn> RealFn for RestrictedFunction<F>
-{
+impl<F: RealFn> RealFn for RestrictedFunction<F> {
     //{{{ fn: dimension
     #[trace_fn]
-    fn dimension(&self) -> usize
-    {
+    fn dimension(&self) -> usize {
         self.bound_statuses
             .iter()
             .filter(|status| **status == BoundStatus::Free)
@@ -133,8 +125,7 @@ impl<F: RealFn> RealFn for RestrictedFunction<F>
     fn eval(
         &mut self,
         x: &Vector,
-    ) -> f64
-    {
+    ) -> f64 {
         let x_full = lift(&self.bound_statuses, x);
         self.fcn.eval(&x_full)
     }
@@ -144,8 +135,7 @@ impl<F: RealFn> RealFn for RestrictedFunction<F>
     fn grad(
         &mut self,
         x: &Vector,
-    ) -> Vector
-    {
+    ) -> Vector {
         let x_full = lift(&self.bound_statuses, x);
         let grad_f_full = self.fcn.grad(&x_full);
         restrict(&self.bound_statuses, &grad_f_full)
@@ -154,8 +144,7 @@ impl<F: RealFn> RealFn for RestrictedFunction<F>
 }
 //}}}
 //{{{ struct: ActiveSetAlgorithm
-pub struct ActiveSetAlgorithm<F: RealFn>
-{
+pub struct ActiveSetAlgorithm<F: RealFn> {
     fcn: F,
     bounds: BoundsConstraints,
     x_init: Vector,
@@ -168,23 +157,20 @@ pub struct ActiveSetAlgorithm<F: RealFn>
 //}}}
 //{{{ enum: Phase
 #[derive(Debug)]
-enum Phase
-{
+enum Phase {
     Ngpa,
     Ua,
 }
 //}}}
 //{{{ impl: ActiveSetAlgorithm
-impl<F: RealFn> ActiveSetAlgorithm<F>
-{
+impl<F: RealFn> ActiveSetAlgorithm<F> {
     #[trace_fn]
     pub fn new(
         mut fcn: F,
         bounds: BoundsConstraints,
         mut x0: Vector,
         opts: Options,
-    ) -> Self
-    {
+    ) -> Self {
         bounds.clamp(&mut x0);
         let grad_0 = fcn.grad(&x0);
         let negative_grad_0 = -grad_0.clone();
@@ -216,8 +202,7 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
     fn is_converged(
         &self,
         iter_k: &IterData,
-    ) -> Option<ConvergedReason>
-    {
+    ) -> Option<ConvergedReason> {
         //{{{ trace
         trace!(target: "asa", "Checking convergence");
         //}}}
@@ -225,12 +210,9 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
             self.bounds
                 .projected_direction(&iter_k.x, &(-iter_k.grad_fx.clone()), 1.0);
         let projected_grad_norm = projected_grad.abs_max().unwrap_or(0.0);
-        let _projected_grad_ratio = if self.norm_grad_fx_init > 0.0
-        {
+        let _projected_grad_ratio = if self.norm_grad_fx_init > 0.0 {
             projected_grad_norm / self.norm_grad_fx_init
-        }
-        else
-        {
+        } else {
             0.0
         };
         let rtol_reached =
@@ -242,8 +224,7 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
         );
         //}}}
 
-        if rtol_reached
-        {
+        if rtol_reached {
             //{{{ trace
             trace!(target: "asa", "Rtol reached");
             //}}}
@@ -252,8 +233,7 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
 
         let atol_reached = projected_grad_norm < self.opts.bound_opts.base_opts.grad_atol;
 
-        if atol_reached
-        {
+        if atol_reached {
             //{{{ trace
             trace!(target: "asa", "Atol reached");
             //}}}
@@ -269,11 +249,9 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
         s: &Vector,
         y: &Vector,
         fallback: f64,
-    ) -> f64
-    {
+    ) -> f64 {
         let s_dot_y = s.dot(y);
-        if s_dot_y <= 0.0
-        {
+        if s_dot_y <= 0.0 {
             //{{{ trace
             debug!(target: "asa", "Skipping BB update because sᵀy = {s_dot_y:.4e}; fallback alpha = {fallback:.4e}");
             //}}}
@@ -292,8 +270,7 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
         &mut self,
         iter_k: &IterData,
         alpha_init: f64,
-    ) -> Option<IterData>
-    {
+    ) -> Option<IterData> {
         let IterData {
             x,
             fx,
@@ -311,8 +288,7 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
         debug!(target: "asa", "NGPA step: alpha_init = {alpha_init:.4e}, ||d|| = {_d_norm:.4e}, ||d||_∞ = {_d_inf_norm:.4e}");
         //}}}
 
-        if d.abs_max().unwrap() < SMALL
-        {
+        if d.abs_max().unwrap() < SMALL {
             //{{{ trace
             debug!(target: "asa", "Projected direction is below SMALL = {SMALL:.4e}");
             //}}}
@@ -330,12 +306,10 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
         trace!(target: "asa", "Running nonmonotone Armijo search: f_max = {f_max:.4e}, gᵀd = {gradfk_dot_d:.4e}, delta = {delta:.4e}");
         //}}}
         let max_iterations = 25;
-        for _i in 0..max_iterations
-        {
+        for _i in 0..max_iterations {
             let armijo_rhs = f_max + delta * alpha * gradfk_dot_d;
             trace!(target: "asa", "Armijo trial {_i}: alpha = {alpha:.4e}, f_trial = {f_trial:.4e}, rhs = {armijo_rhs:.4e}");
-            if f_trial < armijo_rhs || alpha < SMALL
-            {
+            if f_trial < armijo_rhs || alpha < SMALL {
                 //{{{ trace
                 debug!(target: "asa", "Accepted NGPA step at trial {_i}: alpha = {alpha:.4e}, f_trial = {f_trial:.4e}");
                 //}}}
@@ -365,10 +339,8 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
         x: &Vector,
         inactive_grad: &Vector,
         full_grad_norm: f64,
-    ) -> bool
-    {
-        if full_grad_norm < SMALL
-        {
+    ) -> bool {
+        if full_grad_norm < SMALL {
             //{{{ trace
             trace!(target: "asa", "Undecided set empty because projected gradient norm is below SMALL");
             //}}}
@@ -383,10 +355,8 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
         trace!(target: "asa", "Checking undecided set: thresh_g = {thresh_g:.4e}, thresh_x = {thresh_x:.4e}");
         //}}}
 
-        for (_i, (gi, di)) in inactive_grad.iter().zip(distances.iter()).enumerate()
-        {
-            if gi.abs() >= thresh_g && *di > thresh_x
-            {
+        for (_i, (gi, di)) in inactive_grad.iter().zip(distances.iter()).enumerate() {
+            if gi.abs() >= thresh_g && *di > thresh_x {
                 //{{{ trace
                 debug!(target: "asa", "Undecided variable {_i}: |g_i| = {:.4e}, distance = {:.4e}", gi.abs(), di);
                 //}}}
@@ -400,10 +370,8 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
     }
 
     #[trace_fn]
-    fn active_sets_are_stable(&self) -> bool
-    {
-        if self.active_signature_history.len() < self.opts.n1
-        {
+    fn active_sets_are_stable(&self) -> bool {
+        if self.active_signature_history.len() < self.opts.n1 {
             //{{{ trace
             trace!(
                 target: "asa",
@@ -416,8 +384,7 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
         }
         let mut all_equal = true;
         let most_recent_sig = self.active_signature_history.newest().unwrap().clone();
-        for sig in self.active_signature_history.iter()
-        {
+        for sig in self.active_signature_history.iter() {
             all_equal = all_equal && (*sig == most_recent_sig);
         }
         //{{{ trace
@@ -430,8 +397,7 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
         &self,
         _k: u64,
         _iter_k: &IterData,
-    )
-    {
+    ) {
         info!(target: "asa", ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> k = {_k}");
         info!(target: "asa", "Current values: {_iter_k}");
         trace!(target: "asa", "x: {}", _iter_k.x.clone().transpose());
@@ -440,12 +406,9 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
             self.bounds
                 .projected_direction(&_iter_k.x, &(-_iter_k.grad_fx.clone()), 1.0);
         let projected_grad_norm = projected_grad.abs_max().unwrap_or(0.0);
-        let _projected_grad_ratio = if self.norm_grad_fx_init > 0.0
-        {
+        let _projected_grad_ratio = if self.norm_grad_fx_init > 0.0 {
             projected_grad_norm / self.norm_grad_fx_init
-        }
-        else
-        {
+        } else {
             0.0
         };
         info!(target: "asa", "Convergence measures:");
@@ -456,14 +419,12 @@ impl<F: RealFn> ActiveSetAlgorithm<F>
 }
 //}}}
 //{{{ impl: Minimizer for ActiveSetAlgorithm
-impl<F: RealFn> Minimizer for ActiveSetAlgorithm<F>
-{
+impl<F: RealFn> Minimizer for ActiveSetAlgorithm<F> {
     type Error = super::common::Error;
     type Returns = crate::Returns;
 
     #[trace_fn]
-    fn minimize(&mut self) -> Result<crate::Returns, Self::Error>
-    {
+    fn minimize(&mut self) -> Result<crate::Returns, Self::Error> {
         let mut iter_k_prev = IterData::new(self.fcn.clone(), &self.x_init);
         let mut iter_k = IterData::new(self.fcn.clone(), &self.x_init);
         let mut phase = Phase::Ngpa;
@@ -476,11 +437,9 @@ impl<F: RealFn> Minimizer for ActiveSetAlgorithm<F>
 
         info!(target: "asa", "Starting active-set iterations with phase = {phase:?}, mu = {mu:.4e}, alpha_bb = {alpha_bb:.4e}");
 
-        for k in 0..self.opts.bound_opts.base_opts.max_iter
-        {
+        for k in 0..self.opts.bound_opts.base_opts.max_iter {
             self.print_status(k, &iter_k);
-            if let Some(reason) = self.is_converged(&iter_k)
-            {
+            if let Some(reason) = self.is_converged(&iter_k) {
                 //{{{ trace
                 info!(target: "asa", "=============================================");
                 info!(target: "asa", "Converging with reason {reason:?}");
@@ -497,10 +456,8 @@ impl<F: RealFn> Minimizer for ActiveSetAlgorithm<F>
                 });
             }
 
-            match phase
-            {
-                Phase::Ngpa =>
-                {
+            match phase {
+                Phase::Ngpa => {
                     //{{{ trace
                     debug!(target: "asa", "Entering NGPA phase with alpha_bb = {alpha_bb:.4e}, mu = {mu:.4e}");
                     //}}}
@@ -515,8 +472,7 @@ impl<F: RealFn> Minimizer for ActiveSetAlgorithm<F>
 
                     let npga_ok = self.ngpa_step(&iter_k, alpha_bb);
 
-                    if npga_ok.is_none()
-                    {
+                    if npga_ok.is_none() {
                         //{{{ trace
                         debug!(target: "asa", "NGPA could not produce a step; terminating iteration loop");
                         //}}}
@@ -557,18 +513,14 @@ impl<F: RealFn> Minimizer for ActiveSetAlgorithm<F>
                     );
                     //}}}
 
-                    if self.undecided_set_is_empy(x, &inactive_grad, projected_grad_norm)
-                    {
-                        if inactive_grad_norm < mu * projected_grad_norm
-                        {
+                    if self.undecided_set_is_empy(x, &inactive_grad, projected_grad_norm) {
+                        if inactive_grad_norm < mu * projected_grad_norm {
                             let _old_mu = mu;
                             mu *= self.opts.rho;
                             //{{{ trace
                             debug!(target: "asa", "Undecided set empty and inactive gradient is small; shrinking mu from {_old_mu:.4e} to {mu:.4e}");
                             //}}}
-                        }
-                        else
-                        {
+                        } else {
                             //{{{ trace
                             debug!(target: "asa", "Undecided set empty but inactive gradient is large; switching to UA");
                             //}}}
@@ -585,8 +537,7 @@ impl<F: RealFn> Minimizer for ActiveSetAlgorithm<F>
                         phase = Ua;
                     }
                 }
-                Phase::Ua =>
-                {
+                Phase::Ua => {
                     //{{{ trace
                     debug!(target: "asa", "Entering UA phase with mu = {mu:.4e}");
                     //}}}
@@ -618,8 +569,7 @@ impl<F: RealFn> Minimizer for ActiveSetAlgorithm<F>
                         RestrictedFunction::new(self.fcn.clone(), x, bounds_statuses.clone());
 
                     let x0 = restrict(&bounds_statuses, x);
-                    if x0.is_empty()
-                    {
+                    if x0.is_empty() {
                         //{{{ trace
                         debug!(target: "asa", "UA restricted problem has no free variables; switching to NGPA");
                         //}}}
@@ -633,9 +583,7 @@ impl<F: RealFn> Minimizer for ActiveSetAlgorithm<F>
                         self.opts.unconstrained_method.clone(),
                     );
 
-                    let Ok(res) = res
-                    else
-                    {
+                    let Ok(res) = res else {
                         //{{{ trace
                         debug!(target: "asa", "UA internal minimization failed; switching to NGPA");
                         //}}}
@@ -685,14 +633,12 @@ impl<F: RealFn> Minimizer for ActiveSetAlgorithm<F>
                     self.active_signature_history
                         .append(self.bounds.active_signature(&iter_k.x));
 
-                    if inactive_grad_norm_new < mu * projected_grad_norm_new
-                    {
+                    if inactive_grad_norm_new < mu * projected_grad_norm_new {
                         //{{{ trace
                         debug!(target: "asa", "||∇f_inactive|| < mu ||∇f_proj||; switching to NGPA");
                         //}}}
                         phase = Phase::Ngpa;
-                    }
-                    else if active_count_after > active_count_before
+                    } else if active_count_after > active_count_before
                         && active_count_after <= active_count_before + self.opts.n2
                         && !self.undecided_set_is_empy(
                             &iter_k.x,
@@ -704,9 +650,7 @@ impl<F: RealFn> Minimizer for ActiveSetAlgorithm<F>
                         debug!(target: "asa", "Active bound count increased within n2 and undecided set remains nonempty; switching to NGPA");
                         //}}}
                         phase = Phase::Ngpa;
-                    }
-                    else
-                    {
+                    } else {
                         //{{{ trace
                         debug!(target: "asa", "Continuing in UA");
                         //}}}

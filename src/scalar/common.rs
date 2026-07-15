@@ -15,8 +15,7 @@ use topohedral_tracing::{trace, trace_fn};
 //--------------------------------------------------------------------------------------------------
 
 #[derive(Error, Debug)]
-pub enum Error
-{
+pub enum Error {
     #[error("Maximum iterations of {0} reached")]
     MaxIterations(usize),
     #[error(
@@ -43,16 +42,13 @@ pub enum Error
 }
 
 #[derive(Copy, Clone)]
-pub struct BracketOptions
-{
+pub struct BracketOptions {
     pub grow_limit: f64,
     pub max_iter: usize,
 }
 
-impl Default for BracketOptions
-{
-    fn default() -> Self
-    {
+impl Default for BracketOptions {
+    fn default() -> Self {
         Self {
             grow_limit: 110.0,
             max_iter: 1000,
@@ -68,8 +64,7 @@ impl Default for BracketOptions
 /// `fb < fa` and `fb < fc`, i.e. `(xa, fa)`, `(xb, fb)`, `(xc, fc)` bracket a
 /// local minimum of the function.
 #[derive(Copy, Clone, Debug, PartialEq)]
-pub struct BracketResult
-{
+pub struct BracketResult {
     pub xa: f64,
     pub xb: f64,
     pub xc: f64,
@@ -102,8 +97,7 @@ pub fn bracket<F: RealFn1>(
     a: f64,
     b: f64,
     opts: BracketOptions,
-) -> Result<BracketResult, Error>
-{
+) -> Result<BracketResult, Error> {
     const GOLD: f64 = 1.618034;
     const VERY_SMALL_NUM: f64 = 1e-21;
 
@@ -112,8 +106,7 @@ pub fn bracket<F: RealFn1>(
     let mut fa = f.eval(xa);
     let mut fb = f.eval(xb);
 
-    if fa < fb
-    {
+    if fa < fb {
         std::mem::swap(&mut xa, &mut xb);
         std::mem::swap(&mut fa, &mut fb);
     }
@@ -127,24 +120,19 @@ pub fn bracket<F: RealFn1>(
     trace!(target: "scalar", "bracket: starting with xa = {xa:.4e}, xb = {xb:.4e}, xc = {xc:.4e}");
     //}}}
 
-    while fc < fb
-    {
+    while fc < fb {
         let tmp1 = (xb - xa) * (fb - fc);
         let tmp2 = (xb - xc) * (fb - fa);
         let val = tmp2 - tmp1;
-        let denom = if val.abs() < VERY_SMALL_NUM
-        {
+        let denom = if val.abs() < VERY_SMALL_NUM {
             2.0 * VERY_SMALL_NUM
-        }
-        else
-        {
+        } else {
             2.0 * val
         };
         let mut w = xb - ((xb - xc) * tmp2 - (xb - xa) * tmp1) / denom;
         let wlim = xb + opts.grow_limit * (xc - xb);
 
-        if iter > opts.max_iter
-        {
+        if iter > opts.max_iter {
             //{{{ trace
             trace!(target: "scalar", "bracket: exceeded max_iter = {}", opts.max_iter);
             //}}}
@@ -153,20 +141,16 @@ pub fn bracket<F: RealFn1>(
         iter += 1;
 
         let fw;
-        if (w - xc) * (xb - w) > 0.0
-        {
+        if (w - xc) * (xb - w) > 0.0 {
             let mut fw_inner = f.eval(w);
             num_fun_evals += 1;
-            if fw_inner < fc
-            {
+            if fw_inner < fc {
                 xa = xb;
                 xb = w;
                 fa = fb;
                 fb = fw_inner;
                 break;
-            }
-            else if fw_inner > fb
-            {
+            } else if fw_inner > fb {
                 xc = w;
                 fc = fw_inner;
                 break;
@@ -175,19 +159,14 @@ pub fn bracket<F: RealFn1>(
             fw_inner = f.eval(w);
             num_fun_evals += 1;
             fw = fw_inner;
-        }
-        else if (w - wlim) * (wlim - xc) >= 0.0
-        {
+        } else if (w - wlim) * (wlim - xc) >= 0.0 {
             w = wlim;
             fw = f.eval(w);
             num_fun_evals += 1;
-        }
-        else if (w - wlim) * (xc - w) > 0.0
-        {
+        } else if (w - wlim) * (xc - w) > 0.0 {
             let mut fw_inner = f.eval(w);
             num_fun_evals += 1;
-            if fw_inner < fc
-            {
+            if fw_inner < fc {
                 xb = xc;
                 xc = w;
                 w = xc + GOLD * (xc - xb);
@@ -197,9 +176,7 @@ pub fn bracket<F: RealFn1>(
                 num_fun_evals += 1;
             }
             fw = fw_inner;
-        }
-        else
-        {
+        } else {
             w = xc + GOLD * (xc - xb);
             fw = f.eval(w);
             num_fun_evals += 1;
@@ -217,8 +194,7 @@ pub fn bracket<F: RealFn1>(
     let cond2 = (xa < xb && xb < xc) || (xc < xb && xb < xa);
     let cond3 = xa.is_finite() && xb.is_finite() && xc.is_finite();
 
-    if !(cond1 && cond2 && cond3)
-    {
+    if !(cond1 && cond2 && cond3) {
         //{{{ trace
         trace!(target: "scalar", "bracket: invalid bracket xa = {xa:.4e}, xb = {xb:.4e}, xc = {xc:.4e}");
         //}}}
@@ -243,8 +219,7 @@ pub fn bracket<F: RealFn1>(
 //{{{ enum: Bracket
 /// Specifies how the initial bracketing triple for [`resolve_bracket`] is obtained.
 #[derive(Copy, Clone, Default)]
-pub enum Bracket
-{
+pub enum Bracket {
     /// Search for a bracket automatically, starting from the default points `(0, 1)`.
     #[default]
     Auto,
@@ -275,24 +250,19 @@ pub fn resolve_bracket<F: RealFn1>(
     f: &mut F,
     spec: Bracket,
     opts: BracketOptions,
-) -> Result<BracketResult, Error>
-{
-    match spec
-    {
+) -> Result<BracketResult, Error> {
+    match spec {
         Bracket::Auto => bracket(f, 0.0, 1.0, opts),
         Bracket::Points(xa, xb) => bracket(f, xa, xb, opts),
-        Bracket::Triple(xa0, xb, xc0) =>
-        {
+        Bracket::Triple(xa0, xb, xc0) => {
             let (xa, xc) = if xa0 > xc0 { (xc0, xa0) } else { (xa0, xc0) };
-            if !(xa < xb && xb < xc)
-            {
+            if !(xa < xb && xb < xc) {
                 return Err(Error::InvalidBracketOrder(xa, xb, xc));
             }
             let fa = f.eval(xa);
             let fb = f.eval(xb);
             let fc = f.eval(xc);
-            if !(fb < fa && fb < fc)
-            {
+            if !(fb < fa && fb < fc) {
                 return Err(Error::InvalidBracketValues);
             }
             Ok(BracketResult {
@@ -310,57 +280,47 @@ pub fn resolve_bracket<F: RealFn1>(
 //}}}
 //{{{ mod: tests
 #[cfg(test)]
-mod tests
-{
+mod tests {
     use super::*;
 
-    struct ScalarFunction<F: Fn(f64) -> f64>
-    {
+    struct ScalarFunction<F: Fn(f64) -> f64> {
         f: F,
     }
 
-    impl<F: Fn(f64) -> f64> ScalarFunction<F>
-    {
-        fn new(f: F) -> Self
-        {
+    impl<F: Fn(f64) -> f64> ScalarFunction<F> {
+        fn new(f: F) -> Self {
             Self { f }
         }
     }
 
-    impl<F: Fn(f64) -> f64> RealFn1 for ScalarFunction<F>
-    {
+    impl<F: Fn(f64) -> f64> RealFn1 for ScalarFunction<F> {
         fn eval(
             &mut self,
             x: f64,
-        ) -> f64
-        {
+        ) -> f64 {
             (self.f)(x)
         }
 
         fn diff(
             &mut self,
             _x: f64,
-        ) -> f64
-        {
+        ) -> f64 {
             unimplemented!("not needed by bracket")
         }
     }
 
-    fn parabola(x: f64) -> f64
-    {
+    fn parabola(x: f64) -> f64 {
         (x - 1.0).powi(2)
     }
 
-    fn quartic(x: f64) -> f64
-    {
+    fn quartic(x: f64) -> f64 {
         (x - 2.0).powi(4) + 3.0
     }
 
     fn assert_valid_bracket(
         res: &BracketResult,
         f: &mut impl RealFn1,
-    )
-    {
+    ) {
         assert!(
             (res.xa < res.xb && res.xb < res.xc) || (res.xc < res.xb && res.xb < res.xa),
             "xb must lie strictly between xa and xc: xa = {}, xb = {}, xc = {}",
@@ -380,16 +340,14 @@ mod tests
     }
 
     #[test]
-    fn test_bracket_parabola_downhill()
-    {
+    fn test_bracket_parabola_downhill() {
         let mut f = ScalarFunction::new(parabola);
         let res = bracket(&mut f, 0.0, 1.0, BracketOptions::default()).unwrap();
         assert_valid_bracket(&res, &mut f);
     }
 
     #[test]
-    fn test_bracket_parabola_uphill_initial_points()
-    {
+    fn test_bracket_parabola_uphill_initial_points() {
         // fa < fb initially (both left of the minimum), forcing the initial swap
         let mut f = ScalarFunction::new(parabola);
         let res = bracket(&mut f, -1.0, -0.5, BracketOptions::default()).unwrap();
@@ -397,8 +355,7 @@ mod tests
     }
 
     #[test]
-    fn test_bracket_quartic()
-    {
+    fn test_bracket_quartic() {
         let mut f = ScalarFunction::new(quartic);
         let res = bracket(&mut f, 0.0, 1.0, BracketOptions::default()).unwrap();
         assert_valid_bracket(&res, &mut f);
@@ -411,8 +368,7 @@ mod tests
     }
 
     #[test]
-    fn test_bracket_max_iterations_exceeded()
-    {
+    fn test_bracket_max_iterations_exceeded() {
         // A function that is monotonically decreasing everywhere never brackets a
         // minimum, so with a tiny iteration budget the search should report
         // MaxIterations rather than loop forever.
@@ -426,8 +382,7 @@ mod tests
     }
 
     #[test]
-    fn test_bracket_funcalls_counts_all_evaluations()
-    {
+    fn test_bracket_funcalls_counts_all_evaluations() {
         let mut f = ScalarFunction::new(parabola);
         let res = bracket(&mut f, 0.0, 1.0, BracketOptions::default()).unwrap();
         assert!(res.num_fun_evals >= 3);

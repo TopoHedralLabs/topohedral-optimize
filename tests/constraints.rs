@@ -1,6 +1,3 @@
-#![feature(generic_const_exprs)]
-#![allow(incomplete_features)]
-
 //{{{ crate imports
 use topohedral_optimize::constraints::BoundStatus::{self, AtLower, AtUpper};
 use topohedral_optimize::constraints::{BoundsConstraints, CauchyPathPoint, NoConstraints};
@@ -15,8 +12,7 @@ use topohedral_linalg::{Shape, TransformOps, VectorOps};
 //}}}
 
 //{{{ fun: colvec
-fn colvec(values: &[f64]) -> Vector
-{
+fn colvec(values: &[f64]) -> Vector {
     DVector::<f64>::from_slice_vec(values, values.len(), VecType::Col)
 }
 //}}}
@@ -26,8 +22,7 @@ fn assert_cauchy_path_point(
     expected_alpha: f64,
     expected_variable_index: usize,
     expected_bound_status: BoundStatus,
-)
-{
+) {
     assert_relative_eq!(point.alpha, expected_alpha, epsilon = 1e-12);
     assert_eq!(point.variable_index, expected_variable_index);
     assert_eq!(point.bound_status, expected_bound_status);
@@ -40,19 +35,15 @@ fn assert_bound_columns_match(
     gradient: &Matrix,
     lower_bounds: &[Option<f64>],
     upper_bounds: &[Option<f64>],
-)
-{
+) {
     let mut seen_lower = vec![0usize; x.len()];
     let mut seen_upper = vec![0usize; x.len()];
 
-    for constraint_index in 0..values.len()
-    {
+    for constraint_index in 0..values.len() {
         let mut nonzero_entries = Vec::new();
-        for variable_index in 0..x.len()
-        {
+        for variable_index in 0..x.len() {
             let entry = gradient[(variable_index, constraint_index)];
-            if entry.abs() > 1e-12
-            {
+            if entry.abs() > 1e-12 {
                 nonzero_entries.push((variable_index, entry));
             }
         }
@@ -60,8 +51,7 @@ fn assert_bound_columns_match(
         assert_eq!(nonzero_entries.len(), 1);
         let (variable_index, entry) = nonzero_entries[0];
 
-        if entry < 0.0
-        {
+        if entry < 0.0 {
             seen_lower[variable_index] += 1;
             let lower = lower_bounds[variable_index]
                 .expect("gradient column with -1.0 must correspond to a lower bound");
@@ -71,9 +61,7 @@ fn assert_bound_columns_match(
                 lower - x[variable_index],
                 epsilon = 1e-12
             );
-        }
-        else
-        {
+        } else {
             seen_upper[variable_index] += 1;
             let upper = upper_bounds[variable_index]
                 .expect("gradient column with +1.0 must correspond to an upper bound");
@@ -86,8 +74,7 @@ fn assert_bound_columns_match(
         }
     }
 
-    for variable_index in 0..x.len()
-    {
+    for variable_index in 0..x.len() {
         assert_eq!(
             seen_lower[variable_index],
             usize::from(lower_bounds[variable_index].is_some())
@@ -102,8 +89,7 @@ fn assert_bound_columns_match(
 
 //{{{ test: no constraints
 #[test]
-fn test_no_constraints_is_empty_and_noop()
-{
+fn test_no_constraints_is_empty_and_noop() {
     let mut constraints = NoConstraints;
 
     assert_eq!(constraints.dimension_domain(), 0);
@@ -123,8 +109,7 @@ fn test_no_constraints_is_empty_and_noop()
 //}}}
 //{{{ test: mixed bounds
 #[test]
-fn test_bounds_constraints_mixed_bounds_eval_and_grad_match_public_contract()
-{
+fn test_bounds_constraints_mixed_bounds_eval_and_grad_match_public_contract() {
     let mut constraints = BoundsConstraints::new(4);
     constraints.add_bounds(0, Some(-1.0), Some(2.0));
     constraints.add_bounds(2, Some(0.5), None);
@@ -155,8 +140,7 @@ fn test_bounds_constraints_mixed_bounds_eval_and_grad_match_public_contract()
 //}}}
 //{{{ test: cauchy path upper bound
 #[test]
-fn test_cauchy_path_single_upper_bound_hit()
-{
+fn test_cauchy_path_single_upper_bound_hit() {
     let mut constraints = BoundsConstraints::new(1);
     constraints.add_bounds(0, Some(0.0), Some(1.0));
 
@@ -170,8 +154,7 @@ fn test_cauchy_path_single_upper_bound_hit()
 //}}}
 //{{{ test: cauchy path lower bound
 #[test]
-fn test_cauchy_path_single_lower_bound_hit()
-{
+fn test_cauchy_path_single_lower_bound_hit() {
     let mut constraints = BoundsConstraints::new(1);
     constraints.add_bounds(0, Some(0.0), Some(1.0));
 
@@ -185,8 +168,7 @@ fn test_cauchy_path_single_lower_bound_hit()
 //}}}
 //{{{ test: cauchy path no hit
 #[test]
-fn test_cauchy_path_direction_away_from_only_bound_returns_empty_path()
-{
+fn test_cauchy_path_direction_away_from_only_bound_returns_empty_path() {
     // Only a lower bound; direction is positive (moving away from it).
     let mut constraints = BoundsConstraints::new(1);
     constraints.add_bounds(0, Some(0.0), None);
@@ -200,8 +182,7 @@ fn test_cauchy_path_direction_away_from_only_bound_returns_empty_path()
 //}}}
 //{{{ test: cauchy path multiple variables sorted
 #[test]
-fn test_cauchy_path_multiple_variables_sorted_by_t()
-{
+fn test_cauchy_path_multiple_variables_sorted_by_t() {
     // Three variables all with bounds [0, 2], direction [1, 1, 1].
     // var 0: hits upper at t = (2 - 0.5) / 1 = 1.5
     // var 1: hits upper at t = (2 - 0.0) / 1 = 2.0
@@ -225,8 +206,7 @@ fn test_cauchy_path_multiple_variables_sorted_by_t()
 //}}}
 //{{{ test: cauchy path infeasible start clamped
 #[test]
-fn test_cauchy_path_infeasible_start_uses_clamped_location()
-{
+fn test_cauchy_path_infeasible_start_uses_clamped_location() {
     // x = [1.5] is outside upper bound 1.0; clamped to [1.0].
     // d = [-1.0], lower = 0.0 → t = (0.0 - 1.0) / (-1.0) = 1.0
     let mut constraints = BoundsConstraints::new(1);
@@ -242,8 +222,7 @@ fn test_cauchy_path_infeasible_start_uses_clamped_location()
 //}}}
 //{{{ test: cauchy path already at bound
 #[test]
-fn test_cauchy_path_at_lower_bound_direction_into_bound_returns_t_zero()
-{
+fn test_cauchy_path_at_lower_bound_direction_into_bound_returns_t_zero() {
     // x is at the lower bound; d pushes into it → t = 0.
     let mut constraints = BoundsConstraints::new(1);
     constraints.add_bounds(0, Some(0.0), Some(1.0));
@@ -258,8 +237,7 @@ fn test_cauchy_path_at_lower_bound_direction_into_bound_returns_t_zero()
 //}}}
 //{{{ test: max feasible step first bound
 #[test]
-fn test_max_feasible_step_returns_first_bound_hit()
-{
+fn test_max_feasible_step_returns_first_bound_hit() {
     let mut constraints = BoundsConstraints::new(3);
     constraints.add_bounds(0, Some(0.0), Some(2.0));
     constraints.add_bounds(1, Some(0.0), Some(2.0));
@@ -273,8 +251,7 @@ fn test_max_feasible_step_returns_first_bound_hit()
 //}}}
 //{{{ test: max feasible step no bound hit
 #[test]
-fn test_max_feasible_step_returns_infinity_when_direction_stays_feasible()
-{
+fn test_max_feasible_step_returns_infinity_when_direction_stays_feasible() {
     let mut constraints = BoundsConstraints::new(1);
     constraints.add_bounds(0, Some(0.0), None);
 
@@ -286,8 +263,7 @@ fn test_max_feasible_step_returns_infinity_when_direction_stays_feasible()
 //}}}
 //{{{ test: max feasible step blocked at bound
 #[test]
-fn test_max_feasible_step_returns_zero_when_already_blocked_at_bound()
-{
+fn test_max_feasible_step_returns_zero_when_already_blocked_at_bound() {
     let mut constraints = BoundsConstraints::new(1);
     constraints.add_bounds(0, Some(0.0), Some(1.0));
 
@@ -299,8 +275,7 @@ fn test_max_feasible_step_returns_zero_when_already_blocked_at_bound()
 //}}}
 //{{{ test: bound_statuses — no bounded variables → all free
 #[test]
-fn test_bound_statuses_no_bounds_all_free()
-{
+fn test_bound_statuses_no_bounds_all_free() {
     let constraints = BoundsConstraints::new(3);
     let x = colvec(&[1.0, 2.0, 3.0]);
     let d = colvec(&[-1.0, 0.0, 1.0]);
@@ -312,8 +287,7 @@ fn test_bound_statuses_no_bounds_all_free()
 //}}}
 //{{{ test: bound_statuses — interior lower-bounded variable remains free
 #[test]
-fn test_bound_statuses_lower_bound_negative_direction_interior_is_free()
-{
+fn test_bound_statuses_lower_bound_negative_direction_interior_is_free() {
     let mut constraints = BoundsConstraints::new(1);
     constraints.add_bounds(0, Some(0.0), None);
 
@@ -327,8 +301,7 @@ fn test_bound_statuses_lower_bound_negative_direction_interior_is_free()
 //}}}
 //{{{ test: bound_statuses — lower-bounded variable constrained at lower bound
 #[test]
-fn test_bound_statuses_lower_bound_negative_direction_at_bound_is_at_lower()
-{
+fn test_bound_statuses_lower_bound_negative_direction_at_bound_is_at_lower() {
     let mut constraints = BoundsConstraints::new(1);
     constraints.add_bounds(0, Some(0.0), None);
 
@@ -342,8 +315,7 @@ fn test_bound_statuses_lower_bound_negative_direction_at_bound_is_at_lower()
 //}}}
 //{{{ test: bound_statuses — lower bound with positive direction → free
 #[test]
-fn test_bound_statuses_lower_bound_positive_direction_is_free()
-{
+fn test_bound_statuses_lower_bound_positive_direction_is_free() {
     let mut constraints = BoundsConstraints::new(1);
     constraints.add_bounds(0, Some(0.0), None);
 
@@ -357,8 +329,7 @@ fn test_bound_statuses_lower_bound_positive_direction_is_free()
 //}}}
 //{{{ test: bound_statuses — interior upper-bounded variable remains free
 #[test]
-fn test_bound_statuses_upper_bound_positive_direction_interior_is_free()
-{
+fn test_bound_statuses_upper_bound_positive_direction_interior_is_free() {
     let mut constraints = BoundsConstraints::new(1);
     constraints.add_bounds(0, None, Some(1.0));
 
@@ -372,8 +343,7 @@ fn test_bound_statuses_upper_bound_positive_direction_interior_is_free()
 //}}}
 //{{{ test: bound_statuses — upper-bounded variable constrained at upper bound
 #[test]
-fn test_bound_statuses_upper_bound_positive_direction_at_bound_is_at_upper()
-{
+fn test_bound_statuses_upper_bound_positive_direction_at_bound_is_at_upper() {
     let mut constraints = BoundsConstraints::new(1);
     constraints.add_bounds(0, None, Some(1.0));
 
@@ -387,8 +357,7 @@ fn test_bound_statuses_upper_bound_positive_direction_at_bound_is_at_upper()
 //}}}
 //{{{ test: bound_statuses — infeasible start uses clamped boundary
 #[test]
-fn test_bound_statuses_infeasible_start_uses_clamped_boundary()
-{
+fn test_bound_statuses_infeasible_start_uses_clamped_boundary() {
     let mut constraints = BoundsConstraints::new(2);
     constraints.add_bounds(0, Some(0.0), None);
     constraints.add_bounds(1, None, Some(1.0));
@@ -403,8 +372,7 @@ fn test_bound_statuses_infeasible_start_uses_clamped_boundary()
 //}}}
 //{{{ test: bound_statuses — upper bound with negative direction → free
 #[test]
-fn test_bound_statuses_upper_bound_negative_direction_is_free()
-{
+fn test_bound_statuses_upper_bound_negative_direction_is_free() {
     let mut constraints = BoundsConstraints::new(1);
     constraints.add_bounds(0, None, Some(1.0));
 
@@ -418,8 +386,7 @@ fn test_bound_statuses_upper_bound_negative_direction_is_free()
 //}}}
 //{{{ test: bound_statuses — zero direction → free regardless of bounds
 #[test]
-fn test_bound_statuses_zero_direction_is_free()
-{
+fn test_bound_statuses_zero_direction_is_free() {
     let mut constraints = BoundsConstraints::new(1);
     constraints.add_bounds(0, Some(0.0), Some(1.0));
 
@@ -433,8 +400,7 @@ fn test_bound_statuses_zero_direction_is_free()
 //}}}
 //{{{ test: bound_statuses — mixed variables
 #[test]
-fn test_bound_statuses_mixed_variables()
-{
+fn test_bound_statuses_mixed_variables() {
     // var 0: no bounds                           → always inactive
     // var 1: lower bound [0.0, _], x[1] = 0.0   → active (at lower, pushing lower)
     // var 2: upper bound [_, 2.0], x[2] = 2.0   → active (at upper, pushing upper)
@@ -462,8 +428,7 @@ fn test_bound_statuses_mixed_variables()
 //}}}
 //{{{ test: bound_statuses — omitted direction uses position only
 #[test]
-fn test_bound_statuses_no_direction_uses_position_only()
-{
+fn test_bound_statuses_no_direction_uses_position_only() {
     // var 0: no bounds                         → inactive
     // var 1: lower bound [0.0, _], x[1] = 0.0 → active at lower
     // var 2: upper bound [_, 2.0], x[2] = 2.5 → active at upper
@@ -490,8 +455,7 @@ fn test_bound_statuses_no_direction_uses_position_only()
 //}}}
 //{{{ test: bound_statuses — omitted direction does not use clamped direction
 #[test]
-fn test_bound_statuses_no_direction_marks_infeasible_position_constrained()
-{
+fn test_bound_statuses_no_direction_marks_infeasible_position_constrained() {
     let mut constraints = BoundsConstraints::new(2);
     constraints.add_bounds(0, Some(0.0), Some(1.0));
     constraints.add_bounds(1, Some(0.0), Some(1.0));
@@ -509,8 +473,7 @@ fn project_at(
     x: &Vector,
     d: &Vector,
     t: f64,
-) -> Vector
-{
+) -> Vector {
     let vals: Vec<f64> = (0..x.len()).map(|i| x[i] + t * d[i]).collect();
     let mut p = colvec(&vals);
     constraints.clamp(&mut p);
@@ -519,8 +482,7 @@ fn project_at(
 //}}}
 //{{{ test: cauchy path geometric kinks
 #[test]
-fn test_cauchy_path_geometric_projected_path_kinks_at_breakpoints()
-{
+fn test_cauchy_path_geometric_projected_path_kinks_at_breakpoints() {
     // 3 variables, all bounded [0, 2].
     // x = [0.5, 0.0, 1.5], d = [1, 1, 1].
     //
@@ -596,8 +558,7 @@ fn test_cauchy_path_geometric_projected_path_kinks_at_breakpoints()
 //}}}
 //{{{ test: zero stale matrix entries
 #[test]
-fn test_bounds_constraints_grad_clears_stale_matrix_entries()
-{
+fn test_bounds_constraints_grad_clears_stale_matrix_entries() {
     let mut constraints = BoundsConstraints::new(3);
     constraints.add_bounds(1, Some(-2.0), Some(3.0));
 
@@ -607,12 +568,9 @@ fn test_bounds_constraints_grad_clears_stale_matrix_entries()
 
     constraints.grad(&x, &mut gradient);
 
-    for row in 0..gradient.nrows()
-    {
-        for col in 0..gradient.ncols()
-        {
-            let expected = match (row, col)
-            {
+    for row in 0..gradient.nrows() {
+        for col in 0..gradient.ncols() {
+            let expected = match (row, col) {
                 (1, 0) => -1.0,
                 (1, 1) => 1.0,
                 _ => 0.0,

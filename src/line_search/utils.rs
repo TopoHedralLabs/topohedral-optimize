@@ -31,8 +31,7 @@ pub fn quadmin(
     dphi_a: f64,
     b: f64,
     phi_b: f64,
-) -> Option<f64>
-{
+) -> Option<f64> {
     //{{{ trace
     trace!(target: "ls", "Entering with phi_a = {:.4e}, phi_b = {:.4e}, dphi_a = {:.4e}, b = {:.4e}", phi_a, phi_b, dphi_a, b);
     //}}}
@@ -44,8 +43,7 @@ pub fn quadmin(
     trace!(target: "ls", "db = {:.4e}", db);
     //}}}
 
-    if db * db < SMALL
-    {
+    if db * db < SMALL {
         //{{{ trace
         trace!(target: "ls", "db * db too small");
         //}}}
@@ -57,8 +55,7 @@ pub fn quadmin(
     trace!(target: "ls", "beta = {:.4e}", beta);
     //}}}
 
-    if (2.0 * beta).abs() < SMALL
-    {
+    if (2.0 * beta).abs() < SMALL {
         //{{{ trace
         trace!(target: "ls", "2 * beta too small");
         //}}}
@@ -82,8 +79,7 @@ pub fn cubicmin2(
     b: f64,
     phi_b: f64,
     dphi_b: f64,
-) -> Option<f64>
-{
+) -> Option<f64> {
     //{{{ trace
     trace!(target: "ls", "Entering with a = {:.4e}, b = {:.4e}", a, b);
     trace!(target: "ls", "phi_a = {:.4e}, phi_b = {:.4e}", phi_a, phi_b);
@@ -91,8 +87,7 @@ pub fn cubicmin2(
     //}}}
 
     let d = b - a;
-    if d.abs() <= f64::EPSILON
-    {
+    if d.abs() <= f64::EPSILON {
         return None;
     }
 
@@ -109,12 +104,10 @@ pub fn cubicmin2(
     let c0 = dphi_a;
 
     let disc = c1 * c1 - 4.0 * c2 * c0;
-    if disc < 0.0
-    {
+    if disc < 0.0 {
         return None;
     } // no real stationary points
-    if c2.abs() < f64::EPSILON
-    {
+    if c2.abs() < f64::EPSILON {
         return None;
     } // degenerate cubic
 
@@ -124,11 +117,9 @@ pub fn cubicmin2(
 
     // pick feasible minimizer in (0,d) with positive second derivative
     let candidates = [t1, t2].into_iter().filter(|t| *t > 0.0 && *t < d);
-    for t in candidates
-    {
+    for t in candidates {
         let p2 = 2.0 * quad_coeff + 6.0 * cube_coeff * t;
-        if p2 > 0.0
-        {
+        if p2 > 0.0 {
             return Some(a + t);
         }
     }
@@ -156,8 +147,7 @@ pub fn cubicmin3(
     phi_b: f64,
     c: f64,
     phi_c: f64,
-) -> Option<f64>
-{
+) -> Option<f64> {
     //{{{ trace
     trace!(target: "ls", "Enterin with a = {:.4e}, b = {:.4e}, c = {:.4e}", a, b, c);
     trace!(target: "ls", "phi_a = {:.4e}, phi_b = {:.4e}, phi_c = {:.4e}", phi_a, phi_b, phi_c);
@@ -169,8 +159,7 @@ pub fn cubicmin3(
     trace!(target: "ls", "db = {:.4e}, dc = {:.4e}, denom = {:.4e}", db, dc, denom);
     //}}}
 
-    if denom.abs() < SMALL
-    {
+    if denom.abs() < SMALL {
         //{{{ trace
         trace!(target: "ls", "Denominator is too small");
         //}}}
@@ -191,8 +180,7 @@ pub fn cubicmin3(
     let gamma = coeffs[1] / denom;
     let radical = (gamma * gamma - 3.0 * beta * dphi_a).sqrt();
 
-    if (3.0 * beta).abs() < SMALL
-    {
+    if (3.0 * beta).abs() < SMALL {
         //{{{ trace
         error!(target: "ls", "3 * beta too small");
         //}}}
@@ -203,8 +191,7 @@ pub fn cubicmin3(
     //{{{ trace
     error!(target: "ls", "Returning alpha_min = {:.4e}", alpha_min);
     //}}}
-    if alpha_min.is_nan()
-    {
+    if alpha_min.is_nan() {
         //{{{ trace
         error!("Final result is Nan, returning None");
         //}}}
@@ -225,8 +212,7 @@ pub fn quadcubmin<F: RealFn1>(
     phi_b: f64,
     c: f64,
     phi_c: f64,
-) -> Option<(f64, f64)>
-{
+) -> Option<(f64, f64)> {
     let to_pair = |x: &Option<f64>| -> Option<(f64, f64)> {
         x.as_ref().map(|alpha| (*alpha, f.eval(*alpha)))
     };
@@ -244,8 +230,7 @@ pub fn quadcubmin<F: RealFn1>(
         })
         .min_by(|x, y| x.1.partial_cmp(&y.1).unwrap());
 
-    if opt_min_value.is_none()
-    {
+    if opt_min_value.is_none() {
         //{{{ trace
         info!(target: "ls", "No value found");
         //}}}
@@ -267,8 +252,7 @@ pub fn satisfies_armijo(
     phi0: f64,
     dphi0: f64,
     phi1: f64,
-) -> bool
-{
+) -> bool {
     //{{{ trace
     trace!(target: "ls", "armijo: left = {:.4e} right = {:.4e}", phi1, phi0 + c1 * alpha * dphi0);
     trace!(target: "ls", "Satisfies Armijo {}", phi1 <= phi0 + c1 * alpha * dphi0);
@@ -282,8 +266,7 @@ pub fn satisfies_curvature(
     c2: f64,
     dphi0: f64,
     dphi1: f64,
-) -> bool
-{
+) -> bool {
     //{{{ trace
     trace!(target: "ls", "curvature: left = {:.4e} right = {:.4e}", dphi1, c2 * dphi0);
     trace!(target: "ls", "Satisfies curvature {}", dphi1 >= c2 * dphi0);
@@ -301,17 +284,14 @@ pub fn satisfies_wolfe(
     alpha: f64,
     phi1: f64,
     dphi1: f64,
-) -> Result<(), Error>
-{
+) -> Result<(), Error> {
     //{{{ trace
     trace!(target: "ls", "phi0 = {:.4e} dphi0 = {:.4e} phi1 = {:.4e} dphi1 = {:.4e} alpha = {:.4e}", phi0, dphi0, phi1, dphi1, alpha);
     //}}}
-    if !satisfies_armijo(c1, alpha, phi0, dphi0, phi1)
-    {
+    if !satisfies_armijo(c1, alpha, phi0, dphi0, phi1) {
         return Err(Error::Armijo);
     }
-    if !satisfies_curvature(c2, dphi0, dphi1)
-    {
+    if !satisfies_curvature(c2, dphi0, dphi1) {
         return Err(Error::Curvature);
     }
     Ok(())
@@ -323,8 +303,7 @@ pub fn initial_step(
     phi1: f64,
     phi0: f64,
     dphi1: f64,
-) -> f64
-{
+) -> f64 {
     //{{{ trace
     trace!(target: "ls", "phi1 = {phi1:.4e}, phi0 = {phi0:.4e} dphi1 = {dphi1:.4e}");
     //}}}
@@ -339,37 +318,31 @@ pub fn initial_step(
 //}}}
 //{{{ mod: tests
 #[cfg(test)]
-mod tests
-{
+mod tests {
     use super::*;
 
     const EPS: f64 = 1e-8;
 
-    fn quad(x: f64) -> f64
-    {
+    fn quad(x: f64) -> f64 {
         (x - 2.0).powi(2) + 1.0
     }
 
-    fn quad_deriv(x: f64) -> f64
-    {
+    fn quad_deriv(x: f64) -> f64 {
         2.0 * (x - 2.0)
     }
 
-    fn cubic(x: f64) -> f64
-    {
+    fn cubic(x: f64) -> f64 {
         x.powi(3) - 3.0 * x
     }
 
-    fn cubic_deriv(x: f64) -> f64
-    {
+    fn cubic_deriv(x: f64) -> f64 {
         3.0 * x * x - 3.0
     }
 
     // ---------------- quadmin ----------------
 
     #[test]
-    fn quadmin_finds_minimum_for_simple_quadratic()
-    {
+    fn quadmin_finds_minimum_for_simple_quadratic() {
         let a = 0.0;
         let b = 4.0;
         let phi_a = quad(a);
@@ -381,8 +354,7 @@ mod tests
     }
 
     #[test]
-    fn quadmin_returns_none_for_too_close_points()
-    {
+    fn quadmin_returns_none_for_too_close_points() {
         let a = 1.0;
         let b = a + 1e-20; // (b - a)^2 < SMALL
         let phi_a = quad(a);
@@ -395,8 +367,7 @@ mod tests
     // ---------------- cubicmin2 ----------------
 
     #[test]
-    fn cubicmin2_finds_minimum_for_simple_cubic()
-    {
+    fn cubicmin2_finds_minimum_for_simple_cubic() {
         let a = -2.0;
         let b = 2.0;
         let phi_a = cubic(a);
@@ -411,8 +382,7 @@ mod tests
     }
 
     #[test]
-    fn cubicmin2_returns_none_for_degenerate_interval()
-    {
+    fn cubicmin2_returns_none_for_degenerate_interval() {
         let a = 1.0;
         let b = 1.0;
         let phi_a = cubic(a);
@@ -426,8 +396,7 @@ mod tests
     // ---------------- cubicmin3 ----------------
 
     #[test]
-    fn cubicmin3_finds_minimum_for_simple_cubic()
-    {
+    fn cubicmin3_finds_minimum_for_simple_cubic() {
         // Use same cubic f(x) = x^3 - 3x, minimum at x = 1
         let a = 0.0;
         let b = 1.0;
@@ -445,8 +414,7 @@ mod tests
     }
 
     #[test]
-    fn cubicmin3_returns_none_for_singular_configuration()
-    {
+    fn cubicmin3_returns_none_for_singular_configuration() {
         // Make db == dc so denom == 0
         let a = 0.0;
         let b = 1.0;

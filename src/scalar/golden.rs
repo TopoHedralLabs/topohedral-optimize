@@ -23,8 +23,7 @@ const DEFUALT_MAX_ITER: usize = 5000;
 
 //{{{ struct: Options
 #[derive(Copy, Clone)]
-pub struct Options
-{
+pub struct Options {
     /// Initial bracket
     pub bracket: Bracket,
     /// Relative tolerance on `x` used as the termination criterion.
@@ -33,10 +32,8 @@ pub struct Options
     pub max_iter: usize,
 }
 //}}}
-impl Options
-{
-    pub fn new(bracket: Bracket) -> Self
-    {
+impl Options {
+    pub fn new(bracket: Bracket) -> Self {
         Self {
             bracket,
             xtol: DEFUALT_XTOL,
@@ -48,34 +45,29 @@ impl Options
 /// Unbounded minimization of a scalar function using golden-section search.
 ///
 /// Ported from SciPy's `_minimize_scalar_golden` (`scipy/optimize/_optimize.py`).
-pub struct Golden<F: RealFn1>
-{
+pub struct Golden<F: RealFn1> {
     fcn: F,
     opts: Options,
 }
 //}}}
 //{{{ impl: Golden
-impl<F: RealFn1> Golden<F>
-{
+impl<F: RealFn1> Golden<F> {
     #[trace_fn]
     pub fn new(
         fcn: F,
         opts: Options,
-    ) -> Self
-    {
+    ) -> Self {
         Self { fcn, opts }
     }
 }
 //}}}
 //{{{ impl: Minimizer for Golden
-impl<F: RealFn1> Minimizer for Golden<F>
-{
+impl<F: RealFn1> Minimizer for Golden<F> {
     type Error = ScalarError;
     type Returns = ScalarReturns;
 
     #[trace_fn]
-    fn minimize(&mut self) -> Result<Self::Returns, Self::Error>
-    {
+    fn minimize(&mut self) -> Result<Self::Returns, Self::Error> {
         // Golden ratio conjugate: 2.0 / (1.0 + sqrt(5.0)).
         const GR: f64 = 0.61803399;
         const GC: f64 = 1.0 - GR;
@@ -95,13 +87,10 @@ impl<F: RealFn1> Minimizer for Golden<F>
         let mut x0 = xa;
         let mut x3 = xc;
         let (mut x1, mut x2);
-        if (xc - xb).abs() > (xb - xa).abs()
-        {
+        if (xc - xb).abs() > (xb - xa).abs() {
             x1 = xb;
             x2 = xb + GC * (xc - xb);
-        }
-        else
-        {
+        } else {
             x2 = xb;
             x1 = xb - GC * (xb - xa);
         }
@@ -110,23 +99,18 @@ impl<F: RealFn1> Minimizer for Golden<F>
         num_fun_evals += 2;
         let mut nit = 0usize;
 
-        while nit < self.opts.max_iter
-        {
-            if (x3 - x0).abs() <= self.opts.xtol * (x1.abs() + x2.abs())
-            {
+        while nit < self.opts.max_iter {
+            if (x3 - x0).abs() <= self.opts.xtol * (x1.abs() + x2.abs()) {
                 break;
             }
 
-            if f2 < f1
-            {
+            if f2 < f1 {
                 x0 = x1;
                 x1 = x2;
                 x2 = GR * x1 + GC * x3;
                 f1 = f2;
                 f2 = self.fcn.eval(x2);
-            }
-            else
-            {
+            } else {
                 x3 = x2;
                 x2 = x1;
                 x1 = GR * x2 + GC * x0;
@@ -144,16 +128,14 @@ impl<F: RealFn1> Minimizer for Golden<F>
 
         let (xmin, fval) = if f1 < f2 { (x1, f1) } else { (x2, f2) };
 
-        if nit >= self.opts.max_iter
-        {
+        if nit >= self.opts.max_iter {
             //{{{ trace
             trace!(target: "scalar", "golden: exceeded max_iter = {}", self.opts.max_iter);
             //}}}
             return Err(ScalarError::MaxIterations(self.opts.max_iter));
         }
 
-        if xmin.is_nan() || fval.is_nan()
-        {
+        if xmin.is_nan() || fval.is_nan() {
             //{{{ trace
             trace!(target: "scalar", "golden: NaN encountered");
             //}}}

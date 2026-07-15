@@ -15,8 +15,7 @@ use thiserror::Error;
 
 //{{{ struct: Options
 #[derive(Copy, Clone)]
-pub struct Options
-{
+pub struct Options {
     pub base_opts: BaseOptions,
     pub constraint_tol: f64,
 }
@@ -24,8 +23,7 @@ pub struct Options
 
 //{{{ enum: Error
 #[derive(Error, Debug)]
-pub enum Error
-{
+pub enum Error {
     #[error("Unconstrianed minimization failed with error {0}")]
     UnconstrainedError(#[from] UnconstrainedError),
     #[error("Bound constrained minimization failed with error {0}")]

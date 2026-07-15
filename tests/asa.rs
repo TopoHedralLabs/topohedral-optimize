@@ -1,6 +1,3 @@
-#![feature(generic_const_exprs)]
-#![allow(incomplete_features)]
-
 //{{{ crate imports
 use topohedral_optimize::bound_constrained::{
     minimize as bound_constrained_minimize, AsaOptions, BoundConstrainedMethod,
@@ -24,14 +21,12 @@ use topohedral_tracing::*;
 
 //{{{ fun: init_logger
 #[ctor]
-fn init_logger()
-{
+fn init_logger() {
     init().unwrap();
 }
 //}}}
 //{{{ fun: colvec
-fn colvec(values: &[f64]) -> Vector
-{
+fn colvec(values: &[f64]) -> Vector {
     DVector::<f64>::from_slice_vec(values, values.len(), VecType::Col)
 }
 //}}}
@@ -40,11 +35,9 @@ fn assert_vector_close(
     actual: &Vector,
     expected: &Vector,
     epsilon: f64,
-)
-{
+) {
     assert_eq!(actual.len(), expected.len());
-    for (actual_i, expected_i) in actual.iter().zip(expected.iter())
-    {
+    for (actual_i, expected_i) in actual.iter().zip(expected.iter()) {
         assert_relative_eq!(*actual_i, *expected_i, epsilon = epsilon);
     }
 }
@@ -54,11 +47,9 @@ fn add_uniform_bounds(
     n: usize,
     lower: Option<f64>,
     upper: Option<f64>,
-) -> BoundsConstraints
-{
+) -> BoundsConstraints {
     let mut bounds = BoundsConstraints::new(n);
-    for i in 0..n
-    {
+    for i in 0..n {
         bounds.add_bounds(i, lower, upper);
     }
     bounds
@@ -70,19 +61,15 @@ fn kkt_residual<F: RealFn>(
     x: &Vector,
     lower: &[Option<f64>],
     upper: &[Option<f64>],
-) -> f64
-{
+) -> f64 {
     let grad = fcn.grad(x);
     let mut projected = x.clone() - grad;
 
-    for i in 0..projected.len()
-    {
-        if let Some(lower_i) = lower[i]
-        {
+    for i in 0..projected.len() {
+        if let Some(lower_i) = lower[i] {
             projected[i] = projected[i].max(lower_i);
         }
-        if let Some(upper_i) = upper[i]
-        {
+        if let Some(upper_i) = upper[i] {
             projected[i] = projected[i].min(upper_i);
         }
     }
@@ -91,8 +78,7 @@ fn kkt_residual<F: RealFn>(
 }
 //}}}
 //{{{ fun: asa_options
-fn asa_options(max_iter: u64) -> AsaOptions
-{
+fn asa_options(max_iter: u64) -> AsaOptions {
     AsaOptions::new(
         BoundConstrainedOptions {
             base_opts: BaseOptions {
@@ -131,8 +117,7 @@ fn solve_asa<F: RealFn>(
     x0: Vector,
     bounds: BoundsConstraints,
     max_iter: u64,
-) -> Returns
-{
+) -> Returns {
     bound_constrained_minimize(
         fcn,
         bounds,
@@ -145,24 +130,20 @@ fn solve_asa<F: RealFn>(
 
 //{{{ struct: ShiftedQuadratic
 #[derive(Debug, Clone)]
-struct ShiftedQuadratic
-{
+struct ShiftedQuadratic {
     target: Vector,
 }
 //}}}
 //{{{ impl: RealFn for ShiftedQuadratic
-impl RealFn for ShiftedQuadratic
-{
-    fn dimension(&self) -> usize
-    {
+impl RealFn for ShiftedQuadratic {
+    fn dimension(&self) -> usize {
         self.target.len()
     }
 
     fn eval(
         &mut self,
         x: &Vector,
-    ) -> f64
-    {
+    ) -> f64 {
         let diff = x.clone() - self.target.clone();
         diff.dot(&diff)
     }
@@ -170,35 +151,29 @@ impl RealFn for ShiftedQuadratic
     fn grad(
         &mut self,
         x: &Vector,
-    ) -> Vector
-    {
+    ) -> Vector {
         2.0 * (x.clone() - self.target.clone())
     }
 }
 //}}}
 //{{{ struct: Rosenbrock
 #[derive(Debug, Clone)]
-struct Rosenbrock
-{
+struct Rosenbrock {
     n: usize,
 }
 //}}}
 //{{{ impl: RealFn for Rosenbrock
-impl RealFn for Rosenbrock
-{
-    fn dimension(&self) -> usize
-    {
+impl RealFn for Rosenbrock {
+    fn dimension(&self) -> usize {
         self.n
     }
 
     fn eval(
         &mut self,
         x: &Vector,
-    ) -> f64
-    {
+    ) -> f64 {
         let mut value = 0.0;
-        for i in 0..(self.n - 1)
-        {
+        for i in 0..(self.n - 1) {
             value += 100.0 * (x[i + 1] - x[i].powi(2)).powi(2) + (1.0 - x[i]).powi(2);
         }
         value
@@ -207,11 +182,9 @@ impl RealFn for Rosenbrock
     fn grad(
         &mut self,
         x: &Vector,
-    ) -> Vector
-    {
+    ) -> Vector {
         let mut grad = DVector::<f64>::zeros_vec(self.n, VecType::Col);
-        for i in 0..(self.n - 1)
-        {
+        for i in 0..(self.n - 1) {
             grad[i] += -400.0 * x[i] * (x[i + 1] - x[i].powi(2)) - 2.0 * (1.0 - x[i]);
             grad[i + 1] += 200.0 * (x[i + 1] - x[i].powi(2));
         }
@@ -221,22 +194,18 @@ impl RealFn for Rosenbrock
 //}}}
 //{{{ struct: DiagonalSpdQuadratic
 #[derive(Debug, Clone)]
-struct DiagonalSpdQuadratic
-{
+struct DiagonalSpdQuadratic {
     diagonal: Vector,
     rhs: Vector,
 }
 //}}}
 //{{{ impl: DiagonalSpdQuadratic
-impl DiagonalSpdQuadratic
-{
-    fn from_unconstrained_minimum(unconstrained_minimum: Vector) -> Self
-    {
+impl DiagonalSpdQuadratic {
+    fn from_unconstrained_minimum(unconstrained_minimum: Vector) -> Self {
         let mut diagonal = DVector::<f64>::zeros_vec(unconstrained_minimum.len(), VecType::Col);
         let mut rhs = DVector::<f64>::zeros_vec(unconstrained_minimum.len(), VecType::Col);
 
-        for i in 0..unconstrained_minimum.len()
-        {
+        for i in 0..unconstrained_minimum.len() {
             diagonal[i] = 1.0 + 0.1 * i as f64;
             rhs[i] = diagonal[i] * unconstrained_minimum[i];
         }
@@ -246,21 +215,17 @@ impl DiagonalSpdQuadratic
 }
 //}}}
 //{{{ impl: RealFn for DiagonalSpdQuadratic
-impl RealFn for DiagonalSpdQuadratic
-{
-    fn dimension(&self) -> usize
-    {
+impl RealFn for DiagonalSpdQuadratic {
+    fn dimension(&self) -> usize {
         self.diagonal.len()
     }
 
     fn eval(
         &mut self,
         x: &Vector,
-    ) -> f64
-    {
+    ) -> f64 {
         let mut value = 0.0;
-        for i in 0..x.len()
-        {
+        for i in 0..x.len() {
             value += 0.5 * self.diagonal[i] * x[i].powi(2) - self.rhs[i] * x[i];
         }
         value
@@ -269,11 +234,9 @@ impl RealFn for DiagonalSpdQuadratic
     fn grad(
         &mut self,
         x: &Vector,
-    ) -> Vector
-    {
+    ) -> Vector {
         let mut grad = DVector::<f64>::zeros_vec(x.len(), VecType::Col);
-        for i in 0..x.len()
-        {
+        for i in 0..x.len() {
             grad[i] = self.diagonal[i] * x[i] - self.rhs[i];
         }
         grad
@@ -283,8 +246,7 @@ impl RealFn for DiagonalSpdQuadratic
 
 //{{{ test: simple quadratic with active upper bound
 #[test]
-fn asa_minimizes_shifted_quadratic_with_active_upper_bound()
-{
+fn asa_minimizes_shifted_quadratic_with_active_upper_bound() {
     let n = 5;
     let fcn = ShiftedQuadratic {
         target: colvec(&[0.0, 1.0, 2.0, 3.0, 4.0]),
@@ -302,8 +264,7 @@ fn asa_minimizes_shifted_quadratic_with_active_upper_bound()
 //}}}
 //{{{ test: ten dimensional rosenbrock
 #[test]
-fn asa_minimizes_ten_dimensional_rosenbrock_inside_box()
-{
+fn asa_minimizes_ten_dimensional_rosenbrock_inside_box() {
     let n = 10;
     let fcn = Rosenbrock { n };
     let x0 = DVector::<f64>::from_value_vec(-1.2, n, VecType::Col);
@@ -317,8 +278,7 @@ fn asa_minimizes_ten_dimensional_rosenbrock_inside_box()
     assert!(kkt_residual(fcn, &ret.xmin, &[Some(-2.0); 10], &[Some(2.0); 10]) <= 1e-6);
 }
 #[test]
-fn asa_minimizes_ten_dimensional_rosenbrock_outside_box()
-{
+fn asa_minimizes_ten_dimensional_rosenbrock_outside_box() {
     let n = 10;
     let fcn = Rosenbrock { n };
     let x0 = DVector::<f64>::from_value_vec(-1.2, n, VecType::Col);
@@ -349,20 +309,17 @@ fn asa_minimizes_ten_dimensional_rosenbrock_outside_box()
 //}}}
 //{{{ test: nnls style diagonal spd quadratic
 #[test]
-fn asa_minimizes_nnls_style_spd_quadratic_with_many_active_lower_bounds()
-{
+fn asa_minimizes_nnls_style_spd_quadratic_with_many_active_lower_bounds() {
     let n = 20;
     let mut unconstrained_minimum = DVector::<f64>::zeros_vec(n, VecType::Col);
-    for i in 0..n
-    {
+    for i in 0..n {
         let value = 0.1 * (i + 1) as f64;
         unconstrained_minimum[i] = if i % 2 == 0 { -value } else { value };
     }
 
     let fcn = DiagonalSpdQuadratic::from_unconstrained_minimum(unconstrained_minimum.clone());
     let mut expected_x = unconstrained_minimum.clone();
-    for i in 0..n
-    {
+    for i in 0..n {
         expected_x[i] = expected_x[i].max(0.0);
     }
 
@@ -387,12 +344,10 @@ fn asa_minimizes_nnls_style_spd_quadratic_with_many_active_lower_bounds()
 // converge far more slowly (or not at all within a reasonable iteration budget)
 // relative to the n = 5 case, rather than asserting a specific iteration count.
 #[test]
-fn asa_minimizes_large_n_shifted_quadratic_with_mixed_active_bounds()
-{
+fn asa_minimizes_large_n_shifted_quadratic_with_mixed_active_bounds() {
     let n = 500;
     let mut target = DVector::<f64>::zeros_vec(n, VecType::Col);
-    for i in 0..n
-    {
+    for i in 0..n {
         target[i] = i as f64;
     }
     let fcn = ShiftedQuadratic { target };
@@ -403,8 +358,7 @@ fn asa_minimizes_large_n_shifted_quadratic_with_mixed_active_bounds()
     let ret = solve_asa(fcn.clone(), x0, bounds, 2000);
 
     let mut expected_x = DVector::<f64>::zeros_vec(n, VecType::Col);
-    for i in 0..n
-    {
+    for i in 0..n {
         expected_x[i] = (i as f64).min(upper);
     }
     let mut expected_fcn = fcn.clone();

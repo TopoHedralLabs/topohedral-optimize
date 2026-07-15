@@ -25,8 +25,7 @@ pub type Matrix = DMatrix<f64>;
 //}}}
 //{{{ trait: RealFn1
 /// 1D real-valued function trait
-pub trait RealFn1
-{
+pub trait RealFn1 {
     fn eval(
         &mut self,
         x: f64,
@@ -38,8 +37,7 @@ pub trait RealFn1
 }
 //}}}
 //{{{ trait: RealFn
-pub trait RealFn: Clone + Debug
-{
+pub trait RealFn: Clone + Debug {
     fn dimension(&self) -> usize;
     fn eval(
         &mut self,
@@ -53,16 +51,14 @@ pub trait RealFn: Clone + Debug
 //}}}
 //{{{ enum: ConvergedReason
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub enum ConvergedReason
-{
+pub enum ConvergedReason {
     Rtol,
     Atol,
 }
 //}}}
 //{{{ struct: Options
 #[derive(Copy, Clone)]
-pub struct BaseOptions
-{
+pub struct BaseOptions {
     pub grad_rtol: f64,
     pub grad_atol: f64,
     pub max_iter: u64,
@@ -71,8 +67,7 @@ pub struct BaseOptions
 //}}}
 //{{{ struct: Returns
 #[derive(Clone, Debug)]
-pub struct Returns
-{
+pub struct Returns {
     pub xmin: Vector,
     pub fmin: f64,
     pub reason: ConvergedReason,
@@ -83,8 +78,7 @@ pub struct Returns
 //}}}
 //{{{ struct: ScalarReturns
 #[derive(Clone, Debug)]
-pub struct ScalarReturns
-{
+pub struct ScalarReturns {
     pub xmin: f64,
     pub fmin: f64,
     pub reason: ConvergedReason,
@@ -94,8 +88,7 @@ pub struct ScalarReturns
 }
 //}}}
 //{{{ trait: Minimizer
-pub trait Minimizer
-{
+pub trait Minimizer {
     type Error;
     type Returns;
 
@@ -104,8 +97,7 @@ pub trait Minimizer
 //}}}
 //{{{ struct: IterData
 #[derive(Debug, Clone)]
-pub struct IterData
-{
+pub struct IterData {
     pub x: Vector,
     pub fx: f64,
     pub grad_fx: Vector,
@@ -113,14 +105,12 @@ pub struct IterData
 }
 //}}}
 //{{{ impl: IterData
-impl IterData
-{
+impl IterData {
     #[trace_fn]
     pub fn new<F: RealFn>(
         mut fcn: F,
         x: &Vector,
-    ) -> Self
-    {
+    ) -> Self {
         let fx = fcn.eval(x);
         let grad_fx = fcn.grad(x);
         let norm_grad_fx = grad_fx.norm();
@@ -136,8 +126,7 @@ impl IterData
     pub fn copy_from(
         &mut self,
         iter_data: &Self,
-    )
-    {
+    ) {
         self.x.copy_from(&iter_data.x);
         self.fx = iter_data.fx;
         self.grad_fx.copy_from(&iter_data.grad_fx);
@@ -146,13 +135,11 @@ impl IterData
 }
 //}}}
 //{{{ impl: Display for IterData
-impl Display for IterData
-{
+impl Display for IterData {
     fn fmt(
         &self,
         f: &mut Formatter<'_>,
-    ) -> fmt::Result
-    {
+    ) -> fmt::Result {
         let fx = self.fx;
         let norm_grad_fx = self.norm_grad_fx;
         let out = format!("fx={fx:.4e}, norm_grad_fx={norm_grad_fx:.4e}");
@@ -166,8 +153,7 @@ where
     F: RealFn,
 {
     #[trace_fn]
-    fn dimension(&self) -> usize
-    {
+    fn dimension(&self) -> usize {
         self.borrow().dimension()
     }
 
@@ -175,8 +161,7 @@ where
     fn eval(
         &mut self,
         x: &Vector,
-    ) -> f64
-    {
+    ) -> f64 {
         self.borrow_mut().eval(x)
     }
 
@@ -184,8 +169,7 @@ where
     fn grad(
         &mut self,
         x: &Vector,
-    ) -> Vector
-    {
+    ) -> Vector {
         self.borrow_mut().grad(x)
     }
 }
@@ -196,8 +180,7 @@ where
     F: RealFn,
 {
     #[trace_fn]
-    fn dimension(&self) -> usize
-    {
+    fn dimension(&self) -> usize {
         self.lock().unwrap().dimension()
     }
 
@@ -205,8 +188,7 @@ where
     fn eval(
         &mut self,
         x: &Vector,
-    ) -> f64
-    {
+    ) -> f64 {
         self.lock().unwrap().eval(x)
     }
 
@@ -214,27 +196,23 @@ where
     fn grad(
         &mut self,
         x: &Vector,
-    ) -> Vector
-    {
+    ) -> Vector {
         self.lock().unwrap().grad(x)
     }
 }
 //}}}
 //{{{ struct: CountingRealFn
 #[derive(Clone, Debug)]
-pub(crate) struct CountingRealFn<F: RealFn>
-{
+pub(crate) struct CountingRealFn<F: RealFn> {
     fcn: F,
     pub num_func_evals: usize,
     pub num_grad_evals: usize,
 }
 //}}}
 //{{{ impl: RealFn for CountingRealFn
-impl<F: RealFn> RealFn for CountingRealFn<F>
-{
+impl<F: RealFn> RealFn for CountingRealFn<F> {
     #[trace_fn]
-    fn dimension(&self) -> usize
-    {
+    fn dimension(&self) -> usize {
         self.fcn.dimension()
     }
 
@@ -242,8 +220,7 @@ impl<F: RealFn> RealFn for CountingRealFn<F>
     fn eval(
         &mut self,
         x: &Vector,
-    ) -> f64
-    {
+    ) -> f64 {
         self.num_func_evals += 1;
         self.fcn.eval(x)
     }
@@ -252,19 +229,16 @@ impl<F: RealFn> RealFn for CountingRealFn<F>
     fn grad(
         &mut self,
         x: &Vector,
-    ) -> Vector
-    {
+    ) -> Vector {
         self.num_grad_evals += 1;
         self.fcn.grad(x)
     }
 }
 //}}}
 //{{{ impl: CountingRealFn
-impl<F: RealFn> CountingRealFn<F>
-{
+impl<F: RealFn> CountingRealFn<F> {
     #[trace_fn]
-    pub fn new(fcn: F) -> Self
-    {
+    pub fn new(fcn: F) -> Self {
         Self {
             fcn,
             num_func_evals: 0,
@@ -273,8 +247,7 @@ impl<F: RealFn> CountingRealFn<F>
     }
 
     #[trace_fn]
-    pub(crate) fn inner_mut(&mut self) -> &mut F
-    {
+    pub(crate) fn inner_mut(&mut self) -> &mut F {
         &mut self.fcn
     }
 
@@ -282,8 +255,7 @@ impl<F: RealFn> CountingRealFn<F>
     pub(crate) fn with_inner_mut<R>(
         &mut self,
         f: impl FnOnce(&mut F) -> R,
-    ) -> R
-    {
+    ) -> R {
         f(&mut self.fcn)
     }
 }
@@ -297,22 +269,19 @@ pub type ArcRealFn<F> = Arc<Mutex<F>>;
 //{{{ fun: rc_real_fn
 /// Creates a new reference-counted function using Rc<RefCell>
 #[trace_fn]
-pub fn rc_real_fn<F: RealFn>(fcn: F) -> RcRealFn<F>
-{
+pub fn rc_real_fn<F: RealFn>(fcn: F) -> RcRealFn<F> {
     Rc::new(RefCell::new(fcn))
 }
 //}}}
 //{{{ fun: arc_real_fn
 /// Creates a new thread-safe reference-counted function using Arc<Mutex>
 #[trace_fn]
-pub fn arc_real_fn<F: RealFn>(fcn: F) -> ArcRealFn<F>
-{
+pub fn arc_real_fn<F: RealFn>(fcn: F) -> ArcRealFn<F> {
     Arc::new(Mutex::new(fcn))
 }
 //}}}
 //{{{ trait: RealVectorFn
-pub trait RealVectorFn: Clone + Debug
-{
+pub trait RealVectorFn: Clone + Debug {
     fn dimension_domain(&self) -> usize;
     fn dimension_range(&self) -> usize;
 
@@ -334,14 +303,12 @@ where
     T: RealVectorFn,
 {
     #[trace_fn]
-    fn dimension_domain(&self) -> usize
-    {
+    fn dimension_domain(&self) -> usize {
         self.borrow().dimension_domain()
     }
 
     #[trace_fn]
-    fn dimension_range(&self) -> usize
-    {
+    fn dimension_range(&self) -> usize {
         self.borrow().dimension_range()
     }
 
@@ -350,8 +317,7 @@ where
         &mut self,
         x: &Vector,
         val: &mut Vector,
-    )
-    {
+    ) {
         self.borrow_mut().eval(x, val)
     }
 
@@ -360,8 +326,7 @@ where
         &mut self,
         x: &Vector,
         val: &mut Matrix,
-    )
-    {
+    ) {
         self.borrow_mut().grad(x, val)
     }
 }
@@ -372,14 +337,12 @@ where
     T: RealVectorFn,
 {
     #[trace_fn]
-    fn dimension_domain(&self) -> usize
-    {
+    fn dimension_domain(&self) -> usize {
         self.lock().unwrap().dimension_domain()
     }
 
     #[trace_fn]
-    fn dimension_range(&self) -> usize
-    {
+    fn dimension_range(&self) -> usize {
         self.lock().unwrap().dimension_range()
     }
 
@@ -388,8 +351,7 @@ where
         &mut self,
         x: &Vector,
         val: &mut Vector,
-    )
-    {
+    ) {
         self.lock().unwrap().eval(x, val)
     }
 
@@ -398,8 +360,7 @@ where
         &mut self,
         x: &Vector,
         val: &mut DMatrix<f64>,
-    )
-    {
+    ) {
         self.lock().unwrap().grad(x, val)
     }
 }
@@ -413,16 +374,14 @@ pub type ArcRealVectorFn<F> = Arc<Mutex<F>>;
 //{{{ fun: rc_real_vector_fn
 /// Creates a new reference-counted vector-valued function using Rc<RefCell>
 #[trace_fn]
-pub fn rc_real_vector_fn<F: RealVectorFn>(fcn: F) -> RcRealVectorFn<F>
-{
+pub fn rc_real_vector_fn<F: RealVectorFn>(fcn: F) -> RcRealVectorFn<F> {
     Rc::new(RefCell::new(fcn))
 }
 //}}}
 //{{{ fun: arc_real_vector_fn
 /// Creates a new thread-safe reference-counted vector-valued function using Arc<Mutex>
 #[trace_fn]
-pub fn arc_real_vector_fn<F: RealVectorFn>(fcn: F) -> ArcRealVectorFn<F>
-{
+pub fn arc_real_vector_fn<F: RealVectorFn>(fcn: F) -> ArcRealVectorFn<F> {
     Arc::new(Mutex::new(fcn))
 }
 //}}}

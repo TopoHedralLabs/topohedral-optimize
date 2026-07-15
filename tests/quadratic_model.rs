@@ -3,16 +3,14 @@ use topohedral_linalg::{DMatrix, DVector, MatMul, Shape, VecType, VectorOps};
 use topohedral_optimize::quadratic_model::{QuadraticModel, UpdateType};
 use topohedral_optimize::{Matrix, Vector};
 
-fn colvec(values: &[f64]) -> Vector
-{
+fn colvec(values: &[f64]) -> Vector {
     DVector::<f64>::from_slice_vec(values, values.len(), VecType::Col)
 }
 
 fn basis(
     n: usize,
     index: usize,
-) -> Vector
-{
+) -> Vector {
     let mut out = Vector::zeros_vec(n, VecType::Col);
     out[index] = 1.0;
     out
@@ -23,8 +21,7 @@ fn quadratic_value(
     linear: &Vector,
     constant: f64,
     x: &Vector,
-) -> f64
-{
+) -> f64 {
     0.5 * x.dot(&hess.matmul(x)) + linear.dot(x) + constant
 }
 
@@ -32,18 +29,15 @@ fn quadratic_grad(
     hess: &Matrix,
     linear: &Vector,
     x: &Vector,
-) -> Vector
-{
+) -> Vector {
     hess.matmul(x) + linear.clone()
 }
 
-fn implied_linear_term(model: &QuadraticModel) -> Vector
-{
+fn implied_linear_term(model: &QuadraticModel) -> Vector {
     model.grad_fk.clone() - model.hess_k.matmul(&model.xk)
 }
 
-fn implied_constant_term(model: &QuadraticModel) -> f64
-{
+fn implied_constant_term(model: &QuadraticModel) -> f64 {
     model.fk - model.grad_fk.dot(&model.xk) + 0.5 * model.xk.dot(&model.hess_k.matmul(&model.xk))
 }
 
@@ -51,11 +45,9 @@ fn assert_vector_close(
     actual: &Vector,
     expected: &Vector,
     epsilon: f64,
-)
-{
+) {
     assert_eq!(actual.len(), expected.len());
-    for (actual_i, expected_i) in actual.iter().zip(expected.iter())
-    {
+    for (actual_i, expected_i) in actual.iter().zip(expected.iter()) {
         assert_relative_eq!(*actual_i, *expected_i, epsilon = epsilon);
     }
 }
@@ -64,22 +56,18 @@ fn assert_matrix_close(
     actual: &Matrix,
     expected: &Matrix,
     epsilon: f64,
-)
-{
+) {
     assert_eq!(actual.nrows(), expected.nrows());
     assert_eq!(actual.ncols(), expected.ncols());
-    for row in 0..actual.nrows()
-    {
-        for col in 0..actual.ncols()
-        {
+    for row in 0..actual.nrows() {
+        for col in 0..actual.ncols() {
             assert_relative_eq!(actual[(row, col)], expected[(row, col)], epsilon = epsilon);
         }
     }
 }
 
 #[test]
-fn coordinate_updates_recover_quadratic_coefficients()
-{
+fn coordinate_updates_recover_quadratic_coefficients() {
     let hess = DMatrix::<f64>::from_row_slice(
         &[
             4.0, 0.0, 0.0, //
@@ -100,8 +88,7 @@ fn coordinate_updates_recover_quadratic_coefficients()
         .grad_fk
         .copy_from(&quadratic_grad(&hess, &linear, &xk));
 
-    for i in 0..3
-    {
+    for i in 0..3 {
         let delta_x = basis(3, i);
         let delta_grad = quadratic_grad(&hess, &linear, &(xk.clone() + delta_x.clone()))
             - quadratic_grad(&hess, &linear, &xk);
@@ -127,8 +114,7 @@ fn coordinate_updates_recover_quadratic_coefficients()
 }
 
 #[test]
-fn hessian_and_inverse_hessian_stay_inverse()
-{
+fn hessian_and_inverse_hessian_stay_inverse() {
     let hess = DMatrix::<f64>::from_row_slice(
         &[
             5.0, 1.0, 0.5, //
@@ -146,8 +132,7 @@ fn hessian_and_inverse_hessian_stay_inverse()
     ];
 
     let mut model = QuadraticModel::new(3);
-    for delta_x in steps
-    {
+    for delta_x in steps {
         let delta_grad = hess.matmul(&delta_x);
         assert!(model.try_update(&delta_x, &delta_grad, UpdateType::Both));
     }

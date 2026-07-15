@@ -18,8 +18,7 @@ const DEFUALT_MAX_ITER: usize = 100;
 
 //{{{ struct: Options
 #[derive(Copy, Clone)]
-pub struct Options
-{
+pub struct Options {
     /// Bounds
     pub bounds: (f64, f64),
     /// Absolute tolerance on `x` used as the termination criterion.
@@ -28,19 +27,15 @@ pub struct Options
     pub max_iter: usize,
 }
 //}}}
-impl Options
-{
+impl Options {
     pub fn new(
         lower: f64,
         upper: f64,
-    ) -> Result<Self, ScalarError>
-    {
-        if !lower.is_finite() || !upper.is_finite()
-        {
+    ) -> Result<Self, ScalarError> {
+        if !lower.is_finite() || !upper.is_finite() {
             return Err(ScalarError::NonFiniteBounds(lower, upper));
         }
-        if lower > upper
-        {
+        if lower > upper {
             return Err(ScalarError::InvalidBounds(lower, upper));
         }
         Ok(Self {
@@ -52,34 +47,29 @@ impl Options
 }
 //{{{ struct: Bounded
 /// Bounded minimization of a scalar function over a finite interval `[lower, upper]`.
-pub struct Bounded<F: RealFn1>
-{
+pub struct Bounded<F: RealFn1> {
     fcn: F,
     opts: Options,
 }
 //}}}
 //{{{ impl: Bounded
-impl<F: RealFn1> Bounded<F>
-{
+impl<F: RealFn1> Bounded<F> {
     #[trace_fn]
     pub fn new(
         fcn: F,
         opts: Options,
-    ) -> Self
-    {
+    ) -> Self {
         Self { fcn, opts }
     }
 }
 //}}}
 //{{{ impl: Minimizer for Bounded
-impl<F: RealFn1> Minimizer for Bounded<F>
-{
+impl<F: RealFn1> Minimizer for Bounded<F> {
     type Error = ScalarError;
     type Returns = ScalarReturns;
 
     #[trace_fn]
-    fn minimize(&mut self) -> Result<Self::Returns, Self::Error>
-    {
+    fn minimize(&mut self) -> Result<Self::Returns, Self::Error> {
         let sqrt_eps = 2.2e-16_f64.sqrt();
         let golden_mean = 0.5 * (3.0 - 5.0_f64.sqrt());
 
@@ -106,20 +96,17 @@ impl<F: RealFn1> Minimizer for Bounded<F>
         trace!(target: "scalar", "bounded: searching [{a:.4e}, {b:.4e}], x0 = {xf:.4e}, f0 = {fx:.4e}");
         //}}}
 
-        while (xf - xm).abs() > (tol2 - 0.5 * (b - a))
-        {
+        while (xf - xm).abs() > (tol2 - 0.5 * (b - a)) {
             let mut golden = true;
 
             // Check for parabolic fit.
-            if e.abs() > tol1
-            {
+            if e.abs() > tol1 {
                 golden = false;
                 let mut r = (xf - nfc) * (fx - ffulc);
                 let mut q = (xf - fulc) * (fx - fnfc);
                 let mut p = (xf - fulc) * q - (xf - nfc) * r;
                 q = 2.0 * (q - r);
-                if q > 0.0
-                {
+                if q > 0.0 {
                     p = -p;
                 }
                 q = q.abs();
@@ -127,25 +114,20 @@ impl<F: RealFn1> Minimizer for Bounded<F>
                 e = rat;
 
                 // Check for acceptability of parabola.
-                if p.abs() < (0.5 * q * r).abs() && p > q * (a - xf) && p < q * (b - xf)
-                {
+                if p.abs() < (0.5 * q * r).abs() && p > q * (a - xf) && p < q * (b - xf) {
                     rat = p / q;
                     x = xf + rat;
 
-                    if (x - a) < tol2 || (b - x) < tol2
-                    {
+                    if (x - a) < tol2 || (b - x) < tol2 {
                         let si = if xm >= xf { 1.0 } else { -1.0 };
                         rat = tol1 * si;
                     }
-                }
-                else
-                {
+                } else {
                     golden = true;
                 }
             }
 
-            if golden
-            {
+            if golden {
                 // Do a golden-section step.
                 e = if xf >= xm { a - xf } else { b - xf };
                 rat = golden_mean * e;
@@ -156,14 +138,10 @@ impl<F: RealFn1> Minimizer for Bounded<F>
             fu = self.fcn.eval(x);
             num += 1;
 
-            if fu <= fx
-            {
-                if x >= xf
-                {
+            if fu <= fx {
+                if x >= xf {
                     a = xf;
-                }
-                else
-                {
+                } else {
                     b = xf;
                 }
                 fulc = nfc;
@@ -172,26 +150,18 @@ impl<F: RealFn1> Minimizer for Bounded<F>
                 fnfc = fx;
                 xf = x;
                 fx = fu;
-            }
-            else
-            {
-                if x < xf
-                {
+            } else {
+                if x < xf {
                     a = x;
-                }
-                else
-                {
+                } else {
                     b = x;
                 }
-                if fu <= fnfc || nfc == xf
-                {
+                if fu <= fnfc || nfc == xf {
                     fulc = nfc;
                     ffulc = fnfc;
                     nfc = x;
                     fnfc = fu;
-                }
-                else if fu <= ffulc || fulc == xf || fulc == nfc
-                {
+                } else if fu <= ffulc || fulc == xf || fulc == nfc {
                     fulc = x;
                     ffulc = fu;
                 }
@@ -205,8 +175,7 @@ impl<F: RealFn1> Minimizer for Bounded<F>
             trace!(target: "scalar", "bounded: eval {num}, xf = {xf:.4e}, fx = {fx:.4e}");
             //}}}
 
-            if num >= self.opts.max_iter
-            {
+            if num >= self.opts.max_iter {
                 //{{{ trace
                 trace!(target: "scalar", "bounded: exceeded max_iter = {}", self.opts.max_iter);
                 //}}}
@@ -214,8 +183,7 @@ impl<F: RealFn1> Minimizer for Bounded<F>
             }
         }
 
-        if xf.is_nan() || fx.is_nan() || fu.is_nan()
-        {
+        if xf.is_nan() || fx.is_nan() || fu.is_nan() {
             //{{{ trace
             trace!(target: "scalar", "bounded: NaN encountered");
             //}}}

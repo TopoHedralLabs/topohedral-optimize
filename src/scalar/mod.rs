@@ -44,8 +44,7 @@ pub use factory::{create, Method as ScalarMethod};
 pub fn minimize<F: RealFn1>(
     fcn: F,
     method: ScalarMethod,
-) -> Result<ScalarReturns, ScalarError>
-{
+) -> Result<ScalarReturns, ScalarError> {
     let minimizer = factory::create(fcn, method);
     minimizer?.minimize()
 }

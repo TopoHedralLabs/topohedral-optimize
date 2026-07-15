@@ -1,6 +1,3 @@
-#![feature(generic_const_exprs)]
-#![allow(incomplete_features)]
-
 use approx::assert_relative_eq;
 use ctor::ctor;
 use topohedral_linalg::{DMatrix, DVector, MatMul, ReduceOps, VecType, VectorOps};
@@ -14,13 +11,11 @@ use topohedral_optimize::{BaseOptions, Matrix, RealFn, Returns, Vector};
 use topohedral_tracing::*;
 
 #[ctor]
-fn init_logger()
-{
+fn init_logger() {
     init().unwrap();
 }
 
-fn colvec(values: &[f64]) -> Vector
-{
+fn colvec(values: &[f64]) -> Vector {
     DVector::<f64>::from_slice_vec(values, values.len(), VecType::Col)
 }
 
@@ -28,11 +23,9 @@ fn assert_vector_close(
     actual: &Vector,
     expected: &Vector,
     epsilon: f64,
-)
-{
+) {
     assert_eq!(actual.len(), expected.len());
-    for (actual_i, expected_i) in actual.iter().zip(expected.iter())
-    {
+    for (actual_i, expected_i) in actual.iter().zip(expected.iter()) {
         assert_relative_eq!(*actual_i, *expected_i, epsilon = epsilon);
     }
 }
@@ -41,8 +34,7 @@ fn bfgsb_options(
     pgtol: f64,
     ftol: f64,
     max_iter: u64,
-) -> BfgsbOptions
-{
+) -> BfgsbOptions {
     BfgsbOptions {
         bound_opts: BoundConstrainedOptions {
             base_opts: BaseOptions {
@@ -66,18 +58,14 @@ fn bfgsb_options(
     }
 }
 
-fn empty_bounds(n: usize) -> BoundsConstraints
-{
+fn empty_bounds(n: usize) -> BoundsConstraints {
     BoundsConstraints::new(n)
 }
 
-fn bounds_from_pairs(pairs: &[(Option<f64>, Option<f64>)]) -> BoundsConstraints
-{
+fn bounds_from_pairs(pairs: &[(Option<f64>, Option<f64>)]) -> BoundsConstraints {
     let mut bounds = BoundsConstraints::new(pairs.len());
-    for (i, (lower, upper)) in pairs.iter().enumerate()
-    {
-        if lower.is_some() || upper.is_some()
-        {
+    for (i, (lower, upper)) in pairs.iter().enumerate() {
+        if lower.is_some() || upper.is_some() {
             bounds.add_bounds(i, *lower, *upper);
         }
     }
@@ -91,8 +79,7 @@ fn solve_bfgsb<F: RealFn>(
     pgtol: f64,
     ftol: f64,
     max_iter: u64,
-) -> Returns
-{
+) -> Returns {
     bound_constrained_minimize(
         fcn,
         bounds,
@@ -106,32 +93,27 @@ fn kkt_residual<F: RealFn>(
     mut fcn: F,
     x: &Vector,
     bounds: &BoundsConstraints,
-) -> f64
-{
+) -> f64 {
     let grad = fcn.grad(x);
     let projected = bounds.projected_direction(x, &(-grad), 1.0);
     projected.abs_max().unwrap_or(0.0)
 }
 
 #[derive(Clone, Debug)]
-struct Quadratic
-{
+struct Quadratic {
     a: Matrix,
     b: Vector,
 }
 
-impl RealFn for Quadratic
-{
-    fn dimension(&self) -> usize
-    {
+impl RealFn for Quadratic {
+    fn dimension(&self) -> usize {
         self.b.len()
     }
 
     fn eval(
         &mut self,
         x: &Vector,
-    ) -> f64
-    {
+    ) -> f64 {
         let ax = self.a.matmul(x);
         0.5 * x.dot(&ax) - self.b.dot(x)
     }
@@ -139,63 +121,52 @@ impl RealFn for Quadratic
     fn grad(
         &mut self,
         x: &Vector,
-    ) -> Vector
-    {
+    ) -> Vector {
         self.a.matmul(x) - self.b.clone()
     }
 }
 
 #[derive(Clone, Debug)]
-struct Linear
-{
+struct Linear {
     c: Vector,
 }
 
-impl RealFn for Linear
-{
-    fn dimension(&self) -> usize
-    {
+impl RealFn for Linear {
+    fn dimension(&self) -> usize {
         self.c.len()
     }
 
     fn eval(
         &mut self,
         x: &Vector,
-    ) -> f64
-    {
+    ) -> f64 {
         self.c.dot(x)
     }
 
     fn grad(
         &mut self,
         _x: &Vector,
-    ) -> Vector
-    {
+    ) -> Vector {
         self.c.clone()
     }
 }
 
 #[derive(Clone, Debug)]
-struct Rosenbrock
-{
+struct Rosenbrock {
     n: usize,
 }
 
-impl RealFn for Rosenbrock
-{
-    fn dimension(&self) -> usize
-    {
+impl RealFn for Rosenbrock {
+    fn dimension(&self) -> usize {
         self.n
     }
 
     fn eval(
         &mut self,
         x: &Vector,
-    ) -> f64
-    {
+    ) -> f64 {
         let mut value = 0.0;
-        for i in 0..(self.n - 1)
-        {
+        for i in 0..(self.n - 1) {
             value += 100.0 * (x[i + 1] - x[i].powi(2)).powi(2) + (1.0 - x[i]).powi(2);
         }
         value
@@ -204,11 +175,9 @@ impl RealFn for Rosenbrock
     fn grad(
         &mut self,
         x: &Vector,
-    ) -> Vector
-    {
+    ) -> Vector {
         let mut grad = Vector::zeros_vec(self.n, VecType::Col);
-        for i in 0..(self.n - 1)
-        {
+        for i in 0..(self.n - 1) {
             let t = x[i + 1] - x[i].powi(2);
             grad[i] += -400.0 * x[i] * t - 2.0 * (1.0 - x[i]);
             grad[i + 1] += 200.0 * t;
@@ -218,36 +187,30 @@ impl RealFn for Rosenbrock
 }
 
 #[derive(Clone, Debug)]
-struct FiniteDiff<F: RealFn>
-{
+struct FiniteDiff<F: RealFn> {
     fcn: F,
     eps: f64,
 }
 
-impl<F: RealFn> RealFn for FiniteDiff<F>
-{
-    fn dimension(&self) -> usize
-    {
+impl<F: RealFn> RealFn for FiniteDiff<F> {
+    fn dimension(&self) -> usize {
         self.fcn.dimension()
     }
 
     fn eval(
         &mut self,
         x: &Vector,
-    ) -> f64
-    {
+    ) -> f64 {
         self.fcn.eval(x)
     }
 
     fn grad(
         &mut self,
         x: &Vector,
-    ) -> Vector
-    {
+    ) -> Vector {
         let f0 = self.fcn.eval(x);
         let mut grad = Vector::zeros_vec(x.len(), VecType::Col);
-        for i in 0..x.len()
-        {
+        for i in 0..x.len() {
             let mut xp = x.clone();
             xp[i] += self.eps;
             grad[i] = (self.fcn.eval(&xp) - f0) / self.eps;
@@ -256,8 +219,7 @@ impl<F: RealFn> RealFn for FiniteDiff<F>
     }
 }
 
-fn rosenbrock_gradient_matches_finite_difference()
-{
+fn rosenbrock_gradient_matches_finite_difference() {
     let mut fcn = Rosenbrock { n: 5 };
     let x = colvec(&[-1.2, 1.0, 0.5, 0.0, 2.0]);
     let analytic = fcn.grad(&x);
@@ -267,8 +229,7 @@ fn rosenbrock_gradient_matches_finite_difference()
 }
 
 #[test]
-fn unconstrained_quadratic_matches_analytic_minimum()
-{
+fn unconstrained_quadratic_matches_analytic_minimum() {
     let a = DMatrix::<f64>::from_row_slice(&[3.0, 0.5, 0.5, 2.0], 2, 2);
     let b = colvec(&[1.0, 2.0]);
     let x_star = a.solve(&b).expect("quadratic system should solve");
@@ -290,8 +251,7 @@ fn unconstrained_quadratic_matches_analytic_minimum()
 }
 
 #[test]
-fn inactive_bounds_recover_unconstrained_quadratic_minimum()
-{
+fn inactive_bounds_recover_unconstrained_quadratic_minimum() {
     let a = DMatrix::<f64>::from_row_slice(&[3.0, 0.5, 0.5, 2.0], 2, 2);
     let b = colvec(&[1.0, 2.0]);
     let x_star = a.solve(&b).expect("quadratic system should solve");
@@ -308,8 +268,7 @@ fn inactive_bounds_recover_unconstrained_quadratic_minimum()
 }
 
 #[test]
-fn active_lower_bound_quadratic_satisfies_reduced_stationarity()
-{
+fn active_lower_bound_quadratic_satisfies_reduced_stationarity() {
     let a = DMatrix::<f64>::from_row_slice(&[3.0, 0.5, 0.5, 2.0], 2, 2);
     let b = colvec(&[1.0, 2.0]);
     let ret = solve_bfgsb(
@@ -330,8 +289,7 @@ fn active_lower_bound_quadratic_satisfies_reduced_stationarity()
 }
 
 #[test]
-fn linear_objective_converges_to_box_corner()
-{
+fn linear_objective_converges_to_box_corner() {
     let n = 3;
     let ret = solve_bfgsb(
         Linear {
@@ -348,8 +306,7 @@ fn linear_objective_converges_to_box_corner()
 }
 
 #[test]
-fn rosenbrock_unconstrained_converges_to_global_minimum()
-{
+fn rosenbrock_unconstrained_converges_to_global_minimum() {
     rosenbrock_gradient_matches_finite_difference();
 
     let n = 5;
@@ -371,8 +328,7 @@ fn rosenbrock_unconstrained_converges_to_global_minimum()
 }
 
 #[test]
-fn rosenbrock_with_active_box_bounds_is_feasible_and_kkt_small()
-{
+fn rosenbrock_with_active_box_bounds_is_feasible_and_kkt_small() {
     let n = 4;
     let bounds = bounds_from_pairs(&vec![(Some(0.0), Some(0.5)); n]);
     let ret = solve_bfgsb(
@@ -384,8 +340,7 @@ fn rosenbrock_with_active_box_bounds_is_feasible_and_kkt_small()
         3_000,
     );
 
-    for xi in ret.xmin.iter()
-    {
+    for xi in ret.xmin.iter() {
         assert!(*xi >= -1e-9);
         assert!(*xi <= 0.5 + 1e-9);
     }
@@ -393,32 +348,24 @@ fn rosenbrock_with_active_box_bounds_is_feasible_and_kkt_small()
 }
 
 #[test]
-fn high_dimensional_quadratic_with_mixed_bounds_is_feasible()
-{
+fn high_dimensional_quadratic_with_mixed_bounds_is_feasible() {
     let n = 50;
     let mut a = Matrix::identity(n, n);
     let mut b = Vector::zeros_vec(n, VecType::Col);
-    for i in 0..n
-    {
+    for i in 0..n {
         a[(i, i)] = 10.0 + i as f64;
-        b[i] = if i % 3 == 0
-        {
+        b[i] = if i % 3 == 0 {
             1.0
-        }
-        else
-        {
+        } else {
             -1.0 + 0.04 * i as f64
         };
     }
 
     let pairs: Vec<(Option<f64>, Option<f64>)> = (0..n)
         .map(|i| {
-            if i % 3 == 0
-            {
+            if i % 3 == 0 {
                 (None, Some(0.0))
-            }
-            else
-            {
+            } else {
                 (None, None)
             }
         })
@@ -436,16 +383,14 @@ fn high_dimensional_quadratic_with_mixed_bounds_is_feasible()
         2_000,
     );
 
-    for i in (0..n).step_by(3)
-    {
+    for i in (0..n).step_by(3) {
         assert!(ret.xmin[i] <= 1e-8);
     }
     assert!(kkt_residual(Quadratic { a, b }, &ret.xmin, &bounds) < 1e-5);
 }
 
 #[test]
-fn finite_difference_wrapped_rosenbrock_converges()
-{
+fn finite_difference_wrapped_rosenbrock_converges() {
     let n = 3;
     let ret = solve_bfgsb(
         FiniteDiff {
@@ -467,8 +412,7 @@ fn finite_difference_wrapped_rosenbrock_converges()
 }
 
 #[test]
-fn kkt_residual_is_small_on_representative_problems()
-{
+fn kkt_residual_is_small_on_representative_problems() {
     let a = DMatrix::<f64>::from_row_slice(&[3.0, 0.5, 0.5, 2.0], 2, 2);
     let b = colvec(&[1.0, 2.0]);
     let bounds_quad = empty_bounds(2);

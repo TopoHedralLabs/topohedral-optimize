@@ -24,8 +24,7 @@ const DEFUALT_MAX_ITER: usize = 100;
 
 //{{{ struct: Options
 #[derive(Copy, Clone)]
-pub struct Options
-{
+pub struct Options {
     /// Initial bracket
     pub bracket: Bracket,
     /// Relative tolerance on `x` used as the termination criterion.
@@ -34,10 +33,8 @@ pub struct Options
     pub max_iter: usize,
 }
 //}}}
-impl Options
-{
-    pub fn new(bracket: Bracket) -> Self
-    {
+impl Options {
+    pub fn new(bracket: Bracket) -> Self {
         Self {
             bracket,
             xtol: DEFUALT_XTOL,
@@ -50,34 +47,29 @@ impl Options
 ///
 /// Ported from SciPy's `Brent` class / `_minimize_scalar_brent`
 /// (`scipy/optimize/_optimize.py`).
-pub struct Brent<F: RealFn1>
-{
+pub struct Brent<F: RealFn1> {
     fcn: F,
     opts: Options,
 }
 //}}}
 //{{{ impl: Brent
-impl<F: RealFn1> Brent<F>
-{
+impl<F: RealFn1> Brent<F> {
     #[trace_fn]
     pub fn new(
         fcn: F,
         opts: Options,
-    ) -> Self
-    {
+    ) -> Self {
         Self { fcn, opts }
     }
 }
 //}}}
 //{{{ impl: Minimizer for Brent
-impl<F: RealFn1> Minimizer for Brent<F>
-{
+impl<F: RealFn1> Minimizer for Brent<F> {
     type Error = ScalarError;
     type Returns = ScalarReturns;
 
     #[trace_fn]
-    fn minimize(&mut self) -> Result<Self::Returns, Self::Error>
-    {
+    fn minimize(&mut self) -> Result<Self::Returns, Self::Error> {
         const MINTOL: f64 = 1.0e-11;
         const CG: f64 = 0.3819660;
 
@@ -107,32 +99,26 @@ impl<F: RealFn1> Minimizer for Brent<F>
         let mut rat = 0.0_f64;
         let mut iter = 0usize;
 
-        while iter < self.opts.max_iter
-        {
+        while iter < self.opts.max_iter {
             let tol1 = self.opts.xtol * x.abs() + MINTOL;
             let tol2 = 2.0 * tol1;
             let xmid = 0.5 * (a + b);
 
-            if (x - xmid).abs() < (tol2 - 0.5 * (b - a))
-            {
+            if (x - xmid).abs() < (tol2 - 0.5 * (b - a)) {
                 break;
             }
 
-            if deltax.abs() <= tol1
-            {
+            if deltax.abs() <= tol1 {
                 // Do a golden-section step.
                 deltax = if x >= xmid { a - x } else { b - x };
                 rat = CG * deltax;
-            }
-            else
-            {
+            } else {
                 // Do a parabolic step.
                 let tmp1 = (x - w) * (fx - fv);
                 let tmp2_0 = (x - v) * (fx - fw);
                 let mut p = (x - v) * tmp2_0 - (x - w) * tmp1;
                 let mut tmp2 = 2.0 * (tmp2_0 - tmp1);
-                if tmp2 > 0.0
-                {
+                if tmp2 > 0.0 {
                     p = -p;
                 }
                 tmp2 = tmp2.abs();
@@ -146,67 +132,46 @@ impl<F: RealFn1> Minimizer for Brent<F>
                 {
                     rat = p / tmp2;
                     let u = x + rat;
-                    if (u - a) < tol2 || (b - u) < tol2
-                    {
+                    if (u - a) < tol2 || (b - u) < tol2 {
                         rat = if xmid - x >= 0.0 { tol1 } else { -tol1 };
                     }
-                }
-                else
-                {
+                } else {
                     deltax = if x >= xmid { a - x } else { b - x };
                     rat = CG * deltax;
                 }
             }
 
-            let u = if rat.abs() < tol1
-            {
-                if rat >= 0.0
-                {
+            let u = if rat.abs() < tol1 {
+                if rat >= 0.0 {
                     x + tol1
-                }
-                else
-                {
+                } else {
                     x - tol1
                 }
-            }
-            else
-            {
+            } else {
                 x + rat
             };
             let fu = self.fcn.eval(u);
             num_fun_evals += 1;
 
-            if fu > fx
-            {
-                if u < x
-                {
+            if fu > fx {
+                if u < x {
                     a = u;
-                }
-                else
-                {
+                } else {
                     b = u;
                 }
-                if fu <= fw || w == x
-                {
+                if fu <= fw || w == x {
                     v = w;
                     w = u;
                     fv = fw;
                     fw = fu;
-                }
-                else if fu <= fv || v == x || v == w
-                {
+                } else if fu <= fv || v == x || v == w {
                     v = u;
                     fv = fu;
                 }
-            }
-            else
-            {
-                if u >= x
-                {
+            } else {
+                if u >= x {
                     a = x;
-                }
-                else
-                {
+                } else {
                     b = x;
                 }
                 v = w;
@@ -224,16 +189,14 @@ impl<F: RealFn1> Minimizer for Brent<F>
             iter += 1;
         }
 
-        if iter >= self.opts.max_iter
-        {
+        if iter >= self.opts.max_iter {
             //{{{ trace
             trace!(target: "scalar", "brent: exceeded max_iter = {}", self.opts.max_iter);
             //}}}
             return Err(ScalarError::MaxIterations(self.opts.max_iter));
         }
 
-        if x.is_nan() || fx.is_nan()
-        {
+        if x.is_nan() || fx.is_nan() {
             //{{{ trace
             trace!(target: "scalar", "brent: NaN encountered");
             //}}}

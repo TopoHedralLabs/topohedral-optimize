@@ -1,6 +1,3 @@
-#![feature(generic_const_exprs)]
-#![allow(incomplete_features)]
-
 //{{{ crate imports
 use topohedral_optimize::line_search::{
     search1d, LineSearchMethod, LineSearchOptions, NocedalOptions, ThuenteOptions,
@@ -17,60 +14,51 @@ use topohedral_tracing::*;
 
 //{{{ fun: init_logger
 #[ctor]
-fn init_logger()
-{
+fn init_logger() {
     init().unwrap();
 }
 //}}}
 //{{{ collection Quadratic1D
 #[derive(Debug, Clone)]
-struct Quadratic1D
-{
+struct Quadratic1D {
     pub root1: f64,
     pub root2: f64,
 }
-impl RealFn1 for Quadratic1D
-{
+impl RealFn1 for Quadratic1D {
     fn eval(
         &mut self,
         x: f64,
-    ) -> f64
-    {
+    ) -> f64 {
         (x - self.root1) * (x - self.root2)
     }
 
     fn diff(
         &mut self,
         x: f64,
-    ) -> f64
-    {
+    ) -> f64 {
         2.0 * x - (self.root1 + self.root2)
     }
 }
 //}}}
 //{{{ collection: Cubic1D
 #[derive(Debug, Clone)]
-struct Cubic1D
-{
+struct Cubic1D {
     pub root1: f64,
     pub root2: f64,
     pub root3: f64,
 }
-impl RealFn1 for Cubic1D
-{
+impl RealFn1 for Cubic1D {
     fn eval(
         &mut self,
         x: f64,
-    ) -> f64
-    {
+    ) -> f64 {
         (x - self.root1) * (x - self.root2) * (x - self.root3)
     }
 
     fn diff(
         &mut self,
         x: f64,
-    ) -> f64
-    {
+    ) -> f64 {
         let mut out = 0.0;
         out += (x - self.root2) * (x - self.root3);
         out += (x - self.root1) * (x - self.root3);
@@ -81,17 +69,14 @@ impl RealFn1 for Cubic1D
 //}}}
 //{{{ colleciton: RationalQuad1D
 #[derive(Clone, Copy, Debug)]
-struct RationalQuad1D
-{
+struct RationalQuad1D {
     beta: f64,
 }
-impl RealFn1 for RationalQuad1D
-{
+impl RealFn1 for RationalQuad1D {
     fn eval(
         &mut self,
         x: f64,
-    ) -> f64
-    {
+    ) -> f64 {
         let alpha = x;
         -alpha / (alpha.powi(2) + self.beta)
     }
@@ -99,8 +84,7 @@ impl RealFn1 for RationalQuad1D
     fn diff(
         &mut self,
         x: f64,
-    ) -> f64
-    {
+    ) -> f64 {
         let alpha = x;
         (alpha.powi(2) - self.beta) / (alpha.powi(2) + self.beta).powi(2)
     }
@@ -108,8 +92,7 @@ impl RealFn1 for RationalQuad1D
 //}}}
 //{{{ collection: thuente tests
 #[test]
-fn test_thuente_rational()
-{
+fn test_thuente_rational() {
     let alpha_set = [1e-4, 500.0];
     let expected_vals = [
         (5.46100000e-01, -2.37618140e-01, -3.22193606e-01),
@@ -118,8 +101,7 @@ fn test_thuente_rational()
 
     let fcn1 = RationalQuad1D { beta: 2.0 };
 
-    for (alpha, exp_vals) in alpha_set.iter().zip(expected_vals.iter())
-    {
+    for (alpha, exp_vals) in alpha_set.iter().zip(expected_vals.iter()) {
         let out = search1d(
             fcn1,
             *alpha,
@@ -138,8 +120,7 @@ fn test_thuente_rational()
 }
 
 #[test]
-fn test_thuente_quadratic()
-{
+fn test_thuente_quadratic() {
     let root1 = 10.0;
     let root2 = 100.0;
 
@@ -151,8 +132,7 @@ fn test_thuente_quadratic()
         (10.0, 0.0, -9.00000000e+01),
     ];
 
-    for (alpha, exp_vals) in alpha_set.iter().zip(expected_vals.iter())
-    {
+    for (alpha, exp_vals) in alpha_set.iter().zip(expected_vals.iter()) {
         let out = search1d(
             fcn1.clone(),
             *alpha,
@@ -172,8 +152,7 @@ fn test_thuente_quadratic()
 //}}}
 //{{{ collection: nocedal tests
 #[test]
-fn test_nocedal_rational()
-{
+fn test_nocedal_rational() {
     let alpha_set = [1e-4, 500.0];
     let expected_vals = [
         (4.096e-01, -0.188949, -0.389899),
@@ -182,8 +161,7 @@ fn test_nocedal_rational()
 
     let fcn1 = RationalQuad1D { beta: 2.0 };
 
-    for (alpha, exp_vals) in alpha_set.iter().zip(expected_vals.iter())
-    {
+    for (alpha, exp_vals) in alpha_set.iter().zip(expected_vals.iter()) {
         let out = search1d(
             fcn1,
             *alpha,
@@ -203,8 +181,7 @@ fn test_nocedal_rational()
 }
 
 #[test]
-fn test_nocedal_quadratic()
-{
+fn test_nocedal_quadratic() {
     let root1 = 10.0;
     let root2 = 100.0;
 
@@ -216,8 +193,7 @@ fn test_nocedal_quadratic()
         (10.0, 0.0, -9.00000000e+01),
     ];
 
-    for (alpha, exp_vals) in alpha_set.iter().zip(expected_vals.iter())
-    {
+    for (alpha, exp_vals) in alpha_set.iter().zip(expected_vals.iter()) {
         let out = search1d(
             fcn1.clone(),
             *alpha,
@@ -237,8 +213,7 @@ fn test_nocedal_quadratic()
 }
 
 #[test]
-fn test_nocedal_cubic()
-{
+fn test_nocedal_cubic() {
     let c1 = Cubic1D {
         root1: -1.0,
         root2: 0.0,

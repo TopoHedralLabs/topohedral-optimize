@@ -12,19 +12,16 @@ use topohedral_tracing::*;
 //}}}
 //--------------------------------------------------------------------------------------------------
 
-pub struct CircularBuffer<T>
-{
+pub struct CircularBuffer<T> {
     values: Vec<Option<T>>,
     read_ptr: usize,
     write_ptr: usize,
     len: usize,
 }
 
-impl<T> CircularBuffer<T>
-{
+impl<T> CircularBuffer<T> {
     #[trace_fn]
-    pub fn new(num_elems: usize) -> Self
-    {
+    pub fn new(num_elems: usize) -> Self {
         assert!(num_elems > 0, "circular buffer capacity must be non-zero");
 
         let mut values = Vec::with_capacity(num_elems);
@@ -42,42 +39,34 @@ impl<T> CircularBuffer<T>
     pub fn append(
         &mut self,
         new_value: T,
-    )
-    {
+    ) {
         self.values[self.write_ptr] = Some(new_value);
         self.write_ptr = self.next(self.write_ptr);
 
-        if self.len == self.capacity()
-        {
+        if self.len == self.capacity() {
             self.read_ptr = self.next(self.read_ptr);
-        }
-        else
-        {
+        } else {
             self.len += 1;
         }
     }
 
     #[trace_fn]
-    pub fn len(&self) -> usize
-    {
+    pub fn len(&self) -> usize {
         self.len
     }
 
     #[trace_fn]
-    pub fn capacity(&self) -> usize
-    {
+    pub fn capacity(&self) -> usize {
         self.values.len()
     }
 
     #[trace_fn]
-    pub fn is_empty(&self) -> bool
-    {
+    pub fn is_empty(&self) -> bool {
         self.len == 0
     }
 
     #[trace_fn]
-    pub fn is_full(&self) -> bool
-    {
+    pub fn is_full(&self) -> bool {
         self.len == self.capacity()
     }
 
@@ -85,10 +74,8 @@ impl<T> CircularBuffer<T>
     pub fn get(
         &self,
         idx: usize,
-    ) -> Option<&T>
-    {
-        if idx >= self.len
-        {
+    ) -> Option<&T> {
+        if idx >= self.len {
             return None;
         }
 
@@ -96,10 +83,8 @@ impl<T> CircularBuffer<T>
     }
 
     #[trace_fn]
-    pub fn newest(&self) -> Option<&T>
-    {
-        if self.is_empty()
-        {
+    pub fn newest(&self) -> Option<&T> {
+        if self.is_empty() {
             return None;
         }
 
@@ -108,8 +93,7 @@ impl<T> CircularBuffer<T>
     }
 
     #[trace_fn]
-    pub fn oldest(&self) -> Option<&T>
-    {
+    pub fn oldest(&self) -> Option<&T> {
         self.get(0)
     }
 
@@ -117,14 +101,12 @@ impl<T> CircularBuffer<T>
     pub fn next(
         &self,
         ptr: usize,
-    ) -> usize
-    {
+    ) -> usize {
         (ptr + 1) % self.capacity()
     }
 
     #[trace_fn]
-    pub fn iter(&self) -> CircularBufferIter<'_, T>
-    {
+    pub fn iter(&self) -> CircularBufferIter<'_, T> {
         CircularBufferIter {
             buffer: self,
             idx: 0,
@@ -132,37 +114,25 @@ impl<T> CircularBuffer<T>
     }
 }
 
-impl<T: Clone + PartialOrd> CircularBuffer<T>
-{
+impl<T: Clone + PartialOrd> CircularBuffer<T> {
     #[trace_fn]
-    pub fn max(&self) -> Option<T>
-    {
-        self.iter().cloned().reduce(|lhs, rhs| {
-            if lhs >= rhs
-            {
-                lhs
-            }
-            else
-            {
-                rhs
-            }
-        })
+    pub fn max(&self) -> Option<T> {
+        self.iter()
+            .cloned()
+            .reduce(|lhs, rhs| if lhs >= rhs { lhs } else { rhs })
     }
 }
 
-pub struct CircularBufferIter<'a, T>
-{
+pub struct CircularBufferIter<'a, T> {
     buffer: &'a CircularBuffer<T>,
     idx: usize,
 }
 
-impl<'a, T> Iterator for CircularBufferIter<'a, T>
-{
+impl<'a, T> Iterator for CircularBufferIter<'a, T> {
     type Item = &'a T;
 
     #[trace_fn]
-    fn next(&mut self) -> Option<Self::Item>
-    {
+    fn next(&mut self) -> Option<Self::Item> {
         let value = self.buffer.get(self.idx)?;
         self.idx += 1;
 
@@ -171,14 +141,12 @@ impl<'a, T> Iterator for CircularBufferIter<'a, T>
 }
 
 #[cfg(test)]
-mod tests
-{
+mod tests {
     use super::*;
 
     #[test]
     #[trace_fn]
-    fn new_buffer_is_empty_with_fixed_capacity()
-    {
+    fn new_buffer_is_empty_with_fixed_capacity() {
         let buffer = CircularBuffer::<f64>::new(3);
 
         assert_eq!(buffer.len(), 0);
@@ -196,8 +164,7 @@ mod tests
 
     #[test]
     #[trace_fn]
-    fn appends_values_until_full_without_changing_order()
-    {
+    fn appends_values_until_full_without_changing_order() {
         let mut buffer = CircularBuffer::new(3);
 
         buffer.append(1.0);
@@ -224,12 +191,10 @@ mod tests
 
     #[test]
     #[trace_fn]
-    fn overwrites_oldest_value_after_capacity_is_reached()
-    {
+    fn overwrites_oldest_value_after_capacity_is_reached() {
         let mut buffer = CircularBuffer::new(3);
 
-        for value in [1.0, 2.0, 3.0, 4.0, 5.0]
-        {
+        for value in [1.0, 2.0, 3.0, 4.0, 5.0] {
             buffer.append(value);
         }
 
@@ -250,8 +215,7 @@ mod tests
 
     #[test]
     #[trace_fn]
-    fn max_returns_none_for_empty_buffer()
-    {
+    fn max_returns_none_for_empty_buffer() {
         let buffer = CircularBuffer::<f64>::new(3);
 
         assert_eq!(buffer.max(), None);
@@ -259,8 +223,7 @@ mod tests
 
     #[test]
     #[trace_fn]
-    fn max_returns_largest_stored_value()
-    {
+    fn max_returns_largest_stored_value() {
         let mut buffer = CircularBuffer::new(4);
 
         buffer.append(-1.0);
@@ -272,12 +235,10 @@ mod tests
 
     #[test]
     #[trace_fn]
-    fn max_ignores_values_that_have_been_overwritten()
-    {
+    fn max_ignores_values_that_have_been_overwritten() {
         let mut buffer = CircularBuffer::new(3);
 
-        for value in [100.0, 1.0, 2.0, 3.0]
-        {
+        for value in [100.0, 1.0, 2.0, 3.0] {
             buffer.append(value);
         }
 
@@ -290,8 +251,7 @@ mod tests
 
     #[test]
     #[trace_fn]
-    fn stores_non_copy_values()
-    {
+    fn stores_non_copy_values() {
         let mut buffer = CircularBuffer::new(2);
 
         buffer.append(String::from("first"));
@@ -309,8 +269,7 @@ mod tests
 
     #[test]
     #[trace_fn]
-    fn single_element_buffer_always_keeps_latest_value()
-    {
+    fn single_element_buffer_always_keeps_latest_value() {
         let mut buffer = CircularBuffer::new(1);
 
         buffer.append(1.0);
@@ -327,13 +286,11 @@ mod tests
 
     #[test]
     #[trace_fn]
-    fn append_does_not_reallocate_storage()
-    {
+    fn append_does_not_reallocate_storage() {
         let mut buffer = CircularBuffer::new(2);
         let values_ptr = buffer.values.as_ptr();
 
-        for value in [1.0, 2.0, 3.0, 4.0]
-        {
+        for value in [1.0, 2.0, 3.0, 4.0] {
             buffer.append(value);
             assert_eq!(buffer.values.as_ptr(), values_ptr);
             assert_eq!(buffer.capacity(), 2);
@@ -343,8 +300,7 @@ mod tests
     #[test]
     #[should_panic(expected = "circular buffer capacity must be non-zero")]
     #[trace_fn]
-    fn zero_capacity_buffer_panics()
-    {
+    fn zero_capacity_buffer_panics() {
         CircularBuffer::<f64>::new(0);
     }
 }
