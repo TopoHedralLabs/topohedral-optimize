@@ -39,8 +39,8 @@ pub use factory::Method as ScalarMethod;
 //}}}
 
 #[trace_fn]
-pub fn minimize<F: RealFn1>(
-    fcn: F,
+pub fn minimize<F: RealFn1 + ?Sized>(
+    fcn: &mut F,
     method: ScalarMethod,
 ) -> Result<ScalarReturns, ScalarError> {
     let minimizer = factory::create(fcn, method);

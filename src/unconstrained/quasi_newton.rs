@@ -39,8 +39,8 @@ pub struct Options {
 }
 //}}}
 //{{{ struct: QuasiNewton
-pub struct QuasiNewton<F: RealFn> {
-    fcn: F,
+pub struct QuasiNewton<'a, F: RealFn + ?Sized> {
+    fcn: &'a mut F,
     x_init: Vector,
     norm_grad_fx_init: f64,
     opts: Options,
@@ -48,10 +48,10 @@ pub struct QuasiNewton<F: RealFn> {
 }
 //}}}
 //{{{ impl: QuasiNewton
-impl<F: RealFn> QuasiNewton<F> {
+impl<'a, F: RealFn + ?Sized> QuasiNewton<'a, F> {
     #[trace_fn]
     pub fn new(
-        mut fcn: F,
+        fcn: &'a mut F,
         x0: Vector,
         opts: Options,
     ) -> Self {
@@ -151,13 +151,13 @@ impl<F: RealFn> QuasiNewton<F> {
 }
 //}}}
 //{{{ impl: Minimizer for QuasiNewton
-impl<F: RealFn> Minimizer for QuasiNewton<F> {
+impl<F: RealFn + ?Sized> Minimizer for QuasiNewton<'_, F> {
     type Error = Error;
     type Returns = VectorReturns;
 
     #[trace_fn]
     fn minimize(&mut self) -> Result<VectorReturns, Self::Error> {
-        let mut iter_k = IterData::new(self.fcn.clone(), &self.x_init);
+        let mut iter_k = IterData::new(&mut *self.fcn, &self.x_init);
         let mut iter_prev_k = iter_k.clone();
         iter_prev_k.fx = iter_k.fx + 0.5 * iter_k.norm_grad_fx;
 
@@ -178,7 +178,7 @@ impl<F: RealFn> Minimizer for QuasiNewton<F> {
             iter_prev_k = iter_k;
 
             let search_result = ls::search(
-                self.fcn.clone(),
+                &mut *self.fcn,
                 &iter_prev_k,
                 &dir_k,
                 alpha_init,
@@ -193,7 +193,7 @@ impl<F: RealFn> Minimizer for QuasiNewton<F> {
                     let alpha_init =
                         ls::initial_step(iter_prev_k.fx, fx_prev, iter_prev_k.grad_fx.dot(&dir_k));
                     ls::search(
-                        self.fcn.clone(),
+                        &mut *self.fcn,
                         &iter_prev_k,
                         &dir_k,
                         alpha_init,

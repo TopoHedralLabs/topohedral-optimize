@@ -39,18 +39,18 @@ pub struct Options {
 }
 //}}}
 //{{{ struct: ConjugateGradient
-pub struct ConjugateGradient<F: RealFn> {
-    fcn: F,
+pub struct ConjugateGradient<'a, F: RealFn + ?Sized> {
+    fcn: &'a mut F,
     x_init: Vector,
     norm_grad_fx_init: f64,
     opts: Options,
 }
 //}}}
 //{{{ impl: ConjugateGradient
-impl<F: RealFn> ConjugateGradient<F> {
+impl<'a, F: RealFn + ?Sized> ConjugateGradient<'a, F> {
     #[trace_fn]
     pub fn new(
-        mut fcn: F,
+        fcn: &'a mut F,
         x0: Vector,
         opts: Options,
     ) -> Self {
@@ -164,13 +164,13 @@ impl<F: RealFn> ConjugateGradient<F> {
 }
 //}}}
 //{{{ impl: Minimizer for ConjugateGradient
-impl<F: RealFn> Minimizer for ConjugateGradient<F> {
+impl<F: RealFn + ?Sized> Minimizer for ConjugateGradient<'_, F> {
     type Error = Error;
     type Returns = VectorReturns;
 
     #[trace_fn]
     fn minimize(&mut self) -> Result<VectorReturns, Self::Error> {
-        let mut iter_k = IterData::new(self.fcn.clone(), &self.x_init);
+        let mut iter_k = IterData::new(&mut *self.fcn, &self.x_init);
 
         let mut iter_k_prev = iter_k.clone();
         iter_k_prev.fx = iter_k.fx + 0.5 * iter_k.norm_grad_fx;
@@ -188,7 +188,7 @@ impl<F: RealFn> Minimizer for ConjugateGradient<F> {
             iter_k_prev = iter_k;
 
             iter_k = ls::search(
-                self.fcn.clone(),
+                &mut *self.fcn,
                 &iter_k_prev,
                 &dir_k,
                 alpha_init,

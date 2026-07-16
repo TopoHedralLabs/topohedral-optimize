@@ -107,11 +107,11 @@ fn test_thuente_rational() {
         (5.55500019e+01, -1.79901396e-02, 3.23435359e-04),
     ];
 
-    let fcn1 = RationalQuad1D { beta: 2.0 };
+    let mut fcn1 = RationalQuad1D { beta: 2.0 };
 
     for (alpha, exp_vals) in alpha_set.iter().zip(expected_vals.iter()) {
         let out = search1d(
-            fcn1,
+            &mut fcn1,
             *alpha,
             LineSearchMethod::Thuente(ThuenteOptions {
                 ls_opts: LineSearchOptions {
@@ -132,7 +132,7 @@ fn test_thuente_quadratic() {
     let root1 = 10.0;
     let root2 = 100.0;
 
-    let fcn1 = Quadratic1D { root1, root2 };
+    let mut fcn1 = Quadratic1D { root1, root2 };
 
     let alpha_set = [1e-4, 10.0];
     let expected_vals = [
@@ -142,7 +142,7 @@ fn test_thuente_quadratic() {
 
     for (alpha, exp_vals) in alpha_set.iter().zip(expected_vals.iter()) {
         let out = search1d(
-            fcn1.clone(),
+            &mut fcn1,
             *alpha,
             LineSearchMethod::Thuente(ThuenteOptions {
                 ls_opts: LineSearchOptions {
@@ -167,11 +167,11 @@ fn test_nocedal_rational() {
         (1.056683e2, -9.461885e-3, 8.9511233e-5),
     ];
 
-    let fcn1 = RationalQuad1D { beta: 2.0 };
+    let mut fcn1 = RationalQuad1D { beta: 2.0 };
 
     for (alpha, exp_vals) in alpha_set.iter().zip(expected_vals.iter()) {
         let out = search1d(
-            fcn1,
+            &mut fcn1,
             *alpha,
             LineSearchMethod::Nocedal(NocedalOptions {
                 ls_opts: LineSearchOptions {
@@ -193,7 +193,7 @@ fn test_nocedal_quadratic() {
     let root1 = 10.0;
     let root2 = 100.0;
 
-    let fcn1 = Quadratic1D { root1, root2 };
+    let mut fcn1 = Quadratic1D { root1, root2 };
 
     let alpha_set = [1e-4, 10.0];
     let expected_vals = [
@@ -203,7 +203,7 @@ fn test_nocedal_quadratic() {
 
     for (alpha, exp_vals) in alpha_set.iter().zip(expected_vals.iter()) {
         let out = search1d(
-            fcn1.clone(),
+            &mut fcn1,
             *alpha,
             LineSearchMethod::Nocedal(NocedalOptions {
                 ls_opts: LineSearchOptions {
@@ -222,14 +222,14 @@ fn test_nocedal_quadratic() {
 
 #[test]
 fn test_nocedal_cubic() {
-    let c1 = Cubic1D {
+    let mut c1 = Cubic1D {
         root1: -1.0,
         root2: 0.0,
         root3: 1.0,
     };
 
     let out = search1d(
-        c1.clone(),
+        &mut c1,
         1.0,
         LineSearchMethod::Nocedal(NocedalOptions {
             ls_opts: LineSearchOptions {

@@ -4,9 +4,7 @@
 
 //{{{ crate imports
 use topohedral_optimize::DifferentiableFn;
-use topohedral_optimize::{
-    arc_real_vector_fn, rc_real_vector_fn, ArcRealVectorFn, RcRealVectorFn, RealVectorFn, Vector,
-};
+use topohedral_optimize::{RealVectorFn, Vector};
 
 //}}}
 //{{{ std imports
@@ -210,19 +208,5 @@ fn run_linear_vector_checks<F: RealVectorFn>(mut f: F) {
 #[test]
 fn test_linear_vector_dynamic() {
     run_linear_vector_checks(LinearVectorDynamic::new1());
-}
-//}}}
-//{{{ test: test_linear_vector_dynamic_rc
-#[test]
-fn test_linear_vector_dynamic_rc() {
-    let fcn: RcRealVectorFn<LinearVectorDynamic> = rc_real_vector_fn(LinearVectorDynamic::new1());
-    run_linear_vector_checks(fcn);
-}
-//}}}
-//{{{ test: test_linear_vector_dynamic_arc
-#[test]
-fn test_linear_vector_dynamic_arc() {
-    let fcn: ArcRealVectorFn<LinearVectorDynamic> = arc_real_vector_fn(LinearVectorDynamic::new1());
-    run_linear_vector_checks(fcn);
 }
 //}}}

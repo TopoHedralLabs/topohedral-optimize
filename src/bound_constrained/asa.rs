@@ -11,7 +11,7 @@ use crate::bound_constrained::asa::Phase::Ua;
 use crate::common::{Minimizer, Vector};
 use crate::constraints::BoundsConstraints;
 use crate::constraints::{BoundSignature, BoundStatus};
-use crate::unconstrained::{minimize, UnconstrainedMethod};
+use crate::unconstrained::{minimize_impl, UnconstrainedMethod};
 use crate::ConvergedReason;
 use crate::{IterData, RealFn};
 //}}}
@@ -147,8 +147,8 @@ impl<F: RealFn> crate::DifferentiableFn for RestrictedFunction<F> {
 }
 //}}}
 //{{{ struct: ActiveSetAlgorithm
-pub struct ActiveSetAlgorithm<F: RealFn> {
-    fcn: F,
+pub struct ActiveSetAlgorithm<'a, F: RealFn + ?Sized> {
+    fcn: &'a mut F,
     bounds: BoundsConstraints,
     x_init: Vector,
     norm_grad_fx_init: f64,
@@ -166,10 +166,10 @@ enum Phase {
 }
 //}}}
 //{{{ impl: ActiveSetAlgorithm
-impl<F: RealFn> ActiveSetAlgorithm<F> {
+impl<'a, F: RealFn + ?Sized> ActiveSetAlgorithm<'a, F> {
     #[trace_fn]
     pub fn new(
-        mut fcn: F,
+        fcn: &'a mut F,
         bounds: BoundsConstraints,
         mut x0: Vector,
         opts: Options,
@@ -422,14 +422,14 @@ impl<F: RealFn> ActiveSetAlgorithm<F> {
 }
 //}}}
 //{{{ impl: Minimizer for ActiveSetAlgorithm
-impl<F: RealFn> Minimizer for ActiveSetAlgorithm<F> {
+impl<F: RealFn + ?Sized> Minimizer for ActiveSetAlgorithm<'_, F> {
     type Error = super::common::Error;
     type Returns = crate::VectorReturns;
 
     #[trace_fn]
     fn minimize(&mut self) -> Result<crate::VectorReturns, Self::Error> {
-        let mut iter_k_prev = IterData::new(self.fcn.clone(), &self.x_init);
-        let mut iter_k = IterData::new(self.fcn.clone(), &self.x_init);
+        let mut iter_k_prev = IterData::new(&mut *self.fcn, &self.x_init);
+        let mut iter_k = IterData::new(&mut *self.fcn, &self.x_init);
         let mut phase = Phase::Ngpa;
         let mut mu = self.opts.mu;
         let mut alpha_bb = 1.0;
@@ -568,9 +568,6 @@ impl<F: RealFn> Minimizer for ActiveSetAlgorithm<F> {
                     //{{{ trace
                     debug!(target: "asa", "UA restricted problem: active_count = {active_count_before}, free_count = {_free_count}");
                     //}}}
-                    let restricted_fcn =
-                        RestrictedFunction::new(self.fcn.clone(), x, bounds_statuses.clone());
-
                     let x0 = restrict(&bounds_statuses, x);
                     if x0.is_empty() {
                         //{{{ trace
@@ -580,11 +577,14 @@ impl<F: RealFn> Minimizer for ActiveSetAlgorithm<F> {
                         continue;
                     }
 
-                    let res = minimize(
-                        restricted_fcn.clone(),
+                    let mut restricted_fcn =
+                        RestrictedFunction::new(&mut *self.fcn, x, bounds_statuses.clone());
+                    let res = minimize_impl(
+                        &mut restricted_fcn,
                         x0,
                         self.opts.unconstrained_method.clone(),
                     );
+                    drop(restricted_fcn);
 
                     let Ok(res) = res else {
                         //{{{ trace

@@ -301,8 +301,8 @@ pub struct Options {
 }
 //}}}
 //{{{ struct: Bfgsb
-pub struct Bfgsb<F: RealFn> {
-    fcn: F,
+pub struct Bfgsb<'a, F: RealFn + ?Sized> {
+    fcn: &'a mut F,
     bounds: BoundsConstraints,
     x_init: Vector,
     norm_grad_fx_init: f64,
@@ -311,10 +311,10 @@ pub struct Bfgsb<F: RealFn> {
 }
 //}}}
 //{{{ impl Bfgsb
-impl<F: RealFn> Bfgsb<F> {
+impl<'a, F: RealFn + ?Sized> Bfgsb<'a, F> {
     #[trace_fn]
     pub fn new(
-        mut fcn: F,
+        fcn: &'a mut F,
         bounds: BoundsConstraints,
         mut x0: Vector,
         opts: Options,
@@ -402,7 +402,7 @@ impl<F: RealFn> Bfgsb<F> {
 }
 //}}}
 //{{{ impl Minimizer for Bfgsb
-impl<F: RealFn> Minimizer for Bfgsb<F> {
+impl<F: RealFn + ?Sized> Minimizer for Bfgsb<'_, F> {
     type Error = Error;
     type Returns = crate::VectorReturns;
 
@@ -552,7 +552,7 @@ impl<F: RealFn> Minimizer for Bfgsb<F> {
             debug!(target: "bfgsb", "Starting line search: alpha_init = {alpha_init:.4e}, gᵀd = {gd:.4e}");
             //}}}
             let search_result = ls::search(
-                self.fcn.clone(),
+                &mut *self.fcn,
                 &iter_k,
                 &dir,
                 alpha_init,

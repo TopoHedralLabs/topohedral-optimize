@@ -16,18 +16,18 @@ use topohedral_tracing::*;
 //--------------------------------------------------------------------------------------------------
 
 //{{{ struct: LineSearchFcn
-#[derive(Debug, Clone)]
-pub struct LineSearchFcn<F: RealFn> {
-    pub f: F,
+#[derive(Debug)]
+pub struct LineSearchFcn<'a, F: RealFn + ?Sized> {
+    pub f: &'a mut F,
     pub x: Vector,
     pub dir: Vector,
 }
 //}}}
 //{{{ impl: LineSearchFcn
-impl<F: RealFn> LineSearchFcn<F> {
+impl<'a, F: RealFn + ?Sized> LineSearchFcn<'a, F> {
     #[trace_fn]
     pub fn new(
-        f: F,
+        f: &'a mut F,
         x: Vector,
         dir: Vector,
     ) -> Self {
@@ -47,7 +47,7 @@ impl<F: RealFn> LineSearchFcn<F> {
 }
 //}}}
 //{{{ impl: RealFn1 for LineSearchFcn
-impl<F: RealFn> crate::DifferentiableFn for LineSearchFcn<F> {
+impl<F: RealFn + ?Sized> crate::DifferentiableFn for LineSearchFcn<'_, F> {
     type Input = f64;
     type Output = f64;
     type Derivative = f64;
@@ -151,9 +151,6 @@ mod tests {
     use crate::DifferentiableFn;
 
     //{{{ std imports
-    use std::cell::RefCell;
-    use std::sync::Arc;
-    use std::{rc::Rc, sync::Mutex};
     //}}}
     //{{{ dep imports
     use approx::assert_relative_eq;
@@ -240,61 +237,11 @@ mod tests {
     #[test]
     #[trace_fn]
     fn test_quadratic_dynamic_3d_line_search() {
+        let mut fcn = QuadraticDynamic::new1();
         let mut line_fcn1 = LineSearchFcn {
-            f: QuadraticDynamic::new1(),
+            f: &mut fcn,
             x: DVector::<f64>::zeros_vec(3, VecType::Col),
             dir: colvec(&[1.0, -2.0, 1.0]),
-        };
-
-        let phi1 = line_fcn1.eval(&0.0);
-        let dphi1 = line_fcn1.derivative(&0.0);
-        assert_relative_eq!(phi1, 0.0, epsilon = 1e-10);
-        assert_relative_eq!(dphi1, 0.0, epsilon = 1e-10);
-
-        line_fcn1.x = DVector::<f64>::ones_vec(3, VecType::Col);
-        let phi2 = line_fcn1.eval(&0.0);
-        let dphi2 = line_fcn1.derivative(&0.0);
-        assert_relative_eq!(phi2, 27.0, epsilon = 1e-10);
-        assert_relative_eq!(dphi2, 16.0 - 2.0 * 18.0 + 20.0, epsilon = 1e-10);
-    }
-    //}}}
-    //{{{ test: test_quadratic_dynamic_rc_line_search
-    #[test]
-    #[trace_fn]
-    fn test_quadratic_dynamic_rc_line_search() {
-        let fcn1 = Rc::new(RefCell::new(QuadraticDynamic::new1()));
-        let x = DVector::<f64>::zeros_vec(3, VecType::Col);
-        let dir = colvec(&[1.0, -2.0, 1.0]);
-        let mut line_fcn1 = LineSearchFcn {
-            f: fcn1.clone(),
-            x,
-            dir,
-        };
-
-        let phi1 = line_fcn1.eval(&0.0);
-        let dphi1 = line_fcn1.derivative(&0.0);
-        assert_relative_eq!(phi1, 0.0, epsilon = 1e-10);
-        assert_relative_eq!(dphi1, 0.0, epsilon = 1e-10);
-
-        line_fcn1.x = DVector::<f64>::ones_vec(3, VecType::Col);
-        let phi2 = line_fcn1.eval(&0.0);
-        let dphi2 = line_fcn1.derivative(&0.0);
-        assert_relative_eq!(phi2, 27.0, epsilon = 1e-10);
-        assert_relative_eq!(dphi2, 16.0 - 2.0 * 18.0 + 20.0, epsilon = 1e-10);
-    }
-    //}}}
-    //{{{ test: test_quadratic_dynamic_arc_line_search
-    #[test]
-    #[trace_fn]
-    fn test_quadratic_dynamic_arc_line_search() {
-        let fcn1 = Arc::new(Mutex::new(QuadraticDynamic::new1()));
-
-        let x = DVector::<f64>::zeros_vec(3, VecType::Col);
-        let dir = colvec(&[1.0, -2.0, 1.0]);
-        let mut line_fcn1 = LineSearchFcn {
-            f: fcn1.clone(),
-            x,
-            dir,
         };
 
         let phi1 = line_fcn1.eval(&0.0);

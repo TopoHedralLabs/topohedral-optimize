@@ -42,8 +42,8 @@ impl Method {
 }
 
 #[trace_fn]
-pub fn create<'a, F: RealFn + 'a>(
-    fcn: F,
+pub fn create<'a, F: RealFn + ?Sized + 'a>(
+    fcn: &'a mut F,
     bounds: BoundsConstraints,
     x0: Vector,
     method: Method,

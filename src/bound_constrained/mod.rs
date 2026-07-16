@@ -4,9 +4,7 @@
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
-use crate::common::{
-    arc_real_fn, CountingRealFn, RealFn, Vector, VectorReturns as BoundConstrainedReturns,
-};
+use crate::common::{Evaluator, RealFn, Vector, VectorReturns as BoundConstrainedReturns};
 use crate::constraints::BoundsConstraints;
 //}}}
 //{{{ std imports
@@ -37,22 +35,25 @@ pub use factory::Method as BoundConstrainedMethod;
 //}}}
 
 #[trace_fn]
-pub fn minimize<F1: RealFn>(
-    fcn: F1,
+pub fn minimize<F: RealFn + ?Sized>(
+    fcn: &mut F,
     bounds: BoundsConstraints,
     x0: Vector,
     method: BoundConstrainedMethod,
 ) -> Result<BoundConstrainedReturns, BoundConstrainedError> {
-    if method.bound_opts().base_opts.make_counting {
-        let counting_fcn = arc_real_fn(CountingRealFn::new(fcn));
-        let mut minimizer = factory::create(counting_fcn.clone(), bounds, x0, method);
-        let mut ret = minimizer.minimize()?;
-        let counting_fcn_lock = counting_fcn.lock().unwrap();
-        ret.num_fun_evals = counting_fcn_lock.num_func_evals;
-        ret.num_grad_evals = counting_fcn_lock.num_grad_evals;
-        Ok(ret)
-    } else {
-        let mut minimizer = factory::create(fcn, bounds, x0, method);
-        minimizer.minimize()
-    }
+    let mut evaluator = Evaluator::new(fcn);
+    let mut ret = minimize_impl(&mut evaluator, bounds, x0, method)?;
+    ret.num_fun_evals = evaluator.num_func_evals;
+    ret.num_grad_evals = evaluator.num_grad_evals;
+    Ok(ret)
+}
+
+pub(crate) fn minimize_impl<F: RealFn + ?Sized>(
+    fcn: &mut F,
+    bounds: BoundsConstraints,
+    x0: Vector,
+    method: BoundConstrainedMethod,
+) -> Result<BoundConstrainedReturns, BoundConstrainedError> {
+    let mut minimizer = factory::create(fcn, bounds, x0, method);
+    minimizer.minimize()
 }

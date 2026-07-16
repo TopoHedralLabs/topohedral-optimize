@@ -120,8 +120,8 @@ fn test_parabola_two_point_bracket(
     #[case] solver: ScalarSolver,
     #[case] xmin_tol: f64,
 ) {
-    let f = ScalarFunction::new(parabola);
-    let res = minimize(f, solver.method(Bracket::Points(0.0, 1.0))).unwrap();
+    let mut f = ScalarFunction::new(parabola);
+    let res = minimize(&mut f, solver.method(Bracket::Points(0.0, 1.0))).unwrap();
     assert!((res.xmin - 1.0).abs() < xmin_tol);
 }
 
@@ -132,8 +132,8 @@ fn test_parabola_three_point_bracket(
     #[case] solver: ScalarSolver,
     #[case] xmin_tol: f64,
 ) {
-    let f = ScalarFunction::new(parabola);
-    let res = minimize(f, solver.method(Bracket::Triple(-1.0, 0.5, 3.0))).unwrap();
+    let mut f = ScalarFunction::new(parabola);
+    let res = minimize(&mut f, solver.method(Bracket::Triple(-1.0, 0.5, 3.0))).unwrap();
     assert!((res.xmin - 1.0).abs() < xmin_tol);
 }
 
@@ -144,8 +144,8 @@ fn test_parabola_auto_bracket(
     #[case] solver: ScalarSolver,
     #[case] xmin_tol: f64,
 ) {
-    let f = ScalarFunction::new(parabola);
-    let res = minimize(f, solver.method(Bracket::Auto)).unwrap();
+    let mut f = ScalarFunction::new(parabola);
+    let res = minimize(&mut f, solver.method(Bracket::Auto)).unwrap();
     assert!((res.xmin - 1.0).abs() < xmin_tol);
 }
 
@@ -156,8 +156,8 @@ fn test_quartic(
     #[case] solver: ScalarSolver,
     #[case] fmin_tol: Option<f64>,
 ) {
-    let f = ScalarFunction::new(quartic);
-    let res = minimize(f, solver.method(Bracket::Points(0.0, 1.0))).unwrap();
+    let mut f = ScalarFunction::new(quartic);
+    let res = minimize(&mut f, solver.method(Bracket::Points(0.0, 1.0))).unwrap();
     assert!((res.xmin - 2.0).abs() < 1e-2);
     if let Some(tol) = fmin_tol {
         assert!((res.fmin - 3.0).abs() < tol);
@@ -168,8 +168,8 @@ fn test_quartic(
 #[case::brent(ScalarSolver::Brent)]
 #[case::golden(ScalarSolver::Golden)]
 fn test_invalid_triple_order(#[case] solver: ScalarSolver) {
-    let f = ScalarFunction::new(parabola);
-    let result = minimize(f, solver.method(Bracket::Triple(0.0, 0.9, 0.5)));
+    let mut f = ScalarFunction::new(parabola);
+    let result = minimize(&mut f, solver.method(Bracket::Triple(0.0, 0.9, 0.5)));
     assert!(matches!(
         result,
         Err(ScalarError::InvalidBracketOrder(_, _, _))
@@ -181,8 +181,8 @@ fn test_invalid_triple_order(#[case] solver: ScalarSolver) {
 #[case::golden(ScalarSolver::Golden)]
 fn test_invalid_triple_values(#[case] solver: ScalarSolver) {
     // Monotone function: f(xb) is not below both f(xa) and f(xc).
-    let f = ScalarFunction::new(|x: f64| x);
-    let result = minimize(f, solver.method(Bracket::Triple(0.0, 0.5, 1.0)));
+    let mut f = ScalarFunction::new(|x: f64| x);
+    let result = minimize(&mut f, solver.method(Bracket::Triple(0.0, 0.5, 1.0)));
     assert!(matches!(result, Err(ScalarError::InvalidBracketValues)));
 }
 
@@ -190,8 +190,11 @@ fn test_invalid_triple_values(#[case] solver: ScalarSolver) {
 #[case::brent(ScalarSolver::Brent)]
 #[case::golden(ScalarSolver::Golden)]
 fn test_max_iterations_exceeded(#[case] solver: ScalarSolver) {
-    let f = ScalarFunction::new(parabola);
-    let result = minimize(f, solver.method_with(Bracket::Points(0.0, 1.0), 1e-14, 2));
+    let mut f = ScalarFunction::new(parabola);
+    let result = minimize(
+        &mut f,
+        solver.method_with(Bracket::Points(0.0, 1.0), 1e-14, 2),
+    );
     assert!(matches!(result, Err(ScalarError::MaxIterations(2))));
 }
 //}}}
@@ -209,9 +212,9 @@ fn test_bounded_xmin(
     #[case] xmin_tol: f64,
     #[case] fmin_tol: Option<f64>,
 ) {
-    let fcn = ScalarFunction::new(f);
+    let mut fcn = ScalarFunction::new(f);
     let opts = BoundedOptions::new(lower, upper).unwrap();
-    let res = minimize(fcn, ScalarMethod::Bounded(opts)).unwrap();
+    let res = minimize(&mut fcn, ScalarMethod::Bounded(opts)).unwrap();
     assert!((res.xmin - expected_xmin).abs() < xmin_tol);
     if let Some(tol) = fmin_tol {
         assert!(res.fmin < tol);
@@ -232,11 +235,11 @@ fn test_bounded_non_finite_bounds() {
 
 #[test]
 fn test_bounded_max_iterations_exceeded() {
-    let f = ScalarFunction::new(parabola);
+    let mut f = ScalarFunction::new(parabola);
     let mut opts = BoundedOptions::new(-4.0, 4.0).unwrap();
     opts.xatol = 1e-12;
     opts.max_iter = 2;
-    let result = minimize(f, ScalarMethod::Bounded(opts));
+    let result = minimize(&mut f, ScalarMethod::Bounded(opts));
     assert!(matches!(result, Err(ScalarError::MaxIterations(2))));
 }
 //}}}

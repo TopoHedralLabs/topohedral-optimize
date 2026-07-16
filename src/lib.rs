@@ -39,8 +39,7 @@ pub use bound_constrained::{
 //}}}
 //{{{ pub use: common exports
 pub use common::{
-    arc_real_vector_fn, rc_real_fn, rc_real_vector_fn, ArcRealVectorFn, BaseOptions,
-    ConvergedReason, DifferentiableFn, IterData, Matrix, RcRealFn, RcRealVectorFn, RealFn, RealFn1,
+    BaseOptions, ConvergedReason, DifferentiableFn, IterData, Matrix, RealFn, RealFn1,
     RealVectorFn, ScalarReturns, Vector, VectorReturns,
 };
 //}}}

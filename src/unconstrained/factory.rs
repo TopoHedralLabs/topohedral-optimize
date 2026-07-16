@@ -47,8 +47,8 @@ impl Method {
 //}}}
 //{{{ fun: create
 #[trace_fn]
-pub fn create<'a, F: RealFn + 'a>(
-    fcn: F,
+pub fn create<'a, F: RealFn + ?Sized + 'a>(
+    fcn: &'a mut F,
     x0: Vector,
     method: Method,
 ) -> Box<dyn Minimizer<Error = Error, Returns = VectorReturns> + 'a> {

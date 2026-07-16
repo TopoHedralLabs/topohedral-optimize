@@ -1,8 +1,8 @@
 //{{{ crate imports
 use topohedral_optimize::{
     unconstrained_minimize as minimize, ConvergedReason as UnconstrainedConvergedReason,
-    LineSearchMethod, LineSearchOptions, NocedalOptions, QuasiNewtonOptions,
-    QuasiNewtonUpdateMethod as UpdateMethod, ThuenteOptions, UnconstrainedMethod,
+    DifferentiableFn, LineSearchMethod, LineSearchOptions, NocedalOptions, QuasiNewtonOptions,
+    QuasiNewtonUpdateMethod as UpdateMethod, RealFn, ThuenteOptions, UnconstrainedMethod,
     UnconstrainedOptions as UnonstrainedOptions, Vector, VectorReturns as UnconstrainedReturns,
 };
 //}}}
@@ -28,11 +28,42 @@ fn colvec(values: &[f64]) -> Vector {
 }
 //}}}
 //{{{ struct: Quadratic
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 struct Quadratic {
     xmin: Vector,
 }
 //}}}
+#[derive(Debug)]
+struct StatefulQuadratic {
+    eval_calls: usize,
+    derivative_calls: usize,
+}
+
+impl DifferentiableFn for StatefulQuadratic {
+    type Input = Vector;
+    type Output = f64;
+    type Derivative = Vector;
+
+    fn dimension(&self) -> usize {
+        2
+    }
+
+    fn eval(
+        &mut self,
+        x: &Vector,
+    ) -> f64 {
+        self.eval_calls += 1;
+        x.dot(x)
+    }
+
+    fn derivative(
+        &mut self,
+        x: &Vector,
+    ) -> Vector {
+        self.derivative_calls += 1;
+        (2.0 * x).into()
+    }
+}
 //{{{ impl: RealFn for Quadratic
 impl topohedral_optimize::DifferentiableFn for Quadratic {
     type Input = Vector;
@@ -68,7 +99,7 @@ impl topohedral_optimize::DifferentiableFn for Quadratic {
 }
 //}}}
 //{{{ struct: Quartic
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 struct Quartic {
     xmin: Vector,
 }
@@ -180,7 +211,6 @@ const THUENTE_BFGS: QuasiNewtonOptions = QuasiNewtonOptions {
         grad_rtol: 1e-6,
         grad_atol: 1e-8,
         max_iter: 100,
-        make_counting: true,
     },
     ls_method: LineSearchMethod::Thuente(ThuenteOptions {
         ls_opts: LineSearchOptions {
@@ -201,7 +231,6 @@ const NOCEDAL_BFGS: QuasiNewtonOptions = QuasiNewtonOptions {
         grad_rtol: 1e-6,
         grad_atol: 1e-8,
         max_iter: 100,
-        make_counting: true,
     },
     ls_method: LineSearchMethod::Nocedal(NocedalOptions {
         ls_opts: LineSearchOptions {
@@ -253,10 +282,10 @@ fn test_qudratic(
     #[case] opts: QuasiNewtonOptions,
     #[case] exp_ret: UnconstrainedReturns,
 ) {
-    let quad = Quadratic {
+    let mut quad = Quadratic {
         xmin: colvec(&[1000.0, -100.0, 0.0, 567.0, -23.0]),
     };
-    let ret = minimize(quad, x0, UnconstrainedMethod::QuasiNewton(opts)).unwrap();
+    let ret = minimize(&mut quad, x0, UnconstrainedMethod::QuasiNewton(opts)).unwrap();
     println!("{ret:?}");
     assert_returns(&ret, &exp_ret, 1e-7, 1e-10);
 }
@@ -296,13 +325,13 @@ fn test_quartic(
     #[case] mut opts: QuasiNewtonOptions,
     #[case] exp_ret: UnconstrainedReturns,
 ) {
-    let quart = Quartic {
+    let mut quart = Quartic {
         xmin: colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
     };
     opts.uncon_opts.grad_rtol = 1e-12;
     opts.uncon_opts.grad_atol = 1e-12;
     opts.uncon_opts.max_iter = 1000;
-    let ret = minimize(quart, x0, UnconstrainedMethod::QuasiNewton(opts)).unwrap();
+    let ret = minimize(&mut quart, x0, UnconstrainedMethod::QuasiNewton(opts)).unwrap();
     println!("{ret:?}");
     assert_returns(&ret, &exp_ret, 5e-2, 1e-5);
 }
@@ -342,15 +371,51 @@ fn test_rosenbrock(
     #[case] mut opts: QuasiNewtonOptions,
     #[case] exp_ret: UnconstrainedReturns,
 ) {
-    let rosenbrock = Rosenbrock::new();
+    let mut rosenbrock = Rosenbrock::new();
 
     opts.uncon_opts.grad_rtol = 1e-6;
     opts.uncon_opts.grad_atol = 1e-10;
     opts.uncon_opts.max_iter = 10000;
 
     // let mut qn = QuasiNewton::new(rosenbrock, x0, opts);
-    let ret = minimize(rosenbrock, x0, UnconstrainedMethod::QuasiNewton(opts)).unwrap();
+    let ret = minimize(&mut rosenbrock, x0, UnconstrainedMethod::QuasiNewton(opts)).unwrap();
     println!("{ret:?}");
     assert_returns(&ret, &exp_ret, 1e-2, 1e-6);
+}
+
+#[test]
+fn borrowed_objective_preserves_state_and_matches_reported_counts() {
+    let mut objective = StatefulQuadratic {
+        eval_calls: 0,
+        derivative_calls: 0,
+    };
+    let ret = minimize(
+        &mut objective,
+        colvec(&[2.0, -1.0]),
+        UnconstrainedMethod::QuasiNewton(THUENTE_BFGS),
+    )
+    .unwrap();
+
+    assert!(objective.eval_calls > 0);
+    assert!(objective.derivative_calls > 0);
+    assert_eq!(ret.num_fun_evals, objective.eval_calls);
+    assert_eq!(ret.num_grad_evals, objective.derivative_calls);
+}
+
+#[test]
+fn boxed_dynamic_objective_is_accepted_at_the_public_boundary() {
+    let mut objective: Box<dyn RealFn> = Box::new(StatefulQuadratic {
+        eval_calls: 0,
+        derivative_calls: 0,
+    });
+    let ret = minimize(
+        objective.as_mut(),
+        colvec(&[2.0, -1.0]),
+        UnconstrainedMethod::QuasiNewton(THUENTE_BFGS),
+    )
+    .unwrap();
+
+    assert!(ret.num_fun_evals > 0);
+    assert!(ret.num_grad_evals > 0);
 }
 //}}}

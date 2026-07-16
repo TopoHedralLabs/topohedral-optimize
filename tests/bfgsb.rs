@@ -40,7 +40,6 @@ fn bfgsb_options(
                 grad_rtol: 0.0,
                 grad_atol: pgtol,
                 max_iter,
-                make_counting: true,
             },
             constraint_tol: ftol,
         },
@@ -72,7 +71,7 @@ fn bounds_from_pairs(pairs: &[(Option<f64>, Option<f64>)]) -> BoundsConstraints 
 }
 
 fn solve_bfgsb<F: RealFn>(
-    fcn: F,
+    mut fcn: F,
     x0: Vector,
     bounds: BoundsConstraints,
     pgtol: f64,
@@ -80,7 +79,7 @@ fn solve_bfgsb<F: RealFn>(
     max_iter: u64,
 ) -> VectorReturns {
     bound_constrained_minimize(
-        fcn,
+        &mut fcn,
         bounds,
         x0,
         BoundConstrainedMethod::Bfgsb(bfgsb_options(pgtol, ftol, max_iter)),

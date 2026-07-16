@@ -28,7 +28,7 @@ fn colvec(values: &[f64]) -> Vector {
 }
 //}}}
 //{{{ struct: Quadratic
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 struct Quadratic {
     xmin: Vector,
 }
@@ -68,7 +68,7 @@ impl topohedral_optimize::DifferentiableFn for Quadratic {
 }
 //}}}
 //{{{ struct: Quartic
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 struct Quartic {
     xmin: Vector,
 }
@@ -180,7 +180,6 @@ const THUENTE_STEEPEST: ConjugateGradientOptions = ConjugateGradientOptions {
         grad_rtol: 1e-6,
         grad_atol: 1e-8,
         max_iter: 100,
-        make_counting: true,
     },
     ls_method: LineSearchMethod::Thuente(ThuenteOptions {
         ls_opts: LineSearchOptions {
@@ -201,7 +200,6 @@ const THUENTE_FR: ConjugateGradientOptions = ConjugateGradientOptions {
         grad_rtol: 1e-6,
         grad_atol: 1e-8,
         max_iter: 100,
-        make_counting: true,
     },
     ls_method: LineSearchMethod::Thuente(ThuenteOptions {
         ls_opts: LineSearchOptions {
@@ -222,7 +220,6 @@ const THUENTE_PR: ConjugateGradientOptions = ConjugateGradientOptions {
         grad_rtol: 1e-6,
         grad_atol: 1e-8,
         max_iter: 100,
-        make_counting: true,
     },
     ls_method: LineSearchMethod::Thuente(ThuenteOptions {
         ls_opts: LineSearchOptions {
@@ -243,7 +240,6 @@ const NOCEDAL_STEEPEST: ConjugateGradientOptions = ConjugateGradientOptions {
         grad_rtol: 1e-6,
         grad_atol: 1e-8,
         max_iter: 100,
-        make_counting: true,
     },
     ls_method: LineSearchMethod::Nocedal(NocedalOptions {
         ls_opts: LineSearchOptions {
@@ -265,7 +261,6 @@ const NOCEDAL_FR: ConjugateGradientOptions = ConjugateGradientOptions {
         grad_rtol: 1e-6,
         grad_atol: 1e-8,
         max_iter: 100,
-        make_counting: true,
     },
     ls_method: LineSearchMethod::Nocedal(NocedalOptions {
         ls_opts: LineSearchOptions {
@@ -287,7 +282,6 @@ const NOCEDAL_PR: ConjugateGradientOptions = ConjugateGradientOptions {
         grad_rtol: 1e-6,
         grad_atol: 1e-8,
         max_iter: 100,
-        make_counting: true,
     },
     ls_method: LineSearchMethod::Nocedal(NocedalOptions {
         ls_opts: LineSearchOptions {
@@ -394,11 +388,11 @@ fn test_qudratic(
     #[case] opts: ConjugateGradientOptions,
     #[case] exp_ret: UnconstrainedReturns,
 ) {
-    let quad = Quadratic {
+    let mut quad = Quadratic {
         xmin: colvec(&[1000.0, -100.0, 0.0, 567.0, -23.0]),
     };
 
-    let ret = minimize(quad, x0, UnconstrainedMethod::ConjugateGradient(opts)).unwrap();
+    let ret = minimize(&mut quad, x0, UnconstrainedMethod::ConjugateGradient(opts)).unwrap();
     println!("{ret:?}");
     assert_returns(&ret, &exp_ret, 1e-7, 1e-10);
 }
@@ -494,13 +488,13 @@ fn test_quartic(
     #[case] mut opts: ConjugateGradientOptions,
     #[case] exp_ret: UnconstrainedReturns,
 ) {
-    let quart = Quartic {
+    let mut quart = Quartic {
         xmin: colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
     };
     opts.uncon_opts.grad_rtol = 1e-12;
     opts.uncon_opts.grad_atol = 1e-12;
 
-    let ret = minimize(quart, x0, UnconstrainedMethod::ConjugateGradient(opts)).unwrap();
+    let ret = minimize(&mut quart, x0, UnconstrainedMethod::ConjugateGradient(opts)).unwrap();
     println!("{ret:?}");
     assert_returns(&ret, &exp_ret, 5e-2, 1e-5);
 }
@@ -568,12 +562,17 @@ fn test_rosenbrock(
     #[case] mut opts: ConjugateGradientOptions,
     #[case] exp_ret: UnconstrainedReturns,
 ) {
-    let rosenbrock = Rosenbrock::new();
+    let mut rosenbrock = Rosenbrock::new();
 
     opts.uncon_opts.grad_rtol = 1e-6;
     opts.uncon_opts.grad_atol = 1e-10;
     opts.uncon_opts.max_iter = 10000;
-    let ret = minimize(rosenbrock, x0, UnconstrainedMethod::ConjugateGradient(opts)).unwrap();
+    let ret = minimize(
+        &mut rosenbrock,
+        x0,
+        UnconstrainedMethod::ConjugateGradient(opts),
+    )
+    .unwrap();
     println!("{ret:?}");
     assert_returns(&ret, &exp_ret, 1e-2, 1e-6);
 }
