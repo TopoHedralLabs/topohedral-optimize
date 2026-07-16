@@ -1,6 +1,6 @@
-//! Short Description of module
+//! Factory for constructing bound-constrained optimizer implementations.
 //!
-//! Longer description of module
+//! The selected method owns its algorithm-specific options.
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
@@ -20,12 +20,16 @@ use topohedral_tracing::trace_fn;
 //--------------------------------------------------------------------------------------------------
 
 #[derive(Clone)]
+/// Selects a bound-constrained optimization algorithm.
 pub enum Method {
+    /// Active-set algorithm.
     Asa(AsaOptions),
+    /// L-BFGS-B algorithm.
     Bfgsb(BfgsbOptions),
 }
 
 impl Method {
+    /// Returns the shared bound-constrained options.
     pub fn bound_opts(&self) -> &BoundConstrainedOptions {
         match self {
             Method::Asa(asa_opts) => &asa_opts.bound_opts,
@@ -33,6 +37,7 @@ impl Method {
         }
     }
 
+    /// Returns mutable access to the shared bound-constrained options.
     pub fn bound_opts_mut(&mut self) -> &mut BoundConstrainedOptions {
         match self {
             Method::Asa(asa_opts) => &mut asa_opts.bound_opts,
@@ -42,6 +47,7 @@ impl Method {
 }
 
 #[trace_fn]
+/// Constructs the selected bound-constrained optimizer.
 pub fn create<'a, F: RealFn + ?Sized + 'a>(
     fcn: &'a mut F,
     bounds: BoundsConstraints,

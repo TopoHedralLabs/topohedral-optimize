@@ -1,6 +1,6 @@
-//! Short Description of module
+//! Factory for scalar minimizer implementations.
 //!
-//! Longer description of module
+//! The factory selects bounded, Brent, or golden-section minimization.
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
@@ -20,9 +20,13 @@ use topohedral_tracing::trace_fn;
 //--------------------------------------------------------------------------------------------------
 
 #[derive(Clone)]
+/// Selects a scalar minimization algorithm.
 pub enum Method {
+    /// Bounded minimization.
     Bounded(BoundedOptions),
+    /// Brent's method.
     Brent(BrentOptions),
+    /// Golden-section search.
     Golden(GoldenOptions),
 }
 

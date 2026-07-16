@@ -1,6 +1,6 @@
-//! Short Description of module
+//! Shared options and errors for bound-constrained optimization.
 //!
-//! Longer description of module
+//! Also contains helpers for lifting and restricting bound-constrained vectors.
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
@@ -21,18 +21,25 @@ use topohedral_tracing::trace_fn;
 
 //{{{ struct: Options
 #[derive(Copy, Clone)]
+/// Common options for bound-constrained methods.
 pub struct Options {
+    /// General optimizer stopping options.
     pub base_opts: BaseOptions,
+    /// Feasibility tolerance for bound constraints.
     pub constraint_tol: f64,
 }
 //}}}
 //{{{ enum: Error
 #[derive(Error, Debug)]
+/// Errors reported by bound-constrained optimization.
 pub enum Error {
+    /// An underlying unconstrained solve failed.
     #[error("Unconstrianed minimization failed with error {0}")]
     UnconstrainedError(#[from] UnconstrainedError),
+    /// The iteration limit was reached.
     #[error("Maximum iterations of {0} reached")]
     MaxIterations(usize),
+    /// The line search failed.
     #[error("Line Search Failed with error {0}")]
     LineSearch(#[from] LineSearchError),
 }

@@ -1,6 +1,6 @@
-//! Short Description of module
+//! Limited-memory BFGS method for bound-constrained minimization.
 //!
-//! Longer description of module
+//! It combines a projected Cauchy point, subspace minimization, and a capped line search.
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
@@ -295,8 +295,11 @@ fn capped_line_search_method(
 //}}}
 //{{{ struct: Options
 #[derive(Clone)]
+/// Options for the L-BFGS-B algorithm.
 pub struct Options {
+    /// Common bound-constrained stopping options.
     pub bound_opts: BoundConstrainedOptions,
+    /// Line-search method used for free-variable steps.
     pub ls_method: LineSearchMethod,
 }
 //}}}

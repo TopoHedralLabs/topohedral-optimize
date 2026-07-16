@@ -1,6 +1,6 @@
-//! Short Description of module
+//! Shared line-search traits, options, errors, and return values.
 //!
-//! Longer description of module
+//! The common interface supports both scalar and multidimensional searches.
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
@@ -72,20 +72,28 @@ impl<F: RealFn + ?Sized> crate::DifferentiableFn for LineSearchFcn<'_, F> {
 }
 //}}}
 //{{{ enum: Error
+/// Errors returned by a line-search algorithm.
 #[derive(PartialEq, Error, Debug)]
 pub enum Error {
+    /// The initial direction is not descending.
     #[error("Not decreasing")]
     NotDecreasing,
+    /// The Armijo condition was not satisfied.
     #[error("Fails Armijo condition")]
     Armijo,
+    /// The curvature condition was not satisfied.
     #[error("Fails curvature condition")]
     Curvature,
+    /// The iteration limit was reached.
     #[error("Max iterations reached")]
     MaxIterations,
+    /// The step became too small.
     #[error("Step size too small")]
     StepSizeSmall,
+    /// The step became too large.
     #[error("Step size too large")]
     StepSizeLarge,
+    /// No acceptable step was found.
     #[error("No step found")]
     NoStepFound,
 }
@@ -100,9 +108,13 @@ pub enum Error {
 /// or `Inexact`.
 #[derive(Debug, Copy, Clone)]
 pub struct Options {
+    /// Armijo sufficient-decrease constant.
     pub c1: f64,
+    /// Curvature constant.
     pub c2: f64,
+    /// Minimum permitted step.
     pub step_min: f64,
+    /// Maximum permitted step.
     pub step_max: f64,
 }
 //}}}

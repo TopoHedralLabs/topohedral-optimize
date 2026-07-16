@@ -1,6 +1,6 @@
-//! Short Description of module
+//! Small data structures shared by bound-constrained algorithms.
 //!
-//! Longer description of module
+//! In particular, this module provides a fixed-capacity circular buffer.
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports

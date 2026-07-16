@@ -1,6 +1,6 @@
-//! Short Description of module
+//! Quasi-Newton minimization with configurable Hessian updates.
 //!
-//! Longer description of module
+//! The optimizer maintains direct and inverse curvature approximations as needed.
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
@@ -24,21 +24,30 @@ use topohedral_tracing::*;
 
 //{{{ enum: UpdateMethod
 #[derive(Copy, Clone)]
+/// Hessian approximation update used by a quasi-Newton method.
 pub enum UpdateMethod {
+    /// BFGS update.
     BFGS,
+    /// DFP update.
     DFP,
 }
 //}}}
 //{{{ struct: Options
 #[derive(Clone)]
+/// Options for quasi-Newton minimization.
 pub struct Options {
+    /// Common stopping options.
     pub uncon_opts: UnconstrainedOptions,
+    /// Line-search algorithm.
     pub ls_method: LineSearchMethod,
+    /// Hessian update formula.
     pub method: UpdateMethod,
+    /// Restart interval in iterations.
     pub restart: u64,
 }
 //}}}
 //{{{ struct: QuasiNewton
+/// Stateful quasi-Newton optimizer.
 pub struct QuasiNewton<'a, F: RealFn + ?Sized> {
     fcn: &'a mut F,
     x_init: Vector,

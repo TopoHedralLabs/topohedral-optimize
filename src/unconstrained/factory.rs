@@ -1,6 +1,6 @@
-//! Short Description of module
+//! Factory for unconstrained optimizer implementations.
 //!
-//! Longer description of module
+//! It constructs conjugate-gradient or quasi-Newton solvers.
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
@@ -20,14 +20,18 @@ use topohedral_tracing::trace_fn;
 //--------------------------------------------------------------------------------------------------
 
 //{{{ enum: Method
+/// Selects an unconstrained optimization algorithm.
 #[derive(Clone)]
 pub enum Method {
+    /// Conjugate-gradient method.
     ConjugateGradient(ConjugateGradientOptions),
+    /// Quasi-Newton method.
     QuasiNewton(QuasiNewtonOptions),
 }
 //}}}
 //{{{ impl: Method
 impl Method {
+    /// Returns mutable access to common stopping options.
     #[trace_fn]
     pub fn uncon_opts_mut(&mut self) -> &mut Options {
         match self {
@@ -36,6 +40,7 @@ impl Method {
         }
     }
 
+    /// Returns common stopping options.
     #[trace_fn]
     pub fn uncon_opts(&self) -> &Options {
         match self {

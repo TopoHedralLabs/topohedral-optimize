@@ -1,6 +1,6 @@
-//! Short Description of module
+//! Algorithms for unconstrained multidimensional optimization.
 //!
-//! Longer description of module
+//! Conjugate-gradient and quasi-Newton methods are available through one entry point.
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
@@ -35,6 +35,7 @@ pub use factory::Method as UnconstrainedMethod;
 //}}}
 //{{{ fn: minimize
 #[trace_fn]
+/// Minimizes a differentiable function without explicit constraints.
 pub fn minimize<F: RealFn + ?Sized>(
     fcn: &mut F,
     x0: Vector,

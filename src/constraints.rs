@@ -1,6 +1,6 @@
-//! Short Description of module
+//! Types and operations for representing optimization constraints.
 //!
-//! Longer description of module
+//! Bounds are stored sparsely and can be used to project points and directions.
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
@@ -17,14 +17,19 @@ use topohedral_tracing::*;
 
 //{{{ struct: CauchyPathPoint
 #[derive(Debug, Clone)]
+/// One breakpoint along a projected Cauchy path.
 pub struct CauchyPathPoint {
+    /// Step length at which the breakpoint occurs.
     pub alpha: f64,
+    /// Variable reaching a bound.
     pub variable_index: usize,
+    /// Bound reached by the variable.
     pub bound_status: BoundStatus,
 }
 //}}}
 //{{{ struct: NoConstraints
 #[derive(Debug, Clone, Copy)]
+/// Empty vector-valued constraint function.
 pub struct NoConstraints;
 //}}}
 //{{{ impl: RealVectorFn for NoConstraints
@@ -61,6 +66,7 @@ impl crate::DifferentiableFn for NoConstraints {
 //}}}
 //{{{ struct: BoundsConstraints
 #[derive(Debug, Clone)]
+/// Sparse lower and upper bounds for a vector of variables.
 pub struct BoundsConstraints {
     num_variables: usize,
     bounds: HashMap<usize, (Option<f64>, Option<f64>)>,
@@ -68,21 +74,29 @@ pub struct BoundsConstraints {
 //}}}
 //{{{ enum: BoundStatus
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+/// Side of a bound that is active.
 pub enum BoundSide {
+    /// Lower bound.
     Lower,
+    /// Upper bound.
     Upper,
 }
 //}}}
 //{{{ enum: BoundStatus
 #[derive(Debug, Clone, Copy, PartialEq)]
+/// Position of a variable relative to its bounds.
 pub enum BoundStatus {
+    /// Variable is not at a bound.
     Free,
+    /// Variable is at its lower bound.
     AtLower(f64),
+    /// Variable is at its upper bound.
     AtUpper(f64),
 }
 //}}}
 //{{{ impl: BoundStatus
 impl BoundStatus {
+    /// Returns the active side, if the variable is bound.
     #[trace_fn]
     pub fn side(&self) -> Option<BoundSide> {
         match self {
@@ -92,6 +106,7 @@ impl BoundStatus {
         }
     }
 
+    /// Returns the active bound value, if any.
     #[trace_fn]
     pub fn value(&self) -> Option<f64> {
         match self {
@@ -103,11 +118,13 @@ impl BoundStatus {
 //}}}
 //{{{ struct: BoundSignature
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+/// Hashable signature of the active bounds.
 pub struct BoundSignature(Box<[(usize, BoundSide)]>);
 //}}}
 //{{{ impl: BoundsConstraints
 impl BoundsConstraints {
     //{{{ fn: new
+    /// Creates an empty bound set for `num_variables` variables.
     #[trace_fn]
     pub fn new(num_variables: usize) -> Self {
         Self {
@@ -117,10 +134,12 @@ impl BoundsConstraints {
     }
     //}}}
     #[trace_fn]
+    /// Returns whether no bounds have been added.
     pub fn is_empty(&self) -> bool {
         self.bounds.is_empty()
     }
     //{{{ fn: add_bounds
+    /// Adds lower and/or upper bounds for one variable.
     #[trace_fn]
     pub fn add_bounds(
         &mut self,
@@ -135,6 +154,7 @@ impl BoundsConstraints {
     }
     //}}}
     //{{{ fn: get_lower
+    /// Returns the lower bound for `idx`, if present.
     #[trace_fn]
     pub fn get_lower(
         &self,
@@ -148,6 +168,7 @@ impl BoundsConstraints {
     }
     //}}}
     //{{{ fn: get_higher
+    /// Returns the upper bound for `idx`, if present.
     #[trace_fn]
     pub fn get_upper(
         &self,
@@ -161,6 +182,7 @@ impl BoundsConstraints {
     }
     //}}}
     //{{{ fn: num_ieq_constraints
+    /// Counts the scalar inequality constraints represented by the bounds.
     #[trace_fn]
     pub fn num_ieq_constraints(&self) -> usize {
         let mut num_constraints = 0;
@@ -176,6 +198,7 @@ impl BoundsConstraints {
     }
     //}}}
     //{{{ fn: clamp
+    /// Projects a point into the feasible box.
     #[trace_fn]
     pub fn clamp(
         &self,
@@ -194,6 +217,7 @@ impl BoundsConstraints {
     }
     //}}}
     //{{{ fn: projected_direction
+    /// Returns the feasible displacement after projecting a trial step.
     #[trace_fn]
     pub fn projected_direction(
         &self,
@@ -208,6 +232,7 @@ impl BoundsConstraints {
     }
     //}}}
     //{{{ fn: max_feasible_step
+    /// Returns the largest nonnegative step before a bound is reached.
     #[trace_fn]
     pub fn max_feasible_step(
         &self,
@@ -222,6 +247,7 @@ impl BoundsConstraints {
     }
     //}}}
     //{{{ fn: cauchy_path
+    /// Computes breakpoints along the projected search path.
     #[trace_fn]
     pub fn cauchy_path(
         &self,
@@ -268,6 +294,7 @@ impl BoundsConstraints {
     }
     //}}}
     //{{{ fn: bound_statuses
+    /// Classifies variables as free or active at the current point.
     #[trace_fn]
     pub fn bound_statuses(
         &self,
@@ -321,6 +348,7 @@ impl BoundsConstraints {
     }
     //}}}
     //{{{ fn active_signature
+    /// Builds a stable signature of the bounds active at `x`.
     #[trace_fn]
     pub fn active_signature(
         &self,
@@ -343,6 +371,7 @@ impl BoundsConstraints {
     }
     //}}}
     //{{{ fn: mask_gradient_in_place
+    /// Zeros gradient components that cannot move into the feasible region.
     #[trace_fn]
     pub fn mask_gradient_in_place(
         &self,
@@ -359,6 +388,7 @@ impl BoundsConstraints {
     }
     //}}}
     //{{{ fn: masked_gradient
+    /// Returns a gradient with active-bound components masked.
     #[trace_fn]
     pub fn masked_gradient(
         &self,
@@ -372,6 +402,7 @@ impl BoundsConstraints {
 
     //}}}
     //{{{ fn: minimum_distance
+    /// Returns the smallest distance from `x` to any bound.
     #[trace_fn]
     pub fn minimum_distance(
         &self,
@@ -397,6 +428,7 @@ impl BoundsConstraints {
     }
     //}}}
     //{{{ fn: all_distances
+    /// Returns each variable's distance to its nearest bound.
     #[trace_fn]
     pub fn all_distances(
         &self,

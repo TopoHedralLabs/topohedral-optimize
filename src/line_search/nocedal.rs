@@ -17,9 +17,13 @@ use topohedral_tracing::*;
 
 //{{{ struct: Options
 #[derive(Copy, Clone, Default, Debug)]
+/// Options for the Nocedal line search.
 pub struct Options {
+    /// Shared line-search conditions and step limits.
     pub ls_opts: com::Options,
+    /// Maximum number of outer iterations.
     pub maxiter: usize,
+    /// Maximum number of zoom iterations.
     pub zoom_maxiter: usize,
 }
 //}}}

@@ -1,6 +1,6 @@
-//! Short Description of module
+//! Factory for constrained optimizer implementations.
 //!
-//! Longer description of module
+//! It assembles the selected outer method and its optional constraint functions.
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
@@ -23,18 +23,22 @@ use topohedral_tracing::trace_fn;
 
 //{{{ enum: Method
 #[derive(Clone)]
+/// Selects a constrained optimization algorithm and its options.
 pub enum Method {
+    /// Augmented-Lagrangian method.
     AugmentedLagrangian(AugmentedLagrangianOptions),
 }
 //}}}
 //{{{ impl Method
 impl Method {
+    /// Returns the shared constrained options.
     pub fn con_opts(&self) -> &ConstriainedOptions {
         match self {
             Method::AugmentedLagrangian(opts) => &opts.constrained_opts,
         }
     }
 
+    /// Returns mutable access to the shared constrained options.
     pub fn con_opts_mut(&mut self) -> &mut ConstriainedOptions {
         match self {
             Method::AugmentedLagrangian(opts) => &mut opts.constrained_opts,
@@ -45,6 +49,7 @@ impl Method {
 
 //{{{ fun: create
 #[trace_fn]
+/// Constructs the selected constrained optimizer.
 pub fn create<'a, F1: RealFn + 'a, F2: RealVectorFn + 'a, F3: RealVectorFn + 'a>(
     fcn: F1,
     bounds: Option<BoundsConstraints>,

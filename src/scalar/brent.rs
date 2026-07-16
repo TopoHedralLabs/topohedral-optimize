@@ -27,6 +27,7 @@ const DEFUALT_MAX_ITER: usize = 100;
 
 //{{{ struct: Options
 #[derive(Copy, Clone)]
+/// Options for Brent's scalar minimizer.
 pub struct Options {
     /// Initial bracket
     pub bracket: Bracket,
@@ -37,6 +38,7 @@ pub struct Options {
 }
 //}}}
 impl Options {
+    /// Creates options using the supplied initial bracket.
     pub fn new(bracket: Bracket) -> Self {
         Self {
             bracket,

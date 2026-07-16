@@ -35,6 +35,7 @@ pub use factory::Method as ConstrainedMethod;
 
 //{{{ fn: minimize
 #[trace_fn]
+/// Minimizes a function subject to optional bounds and vector constraints.
 pub fn minimize<F: RealFn + ?Sized>(
     fcn: &mut F,
     bounds: Option<BoundsConstraints>,

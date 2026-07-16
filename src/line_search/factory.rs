@@ -1,6 +1,6 @@
-//! Short Description of module
+//! Factory for line-search implementations.
 //!
-//! Longer description of module
+//! It hides algorithm-specific state behind the common line-search trait.
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
@@ -17,9 +17,12 @@ use topohedral_tracing::*;
 //--------------------------------------------------------------------------------------------------
 
 //{{{ enum: Method
+/// Selects a line-search algorithm.
 #[derive(Clone)]
 pub enum Method {
+    /// More-Thuente line search.
     Thuente(thuente::Options),
+    /// Nocedal line search.
     Nocedal(nocedal::Options),
 }
 //}}}

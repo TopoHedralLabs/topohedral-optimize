@@ -1,6 +1,6 @@
-//! Short Description of module
+//! Nonlinear conjugate-gradient minimization.
 //!
-//! Longer description of module
+//! Search directions are combined with the configured line-search method.
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
@@ -23,22 +23,32 @@ use topohedral_tracing::*;
 
 //{{{ enum: Direction
 #[derive(Copy, Clone)]
+/// Formula used to update conjugate-gradient directions.
 pub enum Direction {
+    /// Steepest descent direction.
     Steepest,
+    /// Fletcher-Reeves update.
     FletcherReeves,
+    /// Polak-Ribiere update.
     PolakRibiere,
 }
 //}}}
 //{{{ struct: Options
 #[derive(Clone)]
+/// Options for conjugate-gradient minimization.
 pub struct Options {
+    /// Common stopping options.
     pub uncon_opts: BaseOptions,
+    /// Line-search algorithm.
     pub ls_method: LineSearchMethod,
+    /// Direction update formula.
     pub direction: Direction,
+    /// Restart interval in iterations.
     pub restart: u64,
 }
 //}}}
 //{{{ struct: ConjugateGradient
+/// Stateful conjugate-gradient optimizer.
 pub struct ConjugateGradient<'a, F: RealFn + ?Sized> {
     fcn: &'a mut F,
     x_init: Vector,
