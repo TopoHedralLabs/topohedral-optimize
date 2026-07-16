@@ -9,7 +9,10 @@
 use super::common::{
     resolve_bracket, Bracket, BracketOptions, BracketResult, Error as ScalarError,
 };
-use crate::{common::ScalarReturns, ConvergedReason, Minimizer, RealFn1};
+use crate::{
+    common::{Minimizer, ScalarReturns},
+    ConvergedReason, RealFn1,
+};
 //}}}
 //{{{ std imports
 //}}}
@@ -94,8 +97,8 @@ impl<F: RealFn1> Minimizer for Golden<F> {
             x2 = xb;
             x1 = xb - GC * (xb - xa);
         }
-        let mut f1 = self.fcn.eval(x1);
-        let mut f2 = self.fcn.eval(x2);
+        let mut f1 = self.fcn.eval(&x1);
+        let mut f2 = self.fcn.eval(&x2);
         num_fun_evals += 2;
         let mut nit = 0usize;
 
@@ -109,13 +112,13 @@ impl<F: RealFn1> Minimizer for Golden<F> {
                 x1 = x2;
                 x2 = GR * x1 + GC * x3;
                 f1 = f2;
-                f2 = self.fcn.eval(x2);
+                f2 = self.fcn.eval(&x2);
             } else {
                 x3 = x2;
                 x2 = x1;
                 x1 = GR * x2 + GC * x0;
                 f2 = f1;
-                f1 = self.fcn.eval(x1);
+                f1 = self.fcn.eval(&x1);
             }
             num_fun_evals += 1;
 

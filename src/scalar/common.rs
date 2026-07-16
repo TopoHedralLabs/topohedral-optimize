@@ -103,8 +103,8 @@ pub fn bracket<F: RealFn1>(
 
     let mut xa = a;
     let mut xb = b;
-    let mut fa = f.eval(xa);
-    let mut fb = f.eval(xb);
+    let mut fa = f.eval(&xa);
+    let mut fb = f.eval(&xb);
 
     if fa < fb {
         std::mem::swap(&mut xa, &mut xb);
@@ -112,7 +112,7 @@ pub fn bracket<F: RealFn1>(
     }
 
     let mut xc = xb + GOLD * (xb - xa);
-    let mut fc = f.eval(xc);
+    let mut fc = f.eval(&xc);
     let mut num_fun_evals = 3usize;
     let mut iter = 0usize;
 
@@ -142,7 +142,7 @@ pub fn bracket<F: RealFn1>(
 
         let fw;
         if (w - xc) * (xb - w) > 0.0 {
-            let mut fw_inner = f.eval(w);
+            let mut fw_inner = f.eval(&w);
             num_fun_evals += 1;
             if fw_inner < fc {
                 xa = xb;
@@ -156,15 +156,15 @@ pub fn bracket<F: RealFn1>(
                 break;
             }
             w = xc + GOLD * (xc - xb);
-            fw_inner = f.eval(w);
+            fw_inner = f.eval(&w);
             num_fun_evals += 1;
             fw = fw_inner;
         } else if (w - wlim) * (wlim - xc) >= 0.0 {
             w = wlim;
-            fw = f.eval(w);
+            fw = f.eval(&w);
             num_fun_evals += 1;
         } else if (w - wlim) * (xc - w) > 0.0 {
-            let mut fw_inner = f.eval(w);
+            let mut fw_inner = f.eval(&w);
             num_fun_evals += 1;
             if fw_inner < fc {
                 xb = xc;
@@ -172,13 +172,13 @@ pub fn bracket<F: RealFn1>(
                 w = xc + GOLD * (xc - xb);
                 fb = fc;
                 fc = fw_inner;
-                fw_inner = f.eval(w);
+                fw_inner = f.eval(&w);
                 num_fun_evals += 1;
             }
             fw = fw_inner;
         } else {
             w = xc + GOLD * (xc - xb);
-            fw = f.eval(w);
+            fw = f.eval(&w);
             num_fun_evals += 1;
         }
 
@@ -217,7 +217,7 @@ pub fn bracket<F: RealFn1>(
 }
 //}}}
 //{{{ enum: Bracket
-/// Specifies how the initial bracketing triple for [`resolve_bracket`] is obtained.
+/// Specifies how the initial bracketing triple is obtained.
 #[derive(Copy, Clone, Default)]
 pub enum Bracket {
     /// Search for a bracket automatically, starting from the default points `(0, 1)`.
@@ -259,9 +259,9 @@ pub fn resolve_bracket<F: RealFn1>(
             if !(xa < xb && xb < xc) {
                 return Err(Error::InvalidBracketOrder(xa, xb, xc));
             }
-            let fa = f.eval(xa);
-            let fb = f.eval(xb);
-            let fc = f.eval(xc);
+            let fa = f.eval(&xa);
+            let fb = f.eval(&xb);
+            let fc = f.eval(&xc);
             if !(fb < fa && fb < fc) {
                 return Err(Error::InvalidBracketValues);
             }
@@ -293,17 +293,20 @@ mod tests {
         }
     }
 
-    impl<F: Fn(f64) -> f64> RealFn1 for ScalarFunction<F> {
+    impl<F: Fn(f64) -> f64> crate::DifferentiableFn for ScalarFunction<F> {
+        type Input = f64;
+        type Output = f64;
+        type Derivative = f64;
         fn eval(
             &mut self,
-            x: f64,
+            x: &f64,
         ) -> f64 {
-            (self.f)(x)
+            (self.f)(*x)
         }
 
-        fn diff(
+        fn derivative(
             &mut self,
-            _x: f64,
+            _x: &f64,
         ) -> f64 {
             unimplemented!("not needed by bracket")
         }
@@ -334,9 +337,9 @@ mod tests {
         );
 
         // cross-check reported function values against the function itself
-        assert!((f.eval(res.xa) - res.fa).abs() < 1e-12);
-        assert!((f.eval(res.xb) - res.fb).abs() < 1e-12);
-        assert!((f.eval(res.xc) - res.fc).abs() < 1e-12);
+        assert!((f.eval(&res.xa) - res.fa).abs() < 1e-12);
+        assert!((f.eval(&res.xb) - res.fb).abs() < 1e-12);
+        assert!((f.eval(&res.xc) - res.fc).abs() < 1e-12);
     }
 
     #[test]

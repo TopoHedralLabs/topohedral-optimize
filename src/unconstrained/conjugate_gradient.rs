@@ -6,8 +6,9 @@
 //{{{ crate imports
 use super::common::Error;
 use crate::common::BaseOptions;
+use crate::common::Minimizer;
 use crate::line_search::{self as ls, LineSearchMethod};
-use crate::{ConvergedReason, IterData, Minimizer, RealFn, Returns, Vector};
+use crate::{ConvergedReason, IterData, RealFn, Vector, VectorReturns};
 //}}}
 //{{{ std imports
 //}}}
@@ -38,22 +39,22 @@ pub struct Options {
 }
 //}}}
 //{{{ struct: ConjugateGradient
-pub struct ConjugateGradient<F: RealFn> {
-    fcn: F,
+pub struct ConjugateGradient<'a, F: RealFn + ?Sized> {
+    fcn: &'a mut F,
     x_init: Vector,
     norm_grad_fx_init: f64,
     opts: Options,
 }
 //}}}
 //{{{ impl: ConjugateGradient
-impl<F: RealFn> ConjugateGradient<F> {
+impl<'a, F: RealFn + ?Sized> ConjugateGradient<'a, F> {
     #[trace_fn]
     pub fn new(
-        mut fcn: F,
+        fcn: &'a mut F,
         x0: Vector,
         opts: Options,
     ) -> Self {
-        let grad_0 = fcn.grad(&x0);
+        let grad_0 = fcn.derivative(&x0);
         let norm_grad_0 = grad_0.abs_max().unwrap_or(0.0);
         Self {
             fcn,
@@ -163,13 +164,13 @@ impl<F: RealFn> ConjugateGradient<F> {
 }
 //}}}
 //{{{ impl: Minimizer for ConjugateGradient
-impl<F: RealFn> Minimizer for ConjugateGradient<F> {
+impl<F: RealFn + ?Sized> Minimizer for ConjugateGradient<'_, F> {
     type Error = Error;
-    type Returns = Returns;
+    type Returns = VectorReturns;
 
     #[trace_fn]
-    fn minimize(&mut self) -> Result<Returns, Self::Error> {
-        let mut iter_k = IterData::new(self.fcn.clone(), &self.x_init);
+    fn minimize(&mut self) -> Result<VectorReturns, Self::Error> {
+        let mut iter_k = IterData::new(&mut *self.fcn, &self.x_init);
 
         let mut iter_k_prev = iter_k.clone();
         iter_k_prev.fx = iter_k.fx + 0.5 * iter_k.norm_grad_fx;
@@ -187,7 +188,7 @@ impl<F: RealFn> Minimizer for ConjugateGradient<F> {
             iter_k_prev = iter_k;
 
             iter_k = ls::search(
-                self.fcn.clone(),
+                &mut *self.fcn,
                 &iter_k_prev,
                 &dir_k,
                 alpha_init,
@@ -215,7 +216,7 @@ impl<F: RealFn> Minimizer for ConjugateGradient<F> {
                 trace!(target: "cg", "fx = {:.4e} x = {}", iter_k.fx, iter_k.x.clone().transpose());
                 info!(target: "cg", "=============================================");
                 //}}}
-                return Ok(Returns {
+                return Ok(VectorReturns {
                     fmin: iter_k.fx,
                     xmin: iter_k.x,
                     reason,

@@ -1,20 +1,13 @@
-use topohedral_optimize::bound_constrained::{
-    AsaOptions, BfgsbOptions, BoundConstrainedMethod, BoundConstrainedOptions,
-};
+use topohedral_optimize::AsaOptions;
 //{{{ crate imports
-use topohedral_optimize::constrained::{
-    minimize as constrained_minimize, AugmentedLagrangianInnerMethod, AugmentedLagrangianOptions,
-    ConstrainedMethod, ConstrainedReturns, ConstriainedOptions,
+use topohedral_optimize::{
+    constrained_minimize, AugmentedLagrangianInnerMethod, AugmentedLagrangianOptions, BaseOptions,
+    BfgsbOptions, BoundConstrainedMethod, BoundConstrainedOptions, BoundsConstraints,
+    ConjugateGradientDirection as Direction, ConjugateGradientOptions, ConstrainedMethod,
+    ConstriainedOptions, LineSearchMethod, LineSearchOptions, NocedalOptions, QuasiNewtonOptions,
+    QuasiNewtonUpdateMethod as UpdateMethod, RealFn, RealVectorFn, ThuenteOptions,
+    UnconstrainedMethod, UnconstrainedOptions as UnonstrainedOptions, Vector, VectorReturns,
 };
-use topohedral_optimize::constraints::{BoundsConstraints, NoConstraints};
-use topohedral_optimize::line_search::{
-    LineSearchMethod, LineSearchOptions, NocedalOptions, ThuenteOptions,
-};
-use topohedral_optimize::unconstrained::{
-    ConjugateGradientOptions, Direction, QuasiNewtonOptions, UnconstrainedMethod,
-    UnonstrainedOptions, UpdateMethod,
-};
-use topohedral_optimize::{BaseOptions, RealFn, RealVectorFn, Vector};
 //}}}
 //{{{ std imports
 //}}}
@@ -37,6 +30,38 @@ fn colvec(values: &[f64]) -> Vector {
     DVector::<f64>::from_slice_vec(values, values.len(), VecType::Col)
 }
 //}}}
+#[derive(Debug)]
+struct Observed<F> {
+    inner: F,
+    eval_calls: usize,
+    derivative_calls: usize,
+}
+
+impl<F: RealFn> topohedral_optimize::DifferentiableFn for Observed<F> {
+    type Input = Vector;
+    type Output = f64;
+    type Derivative = Vector;
+
+    fn dimension(&self) -> usize {
+        self.inner.dimension()
+    }
+
+    fn eval(
+        &mut self,
+        x: &Vector,
+    ) -> f64 {
+        self.eval_calls += 1;
+        self.inner.eval(x)
+    }
+
+    fn derivative(
+        &mut self,
+        x: &Vector,
+    ) -> Vector {
+        self.derivative_calls += 1;
+        self.inner.derivative(x)
+    }
+}
 //{{{ collection: constants
 const UNIT_SCALE: f64 = 1.0;
 //}}}
@@ -73,7 +98,7 @@ fn vec_reldiff(
 //}}}
 //{{{ fun: assert_answer
 fn assert_answer(
-    ret: &ConstrainedReturns,
+    ret: &VectorReturns,
     exp_xmin: &Vector,
     exp_fmin: f64,
     xmin_tol: f64,
@@ -88,7 +113,7 @@ fn assert_answer(
 //}}}
 //{{{ fun: assert_counts
 fn assert_counts(
-    ret: &ConstrainedReturns,
+    ret: &VectorReturns,
     exp_num_fun_evals: usize,
     exp_num_grad_evals: usize,
 ) {
@@ -107,16 +132,13 @@ fn assert_counts(
 }
 //}}}
 //{{{ fun: uncon_auglag_method
-fn uncon_auglag_method(mut unconstrained_method: UnconstrainedMethod) -> ConstrainedMethod {
-    unconstrained_method.uncon_opts_mut().make_counting = false;
-
+fn uncon_auglag_method(unconstrained_method: UnconstrainedMethod) -> ConstrainedMethod {
     ConstrainedMethod::AugmentedLagrangian(AugmentedLagrangianOptions::new(
         ConstriainedOptions {
             base_opts: UnonstrainedOptions {
                 grad_rtol: 1e-6,
                 grad_atol: 1e-6,
                 max_iter: 1000,
-                make_counting: true,
             },
             constraint_tol: 1e-6,
         },
@@ -125,16 +147,13 @@ fn uncon_auglag_method(mut unconstrained_method: UnconstrainedMethod) -> Constra
 }
 //}}}
 //{{{ fun: bcon_auglag_method
-fn bcon_auglag_method(mut bcon_method: BoundConstrainedMethod) -> ConstrainedMethod {
-    bcon_method.bound_opts_mut().base_opts.make_counting = false;
-
+fn bcon_auglag_method(bcon_method: BoundConstrainedMethod) -> ConstrainedMethod {
     ConstrainedMethod::AugmentedLagrangian(AugmentedLagrangianOptions::new(
         ConstriainedOptions {
             base_opts: UnonstrainedOptions {
                 grad_rtol: 1e-6,
                 grad_atol: 1e-6,
                 max_iter: 1000,
-                make_counting: true,
             },
             constraint_tol: 1e-6,
         },
@@ -171,7 +190,6 @@ const THUENTE_BFGS: QuasiNewtonOptions = QuasiNewtonOptions {
         grad_rtol: 1e-6,
         grad_atol: 1e-8,
         max_iter: 100,
-        make_counting: false,
     },
     ls_method: LineSearchMethod::Thuente(THUENTE_OPTS_09),
     method: UpdateMethod::BFGS,
@@ -184,7 +202,6 @@ const NOCEDAL_BFGS: QuasiNewtonOptions = QuasiNewtonOptions {
         grad_rtol: 1e-6,
         grad_atol: 1e-8,
         max_iter: 100,
-        make_counting: false,
     },
     ls_method: LineSearchMethod::Nocedal(NOCEDAL_OPTS_04),
     method: UpdateMethod::BFGS,
@@ -197,7 +214,6 @@ const THUENTE_FR: ConjugateGradientOptions = ConjugateGradientOptions {
         grad_rtol: 1e-6,
         grad_atol: 1e-8,
         max_iter: 100,
-        make_counting: false,
     },
     ls_method: LineSearchMethod::Thuente(THUENTE_OPTS_09),
     direction: Direction::FletcherReeves,
@@ -210,7 +226,6 @@ const THUENTE_PR: ConjugateGradientOptions = ConjugateGradientOptions {
         grad_rtol: 1e-6,
         grad_atol: 1e-8,
         max_iter: 100,
-        make_counting: false,
     },
     ls_method: LineSearchMethod::Thuente(THUENTE_OPTS_09),
     direction: Direction::PolakRibiere,
@@ -223,7 +238,6 @@ const NOCEDAL_FR: ConjugateGradientOptions = ConjugateGradientOptions {
         grad_rtol: 1e-6,
         grad_atol: 1e-8,
         max_iter: 100,
-        make_counting: false,
     },
     ls_method: LineSearchMethod::Nocedal(NOCEDAL_OPTS_04),
     direction: Direction::FletcherReeves,
@@ -236,7 +250,6 @@ const NOCEDAL_PR: ConjugateGradientOptions = ConjugateGradientOptions {
         grad_rtol: 1e-6,
         grad_atol: 1e-8,
         max_iter: 100,
-        make_counting: false,
     },
     ls_method: LineSearchMethod::Nocedal(NOCEDAL_OPTS_04),
     direction: Direction::PolakRibiere,
@@ -250,7 +263,6 @@ const ASA_NOCEDAL_PR: AsaOptions = AsaOptions {
             grad_rtol: 1e-8,
             grad_atol: 1e-10,
             max_iter: 100,
-            make_counting: false,
         },
         constraint_tol: 1e-6,
     },
@@ -273,7 +285,6 @@ const BFGSB_NOCEDAL: BfgsbOptions = BfgsbOptions {
             grad_rtol: 1e-8,
             grad_atol: 1e-10,
             max_iter: 100,
-            make_counting: false,
         },
         constraint_tol: 1e-6,
     },
@@ -282,12 +293,15 @@ const BFGSB_NOCEDAL: BfgsbOptions = BfgsbOptions {
 //}}}
 
 //{{{ collection: constraints
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 struct HyperSphereBound {
     center: Vector,
     radius: f64,
 }
-impl RealVectorFn for HyperSphereBound {
+impl topohedral_optimize::DifferentiableFn for HyperSphereBound {
+    type Input = Vector;
+    type Output = Vector;
+    type Derivative = topohedral_optimize::Matrix;
     fn dimension_domain(&self) -> usize {
         self.center.len()
     }
@@ -299,34 +313,37 @@ impl RealVectorFn for HyperSphereBound {
     fn eval(
         &mut self,
         x: &Vector,
-        val: &mut Vector,
-    ) {
+    ) -> Vector {
         let mut value = 0.0;
         for i in 0..x.len() {
             value += (x[i] - self.center[i]).powi(2)
         }
-        (*val)[0] = value - self.radius.powi(2);
+        colvec(&[value - self.radius.powi(2)])
     }
 
-    fn grad(
+    fn derivative(
         &mut self,
         x: &Vector,
-        val: &mut topohedral_optimize::Matrix,
-    ) {
+    ) -> topohedral_optimize::Matrix {
+        let mut val = topohedral_optimize::Matrix::zeros(x.len(), 1);
         val.col_mut(0).copy_from(2.0 * (x - &self.center));
+        val
     }
 }
 //}}}
 
 //{{{ collection: quadratic
 //{{{ struct: Quadratic
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 struct Quadratic {
     xmin: Vector,
 }
 //}}}
 //{{{ impl: RealFn for Quadratic
-impl RealFn for Quadratic {
+impl topohedral_optimize::DifferentiableFn for Quadratic {
+    type Input = Vector;
+    type Output = f64;
+    type Derivative = Vector;
     fn dimension(&self) -> usize {
         self.xmin.len()
     }
@@ -343,7 +360,7 @@ impl RealFn for Quadratic {
         out
     }
 
-    fn grad(
+    fn derivative(
         &mut self,
         x_in: &Vector,
     ) -> Vector {
@@ -369,17 +386,17 @@ fn test_quadratic_unconstrained(
     #[case] exp_num_fun_evals: usize,
     #[case] exp_num_grad_evals: usize,
 ) {
-    let quad = Quadratic {
+    let mut quad = Quadratic {
         xmin: colvec(&[1000.0, -100.0, 0.0, 567.0, -23.0]),
     };
 
     let x0 = colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]);
 
     let ret = constrained_minimize(
-        quad,
+        &mut quad,
         None,
-        None::<NoConstraints>,
-        None::<NoConstraints>,
+        None,
+        None,
         x0,
         uncon_auglag_method(unconstrained_method),
     )
@@ -413,17 +430,17 @@ fn test_quadratic_bound_constrained_ucon_inner(
     #[case] exp_num_fun_evals: usize,
     #[case] exp_num_grad_evals: usize,
 ) {
-    let quad = Quadratic {
+    let mut quad = Quadratic {
         xmin: colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
     };
     let mut ieq_constraints = BoundsConstraints::new(5);
     ieq_constraints.add_bounds(0, Some(20.0), None);
 
     let ret = constrained_minimize(
-        quad,
+        &mut quad,
         None,
-        None::<NoConstraints>,
-        Some(ieq_constraints),
+        None,
+        Some(&mut ieq_constraints),
         x0,
         uncon_auglag_method(unconstrained_method),
     )
@@ -453,17 +470,17 @@ fn test_quadratic_bound_constrained_bcon_inner(
     #[case] exp_num_fun_evals: usize,
     #[case] exp_num_grad_evals: usize,
 ) {
-    let quad = Quadratic {
+    let mut quad = Quadratic {
         xmin: colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
     };
     let mut bound_constraints = BoundsConstraints::new(5);
     bound_constraints.add_bounds(0, Some(20.0), None);
 
     let ret = constrained_minimize(
-        quad,
+        &mut quad,
         Some(bound_constraints),
-        None::<NoConstraints>,
-        None::<NoConstraints>,
+        None,
+        None,
         x0,
         bcon_auglag_method(bound_constrained_method),
     )
@@ -497,19 +514,20 @@ fn test_quadratic_hsphere_constrained_ucon_inner(
     #[case] exp_num_fun_evals: usize,
     #[case] exp_num_grad_evals: usize,
 ) {
-    let quad = Quadratic {
+    let mut quad = Quadratic {
         xmin: colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
     };
 
-    let ieq_constraints = HyperSphereBound {
+    let mut ieq_constraints = HyperSphereBound {
         center: colvec(&[20.0, 20.0, 20.0, 20.0, 20.0]),
         radius: 10.0,
     };
+    let ieq_constraints: &mut dyn RealVectorFn = &mut ieq_constraints;
 
     let ret = constrained_minimize(
-        quad,
+        &mut quad,
         None,
-        None::<NoConstraints>,
+        None,
         Some(ieq_constraints),
         x0,
         uncon_auglag_method(unconstrained_method),
@@ -546,7 +564,7 @@ fn test_quadratic_hsphere_and_bound_constrained_bcon_inner(
     #[case] exp_num_fun_evals: usize,
     #[case] exp_num_grad_evals: usize,
 ) {
-    let quad = Quadratic {
+    let mut quad = Quadratic {
         xmin: colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
     };
 
@@ -555,16 +573,16 @@ fn test_quadratic_hsphere_and_bound_constrained_bcon_inner(
         bound_constraints.add_bounds(i, Some(15.0), Some(20.0));
     }
 
-    let ieq_constraints = HyperSphereBound {
+    let mut ieq_constraints = HyperSphereBound {
         center: colvec(&[20.0, 20.0, 20.0, 20.0, 20.0]),
         radius: 10.0,
     };
 
     let ret = constrained_minimize(
-        quad,
+        &mut quad,
         Some(bound_constraints),
-        None::<NoConstraints>,
-        Some(ieq_constraints),
+        None,
+        Some(&mut ieq_constraints),
         x0,
         bcon_auglag_method(bound_constrained_method),
     )
@@ -597,7 +615,7 @@ fn test_quadratic_hsphere_and_bound_constrained_bcon_inner(
 // actually reaches that tighter accuracy, rather than silently stalling at 1e-6.
 #[test]
 fn test_quadratic_tight_grad_atol_below_old_hardcoded_floor_converges() {
-    let quad = Quadratic {
+    let mut quad = Quadratic {
         xmin: colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
     };
     let mut ieq_constraints = BoundsConstraints::new(5);
@@ -609,7 +627,6 @@ fn test_quadratic_tight_grad_atol_below_old_hardcoded_floor_converges() {
                 grad_rtol: 0.0,
                 grad_atol: 1e-8,
                 max_iter: 1000,
-                make_counting: true,
             },
             constraint_tol: 1e-8,
         },
@@ -619,10 +636,10 @@ fn test_quadratic_tight_grad_atol_below_old_hardcoded_floor_converges() {
     ));
 
     let ret = constrained_minimize(
-        quad,
+        &mut quad,
         None,
-        None::<NoConstraints>,
-        Some(ieq_constraints),
+        None,
+        Some(&mut ieq_constraints),
         colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]),
         opts,
     )
@@ -643,13 +660,16 @@ fn test_quadratic_tight_grad_atol_below_old_hardcoded_floor_converges() {
 //}}}
 //{{{ collection: quartic
 //{{{ struct: Quartic
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 struct Quartic {
     xmin: Vector,
 }
 //}}}
 //{{{ impl: RealFn for Quartic
-impl RealFn for Quartic {
+impl topohedral_optimize::DifferentiableFn for Quartic {
+    type Input = Vector;
+    type Output = f64;
+    type Derivative = Vector;
     fn dimension(&self) -> usize {
         self.xmin.len()
     }
@@ -666,7 +686,7 @@ impl RealFn for Quartic {
         out
     }
 
-    fn grad(
+    fn derivative(
         &mut self,
         x_in: &Vector,
     ) -> Vector {
@@ -692,16 +712,16 @@ fn test_quartic_without_constraints_matches_unconstrained_reference(
     #[case] exp_num_fun_evals: usize,
     #[case] exp_num_grad_evals: usize,
 ) {
-    let quart = Quartic {
+    let mut quart = Quartic {
         xmin: colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
     };
 
     let x0_in = colvec(&[11.0, 11.0, 11.0, 11.0, 11.0]);
     let ret = constrained_minimize(
-        quart,
+        &mut quart,
         None,
-        None::<NoConstraints>,
-        None::<NoConstraints>,
+        None,
+        None,
         x0_in,
         uncon_auglag_method(unconstrained_method),
     )
@@ -734,7 +754,7 @@ fn test_quartic_with_bound_constraints_matches_reference(
     #[case] exp_num_fun_evals: usize,
     #[case] exp_num_grad_evals: usize,
 ) {
-    let quart = Quartic {
+    let mut quart = Quartic {
         xmin: colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
     };
 
@@ -746,10 +766,10 @@ fn test_quartic_with_bound_constraints_matches_reference(
     ieq_constraints.add_bounds(0, Some(20.0), None);
 
     let ret = constrained_minimize(
-        quart,
+        &mut quart,
         None,
-        None::<NoConstraints>,
-        Some(ieq_constraints),
+        None,
+        Some(&mut ieq_constraints),
         x0,
         method,
     )
@@ -779,7 +799,7 @@ fn test_quartic_with_bound_constraints_and_bcon_inner_matches_reference(
     #[case] exp_num_fun_evals: usize,
     #[case] exp_num_grad_evals: usize,
 ) {
-    let quart = Quartic {
+    let mut quart = Quartic {
         xmin: colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
     };
 
@@ -790,15 +810,8 @@ fn test_quartic_with_bound_constraints_and_bcon_inner_matches_reference(
     method.con_opts_mut().constraint_tol = 1e-3;
     method.con_opts_mut().base_opts.grad_rtol = 1e-4;
 
-    let ret = constrained_minimize(
-        quart,
-        Some(bound_constraints),
-        None::<NoConstraints>,
-        None::<NoConstraints>,
-        x0,
-        method,
-    )
-    .unwrap();
+    let ret =
+        constrained_minimize(&mut quart, Some(bound_constraints), None, None, x0, method).unwrap();
 
     println!("ret = {ret:?}");
     let exp_fmin = 10000.0;
@@ -828,7 +841,7 @@ fn test_quartic_hsphere_constrained_ucon_inner_matches_reference(
     #[case] exp_num_fun_evals: usize,
     #[case] exp_num_grad_evals: usize,
 ) {
-    let quart = Quartic {
+    let mut quart = Quartic {
         xmin: colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
     };
 
@@ -836,16 +849,16 @@ fn test_quartic_hsphere_constrained_ucon_inner_matches_reference(
     method.con_opts_mut().constraint_tol = 1e-3;
     method.con_opts_mut().base_opts.grad_rtol = 1e-4;
 
-    let ieq_constraints = HyperSphereBound {
+    let mut ieq_constraints = HyperSphereBound {
         center: colvec(&[20.0, 20.0, 20.0, 20.0, 20.0]),
         radius: 10.0,
     };
 
     let ret = constrained_minimize(
-        quart,
+        &mut quart,
         None,
-        None::<NoConstraints>,
-        Some(ieq_constraints),
+        None,
+        Some(&mut ieq_constraints),
         x0,
         method,
     )
@@ -881,7 +894,7 @@ fn test_quartic_hsphere_and_bound_constrained_bcon_inner_matches_reference(
     #[case] exp_num_fun_evals: usize,
     #[case] exp_num_grad_evals: usize,
 ) {
-    let quart = Quartic {
+    let mut quart = Quartic {
         xmin: colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
     };
 
@@ -890,16 +903,16 @@ fn test_quartic_hsphere_and_bound_constrained_bcon_inner_matches_reference(
         bound_constraints.add_bounds(i, Some(15.0), Some(20.0));
     }
 
-    let ieq_constraints = HyperSphereBound {
+    let mut ieq_constraints = HyperSphereBound {
         center: colvec(&[20.0, 20.0, 20.0, 20.0, 20.0]),
         radius: 10.0,
     };
 
     let ret = constrained_minimize(
-        quart,
+        &mut quart,
         Some(bound_constraints),
-        None::<NoConstraints>,
-        Some(ieq_constraints),
+        None,
+        Some(&mut ieq_constraints),
         x0,
         bcon_auglag_method(bound_constrained_method),
     )
@@ -940,7 +953,10 @@ impl Rosenbrock {
 }
 //}}}
 //{{{ impl: RealFn for Rosenbrock
-impl RealFn for Rosenbrock {
+impl topohedral_optimize::DifferentiableFn for Rosenbrock {
+    type Input = Vector;
+    type Output = f64;
+    type Derivative = Vector;
     fn dimension(&self) -> usize {
         2
     }
@@ -954,7 +970,7 @@ impl RealFn for Rosenbrock {
         (self.a - x).powi(2) + self.b * (y - x.powi(2)).powi(2)
     }
 
-    fn grad(
+    fn derivative(
         &mut self,
         xvec: &Vector,
     ) -> Vector {
@@ -983,12 +999,12 @@ fn test_rosenbrock_uncon(
     #[case] exp_num_fun_evals: usize,
     #[case] exp_num_grad_evals: usize,
 ) {
-    let rosenbrock = Rosenbrock::new();
+    let mut rosenbrock = Rosenbrock::new();
     let ret = constrained_minimize(
-        rosenbrock,
+        &mut rosenbrock,
         None,
-        None::<NoConstraints>,
-        None::<NoConstraints>,
+        None,
+        None,
         x0,
         uncon_auglag_method(unconstrained_method),
     )
@@ -1012,18 +1028,18 @@ fn test_rosenbrock_bcon_1(
     #[case] exp_num_fun_evals: usize,
     #[case] exp_num_grad_evals: usize,
 ) {
-    let rosenbrock = Rosenbrock::new();
+    let mut rosenbrock = Rosenbrock::new();
 
-    let ieq_constraints = HyperSphereBound {
+    let mut ieq_constraints = HyperSphereBound {
         center: colvec(&[2.0, 2.0]),
         radius: 3.0,
     };
 
     let ret = constrained_minimize(
-        rosenbrock,
+        &mut rosenbrock,
         None,
-        None::<NoConstraints>,
-        Some(ieq_constraints),
+        None,
+        Some(&mut ieq_constraints),
         x0,
         uncon_auglag_method(unconstrained_method),
     )
@@ -1047,18 +1063,18 @@ fn test_rosenbrock_bcon_2(
     #[case] exp_num_fun_evals: usize,
     #[case] exp_num_grad_evals: usize,
 ) {
-    let rosenbrock = Rosenbrock::new();
+    let mut rosenbrock = Rosenbrock::new();
 
-    let ieq_constraints = HyperSphereBound {
+    let mut ieq_constraints = HyperSphereBound {
         center: colvec(&[0.0, 0.0]),
         radius: 0.5,
     };
 
     let ret = constrained_minimize(
-        rosenbrock,
+        &mut rosenbrock,
         None,
-        None::<NoConstraints>,
-        Some(ieq_constraints),
+        None,
+        Some(&mut ieq_constraints),
         x0,
         uncon_auglag_method(unconstrained_method),
     )
@@ -1068,4 +1084,27 @@ fn test_rosenbrock_bcon_2(
     assert_counts(&ret, exp_num_fun_evals, exp_num_grad_evals);
 }
 //}}}
+
+#[test]
+fn augmented_nested_solve_counts_each_user_objective_call_once() {
+    let mut objective = Observed {
+        inner: Quadratic {
+            xmin: colvec(&[1.0, -2.0, 0.5, 3.0, -4.0]),
+        },
+        eval_calls: 0,
+        derivative_calls: 0,
+    };
+    let ret = constrained_minimize(
+        &mut objective,
+        None,
+        None,
+        None,
+        colvec(&[4.0, 3.0, -1.0, 0.0, 2.0]),
+        uncon_auglag_method(UnconstrainedMethod::QuasiNewton(THUENTE_BFGS)),
+    )
+    .unwrap();
+
+    assert_eq!(ret.num_fun_evals, objective.eval_calls);
+    assert_eq!(ret.num_grad_evals, objective.derivative_calls);
+}
 //}}}

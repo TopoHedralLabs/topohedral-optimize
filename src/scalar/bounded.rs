@@ -4,7 +4,10 @@
 
 //{{{ crate imports
 use super::common::Error as ScalarError;
-use crate::{common::ScalarReturns, ConvergedReason, Minimizer, RealFn1};
+use crate::{
+    common::{Minimizer, ScalarReturns},
+    ConvergedReason, RealFn1,
+};
 //}}}
 //{{{ std imports
 //}}}
@@ -82,7 +85,7 @@ impl<F: RealFn1> Minimizer for Bounded<F> {
         let mut rat = 0.0_f64;
         let mut e = 0.0_f64;
         let mut x = xf;
-        let mut fx = self.fcn.eval(x);
+        let mut fx = self.fcn.eval(&x);
         let mut num = 1usize;
         let mut fu = f64::INFINITY;
 
@@ -135,7 +138,7 @@ impl<F: RealFn1> Minimizer for Bounded<F> {
 
             let si = if rat >= 0.0 { 1.0 } else { -1.0 };
             x = xf + si * rat.abs().max(tol1);
-            fu = self.fcn.eval(x);
+            fu = self.fcn.eval(&x);
             num += 1;
 
             if fu <= fx {

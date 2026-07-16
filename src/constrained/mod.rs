@@ -4,7 +4,7 @@
 
 //{{{ crate imports
 use crate::{
-    common::{arc_real_fn, CountingRealFn, RealFn, RealVectorFn, Vector},
+    common::{Evaluator, RealFn, RealVectorFn, Vector, VectorReturns},
     constraints::BoundsConstraints,
 };
 //}}}
@@ -22,16 +22,11 @@ mod factory;
 //}}}
 
 //{{{ pub use: common exports
-pub use crate::common::{
-    ConvergedReason as ConstrainedConvergedReason, Minimizer as ConstrainedMinimizer,
-    Returns as ConstrainedReturns,
-};
 pub use common::{Error as ConstrainedError, Options as ConstriainedOptions};
 //}}}
 //{{{ pub use: augmented_lagrangian exports
 pub use augmented_lagrangian::{
-    AugmentedLagrangian, AugmentedLagrangianFcn, InnerMethod as AugmentedLagrangianInnerMethod,
-    Options as AugmentedLagrangianOptions,
+    InnerMethod as AugmentedLagrangianInnerMethod, Options as AugmentedLagrangianOptions,
 };
 //}}}
 //{{{ pub use: factory export
@@ -40,32 +35,37 @@ pub use factory::Method as ConstrainedMethod;
 
 //{{{ fn: minimize
 #[trace_fn]
-pub fn minimize<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn>(
-    fcn: F1,
+pub fn minimize<F: RealFn + ?Sized>(
+    fcn: &mut F,
     bounds: Option<BoundsConstraints>,
-    eq_constraints: Option<F2>,
-    ieq_constraints: Option<F3>,
+    eq_constraints: Option<&mut dyn RealVectorFn>,
+    ieq_constraints: Option<&mut dyn RealVectorFn>,
     x0: Vector,
     method: ConstrainedMethod,
-) -> Result<ConstrainedReturns, ConstrainedError> {
-    if method.con_opts().base_opts.make_counting {
-        let counting_fcn = arc_real_fn(CountingRealFn::new(fcn));
-        let minimizer = factory::create(
-            counting_fcn.clone(),
-            bounds,
-            eq_constraints,
-            ieq_constraints,
-            x0,
-            method,
-        );
-        let mut ret = minimizer?.minimize()?;
-        let counting_fcn_lock = counting_fcn.lock().unwrap();
-        ret.num_fun_evals = counting_fcn_lock.num_func_evals;
-        ret.num_grad_evals = counting_fcn_lock.num_grad_evals;
-        Ok(ret)
-    } else {
-        let minimizer = factory::create(fcn, bounds, eq_constraints, ieq_constraints, x0, method);
-        minimizer?.minimize()
-    }
+) -> Result<VectorReturns, ConstrainedError> {
+    let mut evaluator = Evaluator::new(fcn);
+    let mut ret = minimize_impl(
+        &mut evaluator,
+        bounds,
+        eq_constraints,
+        ieq_constraints,
+        x0,
+        method,
+    )?;
+    ret.num_fun_evals = evaluator.num_func_evals;
+    ret.num_grad_evals = evaluator.num_grad_evals;
+    Ok(ret)
+}
+
+pub(crate) fn minimize_impl<F: RealFn + ?Sized>(
+    fcn: &mut F,
+    bounds: Option<BoundsConstraints>,
+    eq_constraints: Option<&mut dyn RealVectorFn>,
+    ieq_constraints: Option<&mut dyn RealVectorFn>,
+    x0: Vector,
+    method: ConstrainedMethod,
+) -> Result<VectorReturns, ConstrainedError> {
+    let minimizer = factory::create(fcn, bounds, eq_constraints, ieq_constraints, x0, method);
+    minimizer?.minimize()
 }
 //}}}

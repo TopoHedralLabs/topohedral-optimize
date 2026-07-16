@@ -1,7 +1,6 @@
 use approx::assert_relative_eq;
 use topohedral_linalg::{DMatrix, DVector, MatMul, Shape, VecType, VectorOps};
-use topohedral_optimize::quadratic_model::{QuadraticModel, UpdateType};
-use topohedral_optimize::{Matrix, Vector};
+use topohedral_optimize::{Matrix, QuadraticModel, UpdateType, Vector};
 
 fn colvec(values: &[f64]) -> Vector {
     DVector::<f64>::from_slice_vec(values, values.len(), VecType::Col)

@@ -11,7 +11,7 @@ use crate::bound_constrained::asa::Phase::Ua;
 use crate::common::{Minimizer, Vector};
 use crate::constraints::BoundsConstraints;
 use crate::constraints::{BoundSignature, BoundStatus};
-use crate::unconstrained::{minimize, UnconstrainedMethod};
+use crate::unconstrained::{minimize_impl, UnconstrainedMethod};
 use crate::ConvergedReason;
 use crate::{IterData, RealFn};
 //}}}
@@ -110,7 +110,10 @@ impl<F: RealFn> RestrictedFunction<F> {
 }
 //}}}
 //{{{ impl: RealFn for BoundedFunction
-impl<F: RealFn> RealFn for RestrictedFunction<F> {
+impl<F: RealFn> crate::DifferentiableFn for RestrictedFunction<F> {
+    type Input = Vector;
+    type Output = f64;
+    type Derivative = Vector;
     //{{{ fn: dimension
     #[trace_fn]
     fn dimension(&self) -> usize {
@@ -132,20 +135,20 @@ impl<F: RealFn> RealFn for RestrictedFunction<F> {
     //}}}
     //{{{ fn: grad
     #[trace_fn]
-    fn grad(
+    fn derivative(
         &mut self,
         x: &Vector,
     ) -> Vector {
         let x_full = lift(&self.bound_statuses, x);
-        let grad_f_full = self.fcn.grad(&x_full);
+        let grad_f_full = self.fcn.derivative(&x_full);
         restrict(&self.bound_statuses, &grad_f_full)
     }
     //}}}
 }
 //}}}
 //{{{ struct: ActiveSetAlgorithm
-pub struct ActiveSetAlgorithm<F: RealFn> {
-    fcn: F,
+pub struct ActiveSetAlgorithm<'a, F: RealFn + ?Sized> {
+    fcn: &'a mut F,
     bounds: BoundsConstraints,
     x_init: Vector,
     norm_grad_fx_init: f64,
@@ -163,16 +166,16 @@ enum Phase {
 }
 //}}}
 //{{{ impl: ActiveSetAlgorithm
-impl<F: RealFn> ActiveSetAlgorithm<F> {
+impl<'a, F: RealFn + ?Sized> ActiveSetAlgorithm<'a, F> {
     #[trace_fn]
     pub fn new(
-        mut fcn: F,
+        fcn: &'a mut F,
         bounds: BoundsConstraints,
         mut x0: Vector,
         opts: Options,
     ) -> Self {
         bounds.clamp(&mut x0);
-        let grad_0 = fcn.grad(&x0);
+        let grad_0 = fcn.derivative(&x0);
         let negative_grad_0 = -grad_0.clone();
         let projectd_grad_0 = bounds.projected_direction(&x0, &negative_grad_0, 1.0);
         let norm_projected_grad_0 = projectd_grad_0.abs_max().unwrap();
@@ -320,7 +323,7 @@ impl<F: RealFn> ActiveSetAlgorithm<F> {
             f_trial = self.fcn.eval(&x_trial)
         }
 
-        let grad_fx_new = self.fcn.grad(&x_trial);
+        let grad_fx_new = self.fcn.derivative(&x_trial);
         let norm_grad_fx_new = grad_fx_new.abs_max().unwrap_or(0.0);
         //{{{ trace
         debug!(target: "asa", "NGPA accepted point: f = {f_trial:.4e}, ||∇f|| = {norm_grad_fx_new:.4e}");
@@ -419,14 +422,14 @@ impl<F: RealFn> ActiveSetAlgorithm<F> {
 }
 //}}}
 //{{{ impl: Minimizer for ActiveSetAlgorithm
-impl<F: RealFn> Minimizer for ActiveSetAlgorithm<F> {
+impl<F: RealFn + ?Sized> Minimizer for ActiveSetAlgorithm<'_, F> {
     type Error = super::common::Error;
-    type Returns = crate::Returns;
+    type Returns = crate::VectorReturns;
 
     #[trace_fn]
-    fn minimize(&mut self) -> Result<crate::Returns, Self::Error> {
-        let mut iter_k_prev = IterData::new(self.fcn.clone(), &self.x_init);
-        let mut iter_k = IterData::new(self.fcn.clone(), &self.x_init);
+    fn minimize(&mut self) -> Result<crate::VectorReturns, Self::Error> {
+        let mut iter_k_prev = IterData::new(&mut *self.fcn, &self.x_init);
+        let mut iter_k = IterData::new(&mut *self.fcn, &self.x_init);
         let mut phase = Phase::Ngpa;
         let mut mu = self.opts.mu;
         let mut alpha_bb = 1.0;
@@ -446,7 +449,7 @@ impl<F: RealFn> Minimizer for ActiveSetAlgorithm<F> {
                 trace!(target: "asa", "fx = {:.4e} x = {}", iter_k.fx, iter_k.x.clone().transpose());
                 info!(target: "asa", "=============================================");
                 //}}}
-                return Ok(crate::Returns {
+                return Ok(crate::VectorReturns {
                     xmin: iter_k.x,
                     fmin: iter_k.fx,
                     reason,
@@ -565,9 +568,6 @@ impl<F: RealFn> Minimizer for ActiveSetAlgorithm<F> {
                     //{{{ trace
                     debug!(target: "asa", "UA restricted problem: active_count = {active_count_before}, free_count = {_free_count}");
                     //}}}
-                    let restricted_fcn =
-                        RestrictedFunction::new(self.fcn.clone(), x, bounds_statuses.clone());
-
                     let x0 = restrict(&bounds_statuses, x);
                     if x0.is_empty() {
                         //{{{ trace
@@ -577,11 +577,14 @@ impl<F: RealFn> Minimizer for ActiveSetAlgorithm<F> {
                         continue;
                     }
 
-                    let res = minimize(
-                        restricted_fcn.clone(),
+                    let mut restricted_fcn =
+                        RestrictedFunction::new(&mut *self.fcn, x, bounds_statuses.clone());
+                    let res = minimize_impl(
+                        &mut restricted_fcn,
                         x0,
                         self.opts.unconstrained_method.clone(),
                     );
+                    drop(restricted_fcn);
 
                     let Ok(res) = res else {
                         //{{{ trace
@@ -604,7 +607,7 @@ impl<F: RealFn> Minimizer for ActiveSetAlgorithm<F> {
                     iter_k.x.copy_from(lift(&bounds_statuses, &res.xmin));
                     self.bounds.clamp(&mut iter_k.x);
                     iter_k.fx = res.fmin;
-                    iter_k.grad_fx.copy_from(self.fcn.grad(&iter_k.x));
+                    iter_k.grad_fx.copy_from(self.fcn.derivative(&iter_k.x));
                     iter_k.fx = self.fcn.eval(&iter_k.x);
                     iter_k.norm_grad_fx = iter_k.grad_fx.abs_max().unwrap_or(0.0);
 
@@ -664,7 +667,7 @@ impl<F: RealFn> Minimizer for ActiveSetAlgorithm<F> {
             "Finished ASA loop without explicit convergence; returning final iterate after {} iterations",
             self.opts.bound_opts.base_opts.max_iter
         );
-        Ok(crate::Returns {
+        Ok(crate::VectorReturns {
             xmin: iter_k.x,
             fmin: iter_k.fx,
             reason: ConvergedReason::Atol,

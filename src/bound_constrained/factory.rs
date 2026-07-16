@@ -8,8 +8,9 @@ use super::asa::{ActiveSetAlgorithm, Options as AsaOptions};
 use super::bfgsb::{Bfgsb, Options as BfgsbOptions};
 use super::common::Error;
 use crate::bound_constrained::BoundConstrainedOptions;
+use crate::common::Minimizer;
 use crate::constraints::BoundsConstraints;
-use crate::{Minimizer, RealFn, Returns, Vector};
+use crate::{RealFn, Vector, VectorReturns};
 //}}}
 //{{{ std imports
 //}}}
@@ -41,12 +42,12 @@ impl Method {
 }
 
 #[trace_fn]
-pub fn create<'a, F: RealFn + 'a>(
-    fcn: F,
+pub fn create<'a, F: RealFn + ?Sized + 'a>(
+    fcn: &'a mut F,
     bounds: BoundsConstraints,
     x0: Vector,
     method: Method,
-) -> Box<dyn Minimizer<Error = Error, Returns = Returns> + 'a> {
+) -> Box<dyn Minimizer<Error = Error, Returns = VectorReturns> + 'a> {
     match method {
         Method::Asa(opts) => Box::new(ActiveSetAlgorithm::new(fcn, bounds, x0, opts)),
         Method::Bfgsb(opts) => Box::new(Bfgsb::new(fcn, bounds, x0, opts)),

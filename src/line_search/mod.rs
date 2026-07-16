@@ -7,7 +7,7 @@ use crate::RealFn1;
 
 //{{{ crate imports
 use super::common::{RealFn, Vector};
-use crate::unconstrained::IterData;
+use crate::IterData;
 //}}}
 //{{{ std imports
 //}}}
@@ -43,8 +43,8 @@ pub use utils::initial_step;
 //}}}
 //{{{ pub fn: search
 #[trace_fn]
-pub fn search<F: RealFn>(
-    mut fcn: F,
+pub fn search<F: RealFn + ?Sized>(
+    fcn: &mut F,
     iter_data: &IterData,
     dir: &Vector,
     alpha_init: f64,
@@ -62,12 +62,14 @@ pub fn search<F: RealFn>(
         norm_grad_fx: _,
     } = iter_data;
     let dphi0 = grad_fx.dot(dir);
-    let line_search_fcn = common::LineSearchFcn::new(fcn.clone(), x.clone(), dir.clone());
-    let mut line_searcher = factory::create(line_search_fcn, method);
-    let ret = line_searcher.search(*fx, dphi0, alpha_init)?;
+    let ret = {
+        let line_search_fcn = common::LineSearchFcn::new(fcn, x.clone(), dir.clone());
+        let mut line_searcher = factory::create(line_search_fcn, method);
+        line_searcher.search(*fx, dphi0, alpha_init)?
+    };
     let new_x: Vector = (x + ret.alpha * dir).into();
     let new_fx = ret.phi_alpha;
-    let new_grad_fx = fcn.grad(&new_x);
+    let new_grad_fx = fcn.derivative(&new_x);
     let new_norm_grad_fx = new_grad_fx.norm();
     Ok(IterData {
         x: new_x,
@@ -79,13 +81,13 @@ pub fn search<F: RealFn>(
 //}}}
 //{{{ pub fn: search1d
 #[trace_fn]
-pub fn search1d<F: RealFn1>(
-    mut fcn: F,
+pub fn search1d<F: RealFn1 + ?Sized>(
+    fcn: &mut F,
     alpha_init: f64,
     method: LineSearchMethod,
 ) -> Result<LineSearchReturns, LineSearchError> {
-    let phi0 = fcn.eval(0.0);
-    let dphi0 = fcn.diff(0.0);
+    let phi0 = fcn.eval(&0.0);
+    let dphi0 = fcn.derivative(&0.0);
     let mut line_searcher = factory::create(fcn, method);
     line_searcher.search(phi0, dphi0, alpha_init)
 }

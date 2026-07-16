@@ -5,7 +5,10 @@
 
 //{{{ crate imports
 use super::common::Error;
-use super::{Bounded, BoundedOptions, Brent, BrentOptions, Golden, GoldenOptions};
+use super::{
+    bounded::Bounded, bounded::Options as BoundedOptions, brent::Brent,
+    brent::Options as BrentOptions, golden::Golden, golden::Options as GoldenOptions,
+};
 use crate::common::{Minimizer, ScalarReturns};
 use crate::RealFn1;
 //}}}

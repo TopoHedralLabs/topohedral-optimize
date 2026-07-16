@@ -1,14 +1,11 @@
 //{{{ crate imports
-use topohedral_optimize::bound_constrained::{
-    minimize as bound_constrained_minimize, AsaOptions, BoundConstrainedMethod,
-    BoundConstrainedOptions,
+use topohedral_optimize::DifferentiableFn;
+use topohedral_optimize::{
+    bound_constrained_minimize, AsaOptions, BaseOptions, BoundConstrainedMethod,
+    BoundConstrainedOptions, BoundsConstraints, LineSearchMethod, LineSearchOptions,
+    QuasiNewtonOptions, QuasiNewtonUpdateMethod as UpdateMethod, RealFn, ThuenteOptions,
+    UnconstrainedMethod, UnconstrainedOptions as UnonstrainedOptions, Vector, VectorReturns,
 };
-use topohedral_optimize::constraints::BoundsConstraints;
-use topohedral_optimize::line_search::{LineSearchMethod, LineSearchOptions, ThuenteOptions};
-use topohedral_optimize::unconstrained::{
-    QuasiNewtonOptions, UnconstrainedMethod, UnonstrainedOptions, UpdateMethod,
-};
-use topohedral_optimize::{BaseOptions, RealFn, Returns, Vector};
 //}}}
 //{{{ std imports
 //}}}
@@ -30,6 +27,38 @@ fn colvec(values: &[f64]) -> Vector {
     DVector::<f64>::from_slice_vec(values, values.len(), VecType::Col)
 }
 //}}}
+#[derive(Debug)]
+struct Observed<F> {
+    inner: F,
+    eval_calls: usize,
+    derivative_calls: usize,
+}
+
+impl<F: RealFn> DifferentiableFn for Observed<F> {
+    type Input = Vector;
+    type Output = f64;
+    type Derivative = Vector;
+
+    fn dimension(&self) -> usize {
+        self.inner.dimension()
+    }
+
+    fn eval(
+        &mut self,
+        x: &Vector,
+    ) -> f64 {
+        self.eval_calls += 1;
+        self.inner.eval(x)
+    }
+
+    fn derivative(
+        &mut self,
+        x: &Vector,
+    ) -> Vector {
+        self.derivative_calls += 1;
+        self.inner.derivative(x)
+    }
+}
 //{{{ fun: assert_vector_close
 fn assert_vector_close(
     actual: &Vector,
@@ -56,13 +85,13 @@ fn add_uniform_bounds(
 }
 //}}}
 //{{{ fun: kkt_residual
-fn kkt_residual<F: RealFn>(
-    mut fcn: F,
+fn kkt_residual<F: RealFn + ?Sized>(
+    fcn: &mut F,
     x: &Vector,
     lower: &[Option<f64>],
     upper: &[Option<f64>],
 ) -> f64 {
-    let grad = fcn.grad(x);
+    let grad = fcn.derivative(x);
     let mut projected = x.clone() - grad;
 
     for i in 0..projected.len() {
@@ -85,7 +114,6 @@ fn asa_options(max_iter: u64) -> AsaOptions {
                 grad_rtol: 1e-8,
                 grad_atol: 1e-8,
                 max_iter,
-                make_counting: true,
             },
             constraint_tol: 1e-8,
         },
@@ -94,7 +122,6 @@ fn asa_options(max_iter: u64) -> AsaOptions {
                 grad_rtol: 1e-8,
                 grad_atol: 1e-8,
                 max_iter: 100,
-                make_counting: false,
             },
             ls_method: LineSearchMethod::Thuente(ThuenteOptions {
                 ls_opts: LineSearchOptions {
@@ -112,12 +139,12 @@ fn asa_options(max_iter: u64) -> AsaOptions {
 }
 //}}}
 //{{{ fun: solve_asa
-fn solve_asa<F: RealFn>(
-    fcn: F,
+fn solve_asa<F: RealFn + ?Sized>(
+    fcn: &mut F,
     x0: Vector,
     bounds: BoundsConstraints,
     max_iter: u64,
-) -> Returns {
+) -> VectorReturns {
     bound_constrained_minimize(
         fcn,
         bounds,
@@ -129,13 +156,16 @@ fn solve_asa<F: RealFn>(
 //}}}
 
 //{{{ struct: ShiftedQuadratic
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 struct ShiftedQuadratic {
     target: Vector,
 }
 //}}}
 //{{{ impl: RealFn for ShiftedQuadratic
-impl RealFn for ShiftedQuadratic {
+impl topohedral_optimize::DifferentiableFn for ShiftedQuadratic {
+    type Input = Vector;
+    type Output = f64;
+    type Derivative = Vector;
     fn dimension(&self) -> usize {
         self.target.len()
     }
@@ -148,7 +178,7 @@ impl RealFn for ShiftedQuadratic {
         diff.dot(&diff)
     }
 
-    fn grad(
+    fn derivative(
         &mut self,
         x: &Vector,
     ) -> Vector {
@@ -157,13 +187,16 @@ impl RealFn for ShiftedQuadratic {
 }
 //}}}
 //{{{ struct: Rosenbrock
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 struct Rosenbrock {
     n: usize,
 }
 //}}}
 //{{{ impl: RealFn for Rosenbrock
-impl RealFn for Rosenbrock {
+impl topohedral_optimize::DifferentiableFn for Rosenbrock {
+    type Input = Vector;
+    type Output = f64;
+    type Derivative = Vector;
     fn dimension(&self) -> usize {
         self.n
     }
@@ -179,7 +212,7 @@ impl RealFn for Rosenbrock {
         value
     }
 
-    fn grad(
+    fn derivative(
         &mut self,
         x: &Vector,
     ) -> Vector {
@@ -193,7 +226,7 @@ impl RealFn for Rosenbrock {
 }
 //}}}
 //{{{ struct: DiagonalSpdQuadratic
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 struct DiagonalSpdQuadratic {
     diagonal: Vector,
     rhs: Vector,
@@ -215,7 +248,10 @@ impl DiagonalSpdQuadratic {
 }
 //}}}
 //{{{ impl: RealFn for DiagonalSpdQuadratic
-impl RealFn for DiagonalSpdQuadratic {
+impl topohedral_optimize::DifferentiableFn for DiagonalSpdQuadratic {
+    type Input = Vector;
+    type Output = f64;
+    type Derivative = Vector;
     fn dimension(&self) -> usize {
         self.diagonal.len()
     }
@@ -231,7 +267,7 @@ impl RealFn for DiagonalSpdQuadratic {
         value
     }
 
-    fn grad(
+    fn derivative(
         &mut self,
         x: &Vector,
     ) -> Vector {
@@ -248,43 +284,43 @@ impl RealFn for DiagonalSpdQuadratic {
 #[test]
 fn asa_minimizes_shifted_quadratic_with_active_upper_bound() {
     let n = 5;
-    let fcn = ShiftedQuadratic {
+    let mut fcn = ShiftedQuadratic {
         target: colvec(&[0.0, 1.0, 2.0, 3.0, 4.0]),
     };
     let x0 = DVector::<f64>::from_value_vec(1.5, n, VecType::Col);
     let bounds = add_uniform_bounds(n, Some(0.0), Some(3.0));
 
-    let ret = solve_asa(fcn.clone(), x0, bounds, 500);
+    let ret = solve_asa(&mut fcn, x0, bounds, 500);
     let expected_x = colvec(&[0.0, 1.0, 2.0, 3.0, 3.0]);
 
     assert_vector_close(&ret.xmin, &expected_x, 1e-5);
     assert_relative_eq!(ret.fmin, 1.0, epsilon = 1e-8);
-    assert!(kkt_residual(fcn, &ret.xmin, &[Some(0.0); 5], &[Some(3.0); 5]) <= 1e-6);
+    assert!(kkt_residual(&mut fcn, &ret.xmin, &[Some(0.0); 5], &[Some(3.0); 5]) <= 1e-6);
 }
 //}}}
 //{{{ test: ten dimensional rosenbrock
 #[test]
 fn asa_minimizes_ten_dimensional_rosenbrock_inside_box() {
     let n = 10;
-    let fcn = Rosenbrock { n };
+    let mut fcn = Rosenbrock { n };
     let x0 = DVector::<f64>::from_value_vec(-1.2, n, VecType::Col);
     let bounds = add_uniform_bounds(n, Some(-2.0), Some(2.0));
 
-    let ret = solve_asa(fcn.clone(), x0, bounds, 2000);
+    let ret = solve_asa(&mut fcn, x0, bounds, 2000);
     let expected_x = DVector::<f64>::from_value_vec(1.0, n, VecType::Col);
 
     assert_vector_close(&ret.xmin, &expected_x, 1e-4);
     assert_relative_eq!(ret.fmin, 0.0, epsilon = 1e-8);
-    assert!(kkt_residual(fcn, &ret.xmin, &[Some(-2.0); 10], &[Some(2.0); 10]) <= 1e-6);
+    assert!(kkt_residual(&mut fcn, &ret.xmin, &[Some(-2.0); 10], &[Some(2.0); 10]) <= 1e-6);
 }
 #[test]
 fn asa_minimizes_ten_dimensional_rosenbrock_outside_box() {
     let n = 10;
-    let fcn = Rosenbrock { n };
+    let mut fcn = Rosenbrock { n };
     let x0 = DVector::<f64>::from_value_vec(-1.2, n, VecType::Col);
     let bounds = add_uniform_bounds(n, Some(-2.0), Some(0.99));
 
-    let ret = solve_asa(fcn.clone(), x0, bounds, 2000);
+    let ret = solve_asa(&mut fcn, x0, bounds, 2000);
     let expected_f = 5.516346e-02;
     let expected_x = DVector::<f64>::from_col_slice(
         &[
@@ -317,7 +353,7 @@ fn asa_minimizes_nnls_style_spd_quadratic_with_many_active_lower_bounds() {
         unconstrained_minimum[i] = if i % 2 == 0 { -value } else { value };
     }
 
-    let fcn = DiagonalSpdQuadratic::from_unconstrained_minimum(unconstrained_minimum.clone());
+    let mut fcn = DiagonalSpdQuadratic::from_unconstrained_minimum(unconstrained_minimum.clone());
     let mut expected_x = unconstrained_minimum.clone();
     for i in 0..n {
         expected_x[i] = expected_x[i].max(0.0);
@@ -325,14 +361,13 @@ fn asa_minimizes_nnls_style_spd_quadratic_with_many_active_lower_bounds() {
 
     let x0 = DVector::<f64>::from_value_vec(1.0, n, VecType::Col);
     let bounds = add_uniform_bounds(n, Some(0.0), None);
-    let ret = solve_asa(fcn.clone(), x0, bounds, 500);
+    let ret = solve_asa(&mut fcn, x0, bounds, 500);
     let active_count = ret.xmin.iter().filter(|xi| **xi <= 1e-8).count();
-    let mut expected_fcn = fcn.clone();
 
     assert_vector_close(&ret.xmin, &expected_x, 1e-5);
-    assert_relative_eq!(ret.fmin, expected_fcn.eval(&expected_x), epsilon = 1e-8);
+    assert_relative_eq!(ret.fmin, fcn.eval(&expected_x), epsilon = 1e-8);
     assert_eq!(active_count, n / 2);
-    assert!(kkt_residual(fcn, &ret.xmin, &[Some(0.0); 20], &[None; 20]) <= 1e-6);
+    assert!(kkt_residual(&mut fcn, &ret.xmin, &[Some(0.0); 20], &[None; 20]) <= 1e-6);
 }
 //}}}
 //{{{ test: large-n shifted quadratic with a mix of active/inactive bounds
@@ -350,23 +385,42 @@ fn asa_minimizes_large_n_shifted_quadratic_with_mixed_active_bounds() {
     for i in 0..n {
         target[i] = i as f64;
     }
-    let fcn = ShiftedQuadratic { target };
+    let mut fcn = ShiftedQuadratic { target };
     let x0 = DVector::<f64>::from_value_vec(125.0, n, VecType::Col);
     let upper = 250.0;
     let bounds = add_uniform_bounds(n, Some(0.0), Some(upper));
 
-    let ret = solve_asa(fcn.clone(), x0, bounds, 2000);
+    let ret = solve_asa(&mut fcn, x0, bounds, 2000);
 
     let mut expected_x = DVector::<f64>::zeros_vec(n, VecType::Col);
     for i in 0..n {
         expected_x[i] = (i as f64).min(upper);
     }
-    let mut expected_fcn = fcn.clone();
 
     assert_vector_close(&ret.xmin, &expected_x, 1e-5);
-    assert_relative_eq!(ret.fmin, expected_fcn.eval(&expected_x), epsilon = 1e-6);
+    assert_relative_eq!(ret.fmin, fcn.eval(&expected_x), epsilon = 1e-6);
     let lower_bounds: Vec<Option<f64>> = vec![Some(0.0); n];
     let upper_bounds: Vec<Option<f64>> = vec![Some(upper); n];
-    assert!(kkt_residual(fcn, &ret.xmin, &lower_bounds, &upper_bounds) <= 1e-6);
+    assert!(kkt_residual(&mut fcn, &ret.xmin, &lower_bounds, &upper_bounds) <= 1e-6);
 }
 //}}}
+
+#[test]
+fn asa_nested_solve_counts_each_user_objective_call_once() {
+    let mut objective = Observed {
+        inner: ShiftedQuadratic {
+            target: colvec(&[0.0, 1.0, 2.0, 3.0, 4.0]),
+        },
+        eval_calls: 0,
+        derivative_calls: 0,
+    };
+    let ret = solve_asa(
+        &mut objective,
+        DVector::<f64>::from_value_vec(1.5, 5, VecType::Col),
+        add_uniform_bounds(5, Some(0.0), Some(3.0)),
+        500,
+    );
+
+    assert_eq!(ret.num_fun_evals, objective.eval_calls);
+    assert_eq!(ret.num_grad_evals, objective.derivative_calls);
+}

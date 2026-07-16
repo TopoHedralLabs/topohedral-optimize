@@ -5,11 +5,12 @@
 
 //{{{ crate imports
 use super::common::{Error, Options as UnconstrainedOptions};
+use crate::common::Minimizer;
 use crate::common::Vector;
 use crate::line_search as ls;
 use crate::line_search::LineSearchMethod;
 use crate::quadratic_model::{QuadraticModel, UpdateType::Inverse};
-use crate::{ConvergedReason, IterData, Minimizer, RealFn, Returns};
+use crate::{ConvergedReason, IterData, RealFn, VectorReturns};
 //}}}
 //{{{ std imports
 #[allow(unused_imports)]
@@ -38,8 +39,8 @@ pub struct Options {
 }
 //}}}
 //{{{ struct: QuasiNewton
-pub struct QuasiNewton<F: RealFn> {
-    fcn: F,
+pub struct QuasiNewton<'a, F: RealFn + ?Sized> {
+    fcn: &'a mut F,
     x_init: Vector,
     norm_grad_fx_init: f64,
     opts: Options,
@@ -47,14 +48,14 @@ pub struct QuasiNewton<F: RealFn> {
 }
 //}}}
 //{{{ impl: QuasiNewton
-impl<F: RealFn> QuasiNewton<F> {
+impl<'a, F: RealFn + ?Sized> QuasiNewton<'a, F> {
     #[trace_fn]
     pub fn new(
-        mut fcn: F,
+        fcn: &'a mut F,
         x0: Vector,
         opts: Options,
     ) -> Self {
-        let grad_0 = fcn.grad(&x0);
+        let grad_0 = fcn.derivative(&x0);
         let norm_grad_0 = grad_0.abs_max().unwrap_or(0.0);
         let n = x0.len();
         Self {
@@ -150,13 +151,13 @@ impl<F: RealFn> QuasiNewton<F> {
 }
 //}}}
 //{{{ impl: Minimizer for QuasiNewton
-impl<F: RealFn> Minimizer for QuasiNewton<F> {
+impl<F: RealFn + ?Sized> Minimizer for QuasiNewton<'_, F> {
     type Error = Error;
-    type Returns = Returns;
+    type Returns = VectorReturns;
 
     #[trace_fn]
-    fn minimize(&mut self) -> Result<Returns, Self::Error> {
-        let mut iter_k = IterData::new(self.fcn.clone(), &self.x_init);
+    fn minimize(&mut self) -> Result<VectorReturns, Self::Error> {
+        let mut iter_k = IterData::new(&mut *self.fcn, &self.x_init);
         let mut iter_prev_k = iter_k.clone();
         iter_prev_k.fx = iter_k.fx + 0.5 * iter_k.norm_grad_fx;
 
@@ -177,7 +178,7 @@ impl<F: RealFn> Minimizer for QuasiNewton<F> {
             iter_prev_k = iter_k;
 
             let search_result = ls::search(
-                self.fcn.clone(),
+                &mut *self.fcn,
                 &iter_prev_k,
                 &dir_k,
                 alpha_init,
@@ -192,7 +193,7 @@ impl<F: RealFn> Minimizer for QuasiNewton<F> {
                     let alpha_init =
                         ls::initial_step(iter_prev_k.fx, fx_prev, iter_prev_k.grad_fx.dot(&dir_k));
                     ls::search(
-                        self.fcn.clone(),
+                        &mut *self.fcn,
                         &iter_prev_k,
                         &dir_k,
                         alpha_init,
@@ -222,7 +223,7 @@ impl<F: RealFn> Minimizer for QuasiNewton<F> {
                 trace!(target: "qn", "fx = {:.4e} x = {}", iter_k.fx, iter_k.x.clone().transpose());
                 info!(target: "qn", "=============================================");
                 //}}}
-                return Ok(Returns {
+                return Ok(VectorReturns {
                     fmin: iter_k.fx,
                     xmin: iter_k.x,
                     reason,

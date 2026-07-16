@@ -7,10 +7,11 @@
 use super::common::Error;
 use crate::bound_constrained::BoundConstrainedOptions;
 use crate::common::ConvergedReason;
+use crate::common::Minimizer;
 use crate::constraints::{BoundStatus, BoundsConstraints, CauchyPathPoint};
 use crate::line_search::{self as ls, LineSearchError, LineSearchMethod};
 use crate::quadratic_model::{QuadraticModel, UpdateType::Direct};
-use crate::{IterData, Minimizer, RealFn, Vector};
+use crate::{IterData, RealFn, Vector};
 //}}}
 //{{{ std imports
 //}}}
@@ -300,8 +301,8 @@ pub struct Options {
 }
 //}}}
 //{{{ struct: Bfgsb
-pub struct Bfgsb<F: RealFn> {
-    fcn: F,
+pub struct Bfgsb<'a, F: RealFn + ?Sized> {
+    fcn: &'a mut F,
     bounds: BoundsConstraints,
     x_init: Vector,
     norm_grad_fx_init: f64,
@@ -310,16 +311,16 @@ pub struct Bfgsb<F: RealFn> {
 }
 //}}}
 //{{{ impl Bfgsb
-impl<F: RealFn> Bfgsb<F> {
+impl<'a, F: RealFn + ?Sized> Bfgsb<'a, F> {
     #[trace_fn]
     pub fn new(
-        mut fcn: F,
+        fcn: &'a mut F,
         bounds: BoundsConstraints,
         mut x0: Vector,
         opts: Options,
     ) -> Self {
         bounds.clamp(&mut x0);
-        let grad_0 = fcn.grad(&x0);
+        let grad_0 = fcn.derivative(&x0);
         let projected_grad_0 = projected_gradient_inf_norm(&bounds, &x0, &grad_0);
 
         let n = x0.len();
@@ -401,15 +402,15 @@ impl<F: RealFn> Bfgsb<F> {
 }
 //}}}
 //{{{ impl Minimizer for Bfgsb
-impl<F: RealFn> Minimizer for Bfgsb<F> {
+impl<F: RealFn + ?Sized> Minimizer for Bfgsb<'_, F> {
     type Error = Error;
-    type Returns = crate::Returns;
+    type Returns = crate::VectorReturns;
 
     #[trace_fn]
-    fn minimize(&mut self) -> Result<crate::Returns, Self::Error> {
+    fn minimize(&mut self) -> Result<crate::VectorReturns, Self::Error> {
         let mut xk = self.x_init.clone();
         let mut fk = self.fcn.eval(&xk);
-        let mut gk = self.fcn.grad(&xk);
+        let mut gk = self.fcn.derivative(&xk);
         let mut projected_grad_norm = projected_gradient_inf_norm(&self.bounds, &xk, &gk);
         let max_iter = self.opts.bound_opts.base_opts.max_iter;
         let ftol = self.opts.bound_opts.constraint_tol.max(f64::EPSILON);
@@ -432,7 +433,7 @@ impl<F: RealFn> Minimizer for Bfgsb<F> {
                 trace!(target: "bfgsb", "fx = {:.4e} x = {}", fk, xk.clone().transpose());
                 info!(target: "bfgsb", "=============================================");
                 //}}}
-                return Ok(crate::Returns {
+                return Ok(crate::VectorReturns {
                     fmin: fk,
                     xmin: xk,
                     reason,
@@ -498,7 +499,7 @@ impl<F: RealFn> Minimizer for Bfgsb<F> {
                     trace!(target: "bfgsb", "fx = {:.4e} x = {}", fk, xk.clone().transpose());
                     info!(target: "bfgsb", "=============================================");
                     //}}}
-                    return Ok(crate::Returns {
+                    return Ok(crate::VectorReturns {
                         fmin: fk,
                         xmin: xk,
                         reason,
@@ -525,7 +526,7 @@ impl<F: RealFn> Minimizer for Bfgsb<F> {
                     trace!(target: "bfgsb", "fx = {:.4e} x = {}", fk, xk.clone().transpose());
                     info!(target: "bfgsb", "=============================================");
                     //}}}
-                    return Ok(crate::Returns {
+                    return Ok(crate::VectorReturns {
                         fmin: fk,
                         xmin: xk,
                         reason,
@@ -551,7 +552,7 @@ impl<F: RealFn> Minimizer for Bfgsb<F> {
             debug!(target: "bfgsb", "Starting line search: alpha_init = {alpha_init:.4e}, gᵀd = {gd:.4e}");
             //}}}
             let search_result = ls::search(
-                self.fcn.clone(),
+                &mut *self.fcn,
                 &iter_k,
                 &dir,
                 alpha_init,
@@ -584,7 +585,7 @@ impl<F: RealFn> Minimizer for Bfgsb<F> {
             let mut xk_new = search_result.x;
             self.bounds.clamp(&mut xk_new);
             let fk_new = self.fcn.eval(&xk_new);
-            let gk_new = self.fcn.grad(&xk_new);
+            let gk_new = self.fcn.derivative(&xk_new);
             let sk: Vector = (&xk_new - &xk).into();
             let yk: Vector = (&gk_new - &gk).into();
             let rel_red = (fk - fk_new) / fk.abs().max(fk_new.abs()).max(1.0);
@@ -610,7 +611,7 @@ impl<F: RealFn> Minimizer for Bfgsb<F> {
                 trace!(target: "bfgsb", "fx = {:.4e} x = {}", fk, xk.clone().transpose());
                 info!(target: "bfgsb", "=============================================");
                 //}}}
-                return Ok(crate::Returns {
+                return Ok(crate::VectorReturns {
                     fmin: fk,
                     xmin: xk,
                     reason,
@@ -627,7 +628,7 @@ impl<F: RealFn> Minimizer for Bfgsb<F> {
                 trace!(target: "bfgsb", "fx = {:.4e} x = {}", fk, xk.clone().transpose());
                 info!(target: "bfgsb", "=============================================");
                 //}}}
-                return Ok(crate::Returns {
+                return Ok(crate::VectorReturns {
                     fmin: fk,
                     xmin: xk,
                     reason: ConvergedReason::Rtol,

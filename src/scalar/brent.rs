@@ -10,7 +10,10 @@
 use super::common::{
     resolve_bracket, Bracket, BracketOptions, BracketResult, Error as ScalarError,
 };
-use crate::{common::ScalarReturns, ConvergedReason, Minimizer, RealFn1};
+use crate::{
+    common::{Minimizer, ScalarReturns},
+    ConvergedReason, RealFn1,
+};
 //}}}
 //{{{ std imports
 //}}}
@@ -150,7 +153,7 @@ impl<F: RealFn1> Minimizer for Brent<F> {
             } else {
                 x + rat
             };
-            let fu = self.fcn.eval(u);
+            let fu = self.fcn.eval(&u);
             num_fun_evals += 1;
 
             if fu > fx {

@@ -1,13 +1,12 @@
 use approx::assert_relative_eq;
 use ctor::ctor;
 use topohedral_linalg::{DMatrix, DVector, MatMul, ReduceOps, VecType, VectorOps};
-use topohedral_optimize::bound_constrained::{
-    minimize as bound_constrained_minimize, BfgsbOptions, BoundConstrainedMethod,
-    BoundConstrainedOptions,
+use topohedral_optimize::DifferentiableFn;
+use topohedral_optimize::{
+    bound_constrained_minimize, BaseOptions, BfgsbOptions, BoundConstrainedMethod,
+    BoundConstrainedOptions, BoundsConstraints, LineSearchMethod, LineSearchOptions, Matrix,
+    NocedalOptions, RealFn, Vector, VectorReturns,
 };
-use topohedral_optimize::constraints::BoundsConstraints;
-use topohedral_optimize::line_search::{LineSearchMethod, LineSearchOptions, NocedalOptions};
-use topohedral_optimize::{BaseOptions, Matrix, RealFn, Returns, Vector};
 use topohedral_tracing::*;
 
 #[ctor]
@@ -41,7 +40,6 @@ fn bfgsb_options(
                 grad_rtol: 0.0,
                 grad_atol: pgtol,
                 max_iter,
-                make_counting: true,
             },
             constraint_tol: ftol,
         },
@@ -73,15 +71,15 @@ fn bounds_from_pairs(pairs: &[(Option<f64>, Option<f64>)]) -> BoundsConstraints 
 }
 
 fn solve_bfgsb<F: RealFn>(
-    fcn: F,
+    mut fcn: F,
     x0: Vector,
     bounds: BoundsConstraints,
     pgtol: f64,
     ftol: f64,
     max_iter: u64,
-) -> Returns {
+) -> VectorReturns {
     bound_constrained_minimize(
-        fcn,
+        &mut fcn,
         bounds,
         x0,
         BoundConstrainedMethod::Bfgsb(bfgsb_options(pgtol, ftol, max_iter)),
@@ -94,7 +92,7 @@ fn kkt_residual<F: RealFn>(
     x: &Vector,
     bounds: &BoundsConstraints,
 ) -> f64 {
-    let grad = fcn.grad(x);
+    let grad = fcn.derivative(x);
     let projected = bounds.projected_direction(x, &(-grad), 1.0);
     projected.abs_max().unwrap_or(0.0)
 }
@@ -105,7 +103,10 @@ struct Quadratic {
     b: Vector,
 }
 
-impl RealFn for Quadratic {
+impl topohedral_optimize::DifferentiableFn for Quadratic {
+    type Input = Vector;
+    type Output = f64;
+    type Derivative = Vector;
     fn dimension(&self) -> usize {
         self.b.len()
     }
@@ -118,7 +119,7 @@ impl RealFn for Quadratic {
         0.5 * x.dot(&ax) - self.b.dot(x)
     }
 
-    fn grad(
+    fn derivative(
         &mut self,
         x: &Vector,
     ) -> Vector {
@@ -131,7 +132,10 @@ struct Linear {
     c: Vector,
 }
 
-impl RealFn for Linear {
+impl topohedral_optimize::DifferentiableFn for Linear {
+    type Input = Vector;
+    type Output = f64;
+    type Derivative = Vector;
     fn dimension(&self) -> usize {
         self.c.len()
     }
@@ -143,7 +147,7 @@ impl RealFn for Linear {
         self.c.dot(x)
     }
 
-    fn grad(
+    fn derivative(
         &mut self,
         _x: &Vector,
     ) -> Vector {
@@ -156,7 +160,10 @@ struct Rosenbrock {
     n: usize,
 }
 
-impl RealFn for Rosenbrock {
+impl topohedral_optimize::DifferentiableFn for Rosenbrock {
+    type Input = Vector;
+    type Output = f64;
+    type Derivative = Vector;
     fn dimension(&self) -> usize {
         self.n
     }
@@ -172,7 +179,7 @@ impl RealFn for Rosenbrock {
         value
     }
 
-    fn grad(
+    fn derivative(
         &mut self,
         x: &Vector,
     ) -> Vector {
@@ -192,7 +199,10 @@ struct FiniteDiff<F: RealFn> {
     eps: f64,
 }
 
-impl<F: RealFn> RealFn for FiniteDiff<F> {
+impl<F: RealFn> topohedral_optimize::DifferentiableFn for FiniteDiff<F> {
+    type Input = Vector;
+    type Output = f64;
+    type Derivative = Vector;
     fn dimension(&self) -> usize {
         self.fcn.dimension()
     }
@@ -204,7 +214,7 @@ impl<F: RealFn> RealFn for FiniteDiff<F> {
         self.fcn.eval(x)
     }
 
-    fn grad(
+    fn derivative(
         &mut self,
         x: &Vector,
     ) -> Vector {
@@ -222,9 +232,9 @@ impl<F: RealFn> RealFn for FiniteDiff<F> {
 fn rosenbrock_gradient_matches_finite_difference() {
     let mut fcn = Rosenbrock { n: 5 };
     let x = colvec(&[-1.2, 1.0, 0.5, 0.0, 2.0]);
-    let analytic = fcn.grad(&x);
+    let analytic = fcn.derivative(&x);
     let mut finite_diff = FiniteDiff { fcn, eps: 1e-6 };
-    let numerical = finite_diff.grad(&x);
+    let numerical = finite_diff.derivative(&x);
     assert_vector_close(&analytic, &numerical, 1e-3);
 }
 

@@ -4,21 +4,19 @@
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
+use crate::common::Minimizer;
 use crate::{
-    bound_constrained::{minimize as bcon_minimize, BoundConstrainedMethod},
-    common::{self, arc_real_fn, ConvergedReason, CountingRealFn, IterData, Returns},
+    bound_constrained::{minimize_impl as bcon_minimize, BoundConstrainedMethod},
+    common::{self, ConvergedReason, IterData, VectorReturns},
     constrained::{ConstrainedError, ConstriainedOptions},
     constraints::BoundsConstraints,
-    unconstrained::{minimize as uncon_minimize, UnconstrainedMethod},
-    Matrix, Minimizer, RealFn, RealVectorFn, Vector,
+    unconstrained::{minimize_impl as uncon_minimize, UnconstrainedMethod},
+    DifferentiableFn, Matrix, RealFn, RealVectorFn, Vector,
 };
 use core::f64;
 //}}}
 //{{{ std imports
-use std::{
-    collections::HashMap,
-    sync::{Arc, Mutex},
-};
+use std::collections::HashMap;
 //}}}
 //{{{ dep imports
 #[allow(unused_imports)]
@@ -87,7 +85,7 @@ impl Options {
 //}}}
 
 //{{{ struct: LagrangianPenaltyData
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 struct LagrangianPenaltyData<F: RealVectorFn> {
     pub function: F,
     pub penalties: Vector,
@@ -131,7 +129,7 @@ impl<F: RealVectorFn> LagrangianPenaltyData<F> {
         &mut self,
         x: &Vector,
     ) {
-        self.function.eval(x, &mut self.values);
+        self.values = self.function.eval(x);
     }
     //}}}
     //{{{ fn: update_gradients
@@ -140,7 +138,7 @@ impl<F: RealVectorFn> LagrangianPenaltyData<F> {
         &mut self,
         x: &Vector,
     ) {
-        self.function.grad(x, &mut self.gradients);
+        self.gradients = self.function.derivative(x);
     }
     //}}}
     //{{{ fn: update_max_violations
@@ -191,7 +189,7 @@ impl<F: RealVectorFn> LagrangianPenaltyData<F> {
 //}}}
 
 //{{{ struct: EqPenalty
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 struct EqPenalty<F: RealVectorFn> {
     data: LagrangianPenaltyData<F>,
     lagrangian_type: LagrangianType,
@@ -235,7 +233,10 @@ impl<F: RealVectorFn> EqPenalty<F> {
 }
 //}}}
 //{{{ impl RealFn for EqPenalty
-impl<F: RealVectorFn> RealFn for EqPenalty<F> {
+impl<F: RealVectorFn> crate::DifferentiableFn for EqPenalty<F> {
+    type Input = Vector;
+    type Output = f64;
+    type Derivative = Vector;
     //{{{ fn: dimension
     #[trace_fn]
     fn dimension(&self) -> usize {
@@ -275,7 +276,7 @@ impl<F: RealVectorFn> RealFn for EqPenalty<F> {
     //}}}
     //{{{ fn: grad
     #[trace_fn]
-    fn grad(
+    fn derivative(
         &mut self,
         x: &Vector,
     ) -> Vector {
@@ -293,7 +294,7 @@ impl<F: RealVectorFn> RealFn for EqPenalty<F> {
 //}}}
 
 //{{{ struct: IeqPenalty
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 struct IeqPenalty<F: RealVectorFn> {
     data: LagrangianPenaltyData<F>,
     lagrangian_type: LagrangianType,
@@ -349,7 +350,10 @@ impl<F: RealVectorFn> IeqPenalty<F> {
 }
 //}}}
 //{{{ impl RealFn  for IeqPenalty
-impl<F: RealVectorFn> RealFn for IeqPenalty<F> {
+impl<F: RealVectorFn> crate::DifferentiableFn for IeqPenalty<F> {
+    type Input = Vector;
+    type Output = f64;
+    type Derivative = Vector;
     //{{{ fn: dimension
     #[trace_fn]
     fn dimension(&self) -> usize {
@@ -378,7 +382,7 @@ impl<F: RealVectorFn> RealFn for IeqPenalty<F> {
     //}}}
     //{{{ fn: grad
     #[trace_fn]
-    fn grad(
+    fn derivative(
         &mut self,
         x: &Vector,
     ) -> Vector {
@@ -436,7 +440,7 @@ impl CachedValues {
 //}}}
 
 //{{{ struct: AugmentedLagrangianFcn
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct AugmentedLagrangianFcn<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> {
     fcn: F1,
     eq_penalty: Option<EqPenalty<F2>>,
@@ -482,6 +486,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangianFcn<F1, 
         &mut self,
         lagrangian_type: LagrangianType,
     ) {
+        self.lagrangian_type = lagrangian_type;
         if let Some(eq_penalty) = &mut self.eq_penalty {
             eq_penalty.lagrangian_type = lagrangian_type
         }
@@ -491,6 +496,17 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangianFcn<F1, 
         }
     }
     //}}}
+    fn evaluate_for_type(
+        &mut self,
+        x: &Vector,
+        lagrangian_type: LagrangianType,
+    ) {
+        let previous_type = self.lagrangian_type;
+        self.set_lagrangian_type(lagrangian_type);
+        let _ = self.eval(x);
+        let _ = self.derivative(x);
+        self.set_lagrangian_type(previous_type);
+    }
     //{{{ fn: update_max_eq_violations
     #[trace_fn]
     fn update_max_eq_violations(
@@ -559,7 +575,12 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangianFcn<F1, 
 
 //}}}
 //{{{ impl: RealFn for AugmentedLagrangianFcn
-impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> RealFn for AugmentedLagrangianFcn<F1, F2, F3> {
+impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> crate::DifferentiableFn
+    for AugmentedLagrangianFcn<F1, F2, F3>
+{
+    type Input = Vector;
+    type Output = f64;
+    type Derivative = Vector;
     //{{{ fn: dimension
     #[trace_fn]
     fn dimension(&self) -> usize {
@@ -617,13 +638,13 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> RealFn for AugmentedLagrang
     //}}}
     //{{{ fn: grad
     #[trace_fn]
-    fn grad(
+    fn derivative(
         &mut self,
         x: &Vector,
     ) -> Vector {
         let n = self.dimension();
 
-        let fcn_grad = self.fcn.grad(x);
+        let fcn_grad = self.fcn.derivative(x);
 
         //{{{ trace
         trace!(target: "aug", "Evaluated Objective Gradient = {}",
@@ -631,7 +652,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> RealFn for AugmentedLagrang
         //}}}
 
         let eq_penalty_grad = if let Some(eq_constraint_data) = &mut self.eq_penalty {
-            let eq_penalty_grad = eq_constraint_data.grad(x);
+            let eq_penalty_grad = eq_constraint_data.derivative(x);
             //{{{ trace
             trace!(target: "aug", "Evaluated EQ Gradient = {}",
                     eq_penalty_grad.clone().transpose());
@@ -642,7 +663,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> RealFn for AugmentedLagrang
         };
 
         let ieq_penalty_grad = if let Some(ieq_constraint_data) = &mut self.ieq_penalty {
-            let ieq_penalty_grad = ieq_constraint_data.grad(x);
+            let ieq_penalty_grad = ieq_constraint_data.derivative(x);
             //{{{ trace
             trace!(target: "aug", "Evaluated IEQ Gradient = {}",
                     ieq_penalty_grad.clone().transpose());
@@ -675,7 +696,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> RealFn for AugmentedLagrang
 
 //{{{ struct: AugmentedLagrangian
 pub struct AugmentedLagrangian<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> {
-    fcn: Arc<Mutex<CountingRealFn<AugmentedLagrangianFcn<F1, F2, F3>>>>,
+    fcn: AugmentedLagrangianFcn<F1, F2, F3>,
     x_init: Vector,
     bounds: Option<BoundsConstraints>,
     opts: Options,
@@ -705,21 +726,21 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
         trace!(target: "aug", "Creating new Augmented Lagrangian function");
         //}}}
 
-        let mut fcn_shared = arc_real_fn(CountingRealFn::new(AugmentedLagrangianFcn::new(
+        let mut fcn = AugmentedLagrangianFcn::new(
             fcn,
             eq_constraints,
             ieq_constraints,
             opts.initial_penalty,
             LagrangianType::AugmentedLagrangian,
-        )));
+        );
 
-        let _ = fcn_shared.eval(&x0);
-        let _ = fcn_shared.grad(&x0);
+        let _ = fcn.eval(&x0);
+        let _ = fcn.derivative(&x0);
 
         let user_omega = opts.constrained_opts.base_opts.grad_atol;
         let mu0 = opts.initial_penalty;
         Self {
-            fcn: fcn_shared,
+            fcn,
             x_init: x0,
             bounds,
             opts,
@@ -731,77 +752,65 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
     //{{{ fn: is_converged
     #[trace_fn]
     fn is_converged(
-        &self,
+        &mut self,
         iter_k: &IterData,
     ) -> Option<ConvergedReason> {
         //{{{ trace
         info!(target: "aug", "Checking convergence");
         //}}}
-        self.fcn.lock().unwrap().with_inner_mut(|fcn| {
-            let mut classical_auglag = fcn.clone();
-            classical_auglag.set_lagrangian_type(LagrangianType::Lagrangian);
-            let _ = classical_auglag.eval(&iter_k.x);
-            let _ = classical_auglag.grad(&iter_k.x);
+        self.fcn
+            .evaluate_for_type(&iter_k.x, LagrangianType::Lagrangian);
 
-            let norm_eq = if let Some(eq_penalty) = &classical_auglag.eq_penalty
-            {
-                eq_penalty.data.values.abs_max().unwrap()
-            }
-            else {
-                0.0
-            };
-            let norm_ieq = if let Some(ieq_penalty) = &classical_auglag.ieq_penalty
-            {
-                ieq_penalty.data.values.posed().abs_max().unwrap()
-            }
-            else {
-                0.0
-            };
+        let norm_eq = if let Some(eq_penalty) = &self.fcn.eq_penalty {
+            eq_penalty.data.values.abs_max().unwrap()
+        } else {
+            0.0
+        };
+        let norm_ieq = if let Some(ieq_penalty) = &self.fcn.ieq_penalty {
+            ieq_penalty.data.values.posed().abs_max().unwrap()
+        } else {
+            0.0
+        };
 
-            let cached_values = classical_auglag.get_cached_values();
-            let norm_grad_f = cached_values.fcn_grad.abs_max().unwrap();
-            let norm_grad_penalty = cached_values.all_constraint_grad.abs_max().unwrap();
-            let stationarity_gradient = if let Some(bounds) = &self.bounds
-            {
-                bounds.projected_direction(&iter_k.x, &(-cached_values.auglag_grad.clone()), 1.0)
-            }
-            else
-            {
-                cached_values.auglag_grad.clone()
-            };
-            let _norm_grad_auglag = cached_values.auglag_grad.abs_max().unwrap();
-            let norm_projected_grad_auglag = stationarity_gradient.abs_max().unwrap_or(0.0);
+        let cached_values = self
+            .fcn
+            .cached_values
+            .get(&LagrangianType::Lagrangian)
+            .unwrap();
+        let norm_grad_f = cached_values.fcn_grad.abs_max().unwrap();
+        let norm_grad_penalty = cached_values.all_constraint_grad.abs_max().unwrap();
+        let stationarity_gradient = if let Some(bounds) = &self.bounds {
+            bounds.projected_direction(&iter_k.x, &(-cached_values.auglag_grad.clone()), 1.0)
+        } else {
+            cached_values.auglag_grad.clone()
+        };
+        let _norm_grad_auglag = cached_values.auglag_grad.abs_max().unwrap();
+        let norm_projected_grad_auglag = stationarity_gradient.abs_max().unwrap_or(0.0);
 
-            let residual_stationarity = norm_projected_grad_auglag;
-            let residual_stationarity_scaled =
-                norm_projected_grad_auglag / 1.0f64.max(norm_grad_f).max(norm_grad_penalty);
-            let residual_primal = norm_eq.max(norm_ieq);
-            //{{{ trace
-            info!(target: "aug", "||∇P|| = {norm_grad_penalty:.4e} ||∇F|| = {norm_grad_f:.4} ||h|| = {norm_eq:.4e} ||g|| = {norm_ieq:.4e}");
-            info!(target: "aug", "||∇L|| = {_norm_grad_auglag:.4e})");
-            info!(target: "aug", "||∇L_proj|| = {norm_projected_grad_auglag:.4e})");
-            info!(target: "aug", "||∇L_proj|| / max(1, ||∇F||, ||∇P||) = {residual_stationarity_scaled:.4e}");
-            //}}}
-            let ctol = self.opts.constrained_opts.constraint_tol;
-            let rtol = self.opts.constrained_opts.base_opts.grad_rtol;
-            let atol = self.opts.constrained_opts.base_opts.grad_atol;
-            let constraints_satsifed = residual_primal < ctol;
-            let stationarity_rtol_satisfied = residual_stationarity_scaled < rtol;
-            let stationarity_atol_satisfied = residual_stationarity< atol;
+        let residual_stationarity = norm_projected_grad_auglag;
+        let residual_stationarity_scaled =
+            norm_projected_grad_auglag / 1.0f64.max(norm_grad_f).max(norm_grad_penalty);
+        let residual_primal = norm_eq.max(norm_ieq);
+        //{{{ trace
+        info!(target: "aug", "||∇P|| = {norm_grad_penalty:.4e} ||∇F|| = {norm_grad_f:.4} ||h|| = {norm_eq:.4e} ||g|| = {norm_ieq:.4e}");
+        info!(target: "aug", "||∇L|| = {_norm_grad_auglag:.4e})");
+        info!(target: "aug", "||∇L_proj|| = {norm_projected_grad_auglag:.4e})");
+        info!(target: "aug", "||∇L_proj|| / max(1, ||∇F||, ||∇P||) = {residual_stationarity_scaled:.4e}");
+        //}}}
+        let ctol = self.opts.constrained_opts.constraint_tol;
+        let rtol = self.opts.constrained_opts.base_opts.grad_rtol;
+        let atol = self.opts.constrained_opts.base_opts.grad_atol;
+        let constraints_satsifed = residual_primal < ctol;
+        let stationarity_rtol_satisfied = residual_stationarity_scaled < rtol;
+        let stationarity_atol_satisfied = residual_stationarity < atol;
 
-            if constraints_satsifed && stationarity_rtol_satisfied
-            {
-                Some(ConvergedReason::Rtol)
-            }
-            else if constraints_satsifed && stationarity_atol_satisfied
-            {
-                Some(ConvergedReason::Atol)
-            }
-            else
-            {
-                None
-            }
-        })
+        if constraints_satsifed && stationarity_rtol_satisfied {
+            Some(ConvergedReason::Rtol)
+        } else if constraints_satsifed && stationarity_atol_satisfied {
+            Some(ConvergedReason::Atol)
+        } else {
+            None
+        }
     }
     //}}}
     //{{{ fn: print_status
@@ -810,27 +819,23 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
         _k: u64,
         _iter_k: &IterData,
     ) {
-        self.fcn.lock().unwrap().with_inner_mut(|fcn| {
+        let fcn = &self.fcn;
 
-            info!(target: "aug", "******************************************************************************************** k = {_k}");
-            trace!(target: "aug", "Current solution: {}", _iter_k.x.clone().transpose());
-            trace!(target: "aug", "Current gradient: {}", _iter_k.grad_fx.clone().transpose());
+        info!(target: "aug", "******************************************************************************************** k = {_k}");
+        trace!(target: "aug", "Current solution: {}", _iter_k.x.clone().transpose());
+        trace!(target: "aug", "Current gradient: {}", _iter_k.grad_fx.clone().transpose());
 
-            if let Some(_eq_penalty) = &fcn.eq_penalty
-            {
-                trace!(target: "aug", "Current EQ penalties: {}", _eq_penalty.data.penalties.clone().transpose());
-                trace!(target: "aug", "Current EQ shifts: {}", _eq_penalty.data.shifts.clone().transpose());
-            }
+        if let Some(_eq_penalty) = &fcn.eq_penalty {
+            trace!(target: "aug", "Current EQ penalties: {}", _eq_penalty.data.penalties.clone().transpose());
+            trace!(target: "aug", "Current EQ shifts: {}", _eq_penalty.data.shifts.clone().transpose());
+        }
 
-            if let Some(_ieq_penalty) = &fcn.ieq_penalty
-            {
-                trace!(target: "aug", "Current IEQ penalties: {}", _ieq_penalty.data.penalties.clone().transpose());
-                trace!(target: "aug", "Current IEQ shifts: {}", _ieq_penalty.data.shifts.clone().transpose());
-            }
+        if let Some(_ieq_penalty) = &fcn.ieq_penalty {
+            trace!(target: "aug", "Current IEQ penalties: {}", _ieq_penalty.data.penalties.clone().transpose());
+            trace!(target: "aug", "Current IEQ shifts: {}", _ieq_penalty.data.shifts.clone().transpose());
+        }
 
-
-            info!(target: "aug", "******************************************************************************************** k = {_k}");
-        })
+        info!(target: "aug", "******************************************************************************************** k = {_k}");
     }
     //}}}
     //{{{ fn: update_penalties_shifts
@@ -839,30 +844,24 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
         &mut self,
         constraint_improvement_factor: f64,
         penalty_increase_factor: f64,
-        uncon_ret: Returns,
+        uncon_ret: VectorReturns,
     ) -> IterData {
-        self.fcn.lock().unwrap().with_inner_mut(|fcn| {
-            if let Some(eq_penalty) = &mut fcn.eq_penalty {
-                //{{{ trace
-                info!(target: "aug", "Updating penalties and shifts for EQ");
-                //}}}
-                eq_penalty.update_penalties_shifts(
-                    constraint_improvement_factor,
-                    penalty_increase_factor,
-                );
-            }
+        if let Some(eq_penalty) = &mut self.fcn.eq_penalty {
+            //{{{ trace
+            info!(target: "aug", "Updating penalties and shifts for EQ");
+            //}}}
+            eq_penalty
+                .update_penalties_shifts(constraint_improvement_factor, penalty_increase_factor);
+        }
 
-            if let Some(ieq_penalty) = &mut fcn.ieq_penalty {
-                //{{{ trace
-                info!(target: "aug", "Updating penalties and shifts for IEQ");
-                //}}}
-                ieq_penalty.update_penalties_shifts(
-                    constraint_improvement_factor,
-                    penalty_increase_factor,
-                );
-            }
-        });
-        IterData::new(self.fcn.clone(), &uncon_ret.xmin)
+        if let Some(ieq_penalty) = &mut self.fcn.ieq_penalty {
+            //{{{ trace
+            info!(target: "aug", "Updating penalties and shifts for IEQ");
+            //}}}
+            ieq_penalty
+                .update_penalties_shifts(constraint_improvement_factor, penalty_increase_factor);
+        }
+        IterData::new(&mut self.fcn, &uncon_ret.xmin)
     }
     //}}}
     /// Computes this outer iteration's inner stationarity tolerance ω_k and
@@ -913,11 +912,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
     #[trace_fn]
     fn set_inner_tolerances(&mut self) -> InnerMethod {
         let inner_method = self.opts.inner_method.clone();
-        let is_constrained = self
-            .fcn
-            .lock()
-            .unwrap()
-            .with_inner_mut(|fcn| fcn.is_constrained());
+        let is_constrained = self.fcn.is_constrained();
 
         match inner_method {
             InnerMethod::Unconstrained(mut uncon_method) => {
@@ -958,12 +953,12 @@ pub enum InnerMethod {
 }
 //}}}
 //{{{ fn: inner_minimize
-fn inner_minimize<F: RealFn>(
-    fcn: F,
+fn inner_minimize<F: RealFn + ?Sized>(
+    fcn: &mut F,
     bounds: Option<BoundsConstraints>,
     x0: Vector,
     inner_method: InnerMethod,
-) -> Result<common::Returns, ConstrainedError> {
+) -> Result<common::VectorReturns, ConstrainedError> {
     match inner_method {
         InnerMethod::Unconstrained(uncon_method) => Ok(uncon_minimize(fcn, x0, uncon_method)?),
         InnerMethod::BoundConstrained(bcon_method) => {
@@ -975,14 +970,14 @@ fn inner_minimize<F: RealFn>(
 //{{{ impl: Minimizer for AugmentedLagrangian
 impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> Minimizer for AugmentedLagrangian<F1, F2, F3> {
     type Error = ConstrainedError;
-    type Returns = Returns;
+    type Returns = VectorReturns;
 
     #[trace_fn]
-    fn minimize(&mut self) -> Result<Returns, Self::Error> {
+    fn minimize(&mut self) -> Result<VectorReturns, Self::Error> {
         let alpha = self.opts.constraint_improvement_factor;
         let beta = self.opts.penalty_growth_factor;
         let n_iter = self.opts.constrained_opts.base_opts.max_iter;
-        let mut iter_k = IterData::new(self.fcn.clone(), &self.x_init);
+        let mut iter_k = IterData::new(&mut self.fcn, &self.x_init);
         let mut iter_prev_k = iter_k.clone();
 
         for k in 1..n_iter {
@@ -990,7 +985,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> Minimizer for AugmentedLagr
             let uncon_method = self.set_inner_tolerances();
             let _omega_k = self.omega_k;
             let ret = match inner_minimize(
-                self.fcn.clone(),
+                &mut self.fcn,
                 self.bounds.clone(),
                 iter_prev_k.x.clone(),
                 uncon_method,
@@ -1012,14 +1007,8 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> Minimizer for AugmentedLagr
                     //{{{ trace
                     info!(target: "aug", "Inner solve failed at ω_k = {_omega_k:.4e}: {_err:?} — treating {k}'s starting iterate as this step's result");
                     //}}}
-                    let fmin = self
-                        .fcn
-                        .lock()
-                        .unwrap()
-                        .inner_mut()
-                        .fcn
-                        .eval(&iter_prev_k.x);
-                    Returns {
+                    let fmin = self.fcn.fcn.eval(&iter_prev_k.x);
+                    VectorReturns {
                         xmin: iter_prev_k.x.clone(),
                         fmin,
                         reason: ConvergedReason::Atol,
@@ -1039,9 +1028,9 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> Minimizer for AugmentedLagr
                 info!(target: "cg", "||∇L(k)|| = {:.4e}", iter_k.norm_grad_fx);
                 info!(target: "cg", "*********************************************");
                 //}}}
-                let fmin = self.fcn.lock().unwrap().inner_mut().fcn.eval(&iter_k.x);
+                let fmin = self.fcn.fcn.eval(&iter_k.x);
                 let xmin = iter_k.x;
-                return Ok(Returns {
+                return Ok(VectorReturns {
                     fmin,
                     xmin,
                     reason,

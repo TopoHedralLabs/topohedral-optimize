@@ -67,7 +67,7 @@ impl<F: RealFn1> LineSearch for Nocedal<F> {
         let mut dphi_a0 = dphi0;
         let mut dphi_a1 = 0.0;
         let _ = dphi_a1;
-        let mut phi_a1 = self.f.eval(alpha1);
+        let mut phi_a1 = self.f.eval(&alpha1);
         let max_iter = self.opts.maxiter;
 
         for i in 0..max_iter {
@@ -130,7 +130,7 @@ impl<F: RealFn1> LineSearch for Nocedal<F> {
             }
 
             // current step is armijo-acceptable, so check if curvature-accepttable
-            dphi_a1 = self.f.diff(alpha1);
+            dphi_a1 = self.f.derivative(&alpha1);
             //{{{ trace
             trace!(target: "ls", "dphi_a1 = {dphi_a1:.4e}");
             //}}}
@@ -204,7 +204,7 @@ impl<F: RealFn1> LineSearch for Nocedal<F> {
             alpha1 = alpha2;
             phi_a0 = phi_a1;
             dphi_a0 = dphi_a1;
-            phi_a1 = self.f.eval(alpha1);
+            phi_a1 = self.f.eval(&alpha1);
         }
 
         //{{{ trace
@@ -302,7 +302,7 @@ where
         trace!(target: "ls", "New value of a_j = {:.4e}", a_j);
         //}}}
         // try new value of alpha
-        let phi_aj = phi_fcn.eval(a_j);
+        let phi_aj = phi_fcn.eval(&a_j);
 
         let not_sat_armijo = !satisfies_armijo(c1, a_j, phi0, dphi0, phi_aj);
         let not_decreasing = phi_aj >= phi_lo;
@@ -319,7 +319,7 @@ where
             //{{{ trace
             trace!(target: "ls", "Passed armijo condition");
             //}}}
-            let dphi_aj = phi_fcn.diff(a_j);
+            let dphi_aj = phi_fcn.derivative(&a_j);
             if dphi_aj.abs() <= -c2 * dphi0 {
                 //{{{ trace
                 trace!(target: "ls","Passed curvature condition");
@@ -359,6 +359,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::DifferentiableFn;
     use approx::assert_relative_eq;
 
     struct ScalarFunction<F: Fn(f64) -> f64, G: Fn(f64) -> f64> {
@@ -376,21 +377,24 @@ mod tests {
         }
     }
 
-    impl<F: Fn(f64) -> f64, G: Fn(f64) -> f64> RealFn1 for ScalarFunction<F, G> {
+    impl<F: Fn(f64) -> f64, G: Fn(f64) -> f64> crate::DifferentiableFn for ScalarFunction<F, G> {
+        type Input = f64;
+        type Output = f64;
+        type Derivative = f64;
         #[trace_fn]
         fn eval(
             &mut self,
-            x: f64,
+            x: &f64,
         ) -> f64 {
-            (self.f)(x)
+            (self.f)(*x)
         }
 
         #[trace_fn]
-        fn diff(
+        fn derivative(
             &mut self,
-            x: f64,
+            x: &f64,
         ) -> f64 {
-            (self.df_dx)(x)
+            (self.df_dx)(*x)
         }
     }
 
@@ -401,9 +405,9 @@ mod tests {
         let f = |x: f64| (x - 2.0).powi(2);
         let df_dx = |x: f64| 2.0 * (x - 2.0);
         let mut sf = ScalarFunction::new(f, df_dx);
-        let phi0 = sf.eval(0.0);
-        let dphi0 = sf.diff(0.0);
-        let phi1 = sf.eval(1.0);
+        let phi0 = sf.eval(&0.0);
+        let dphi0 = sf.derivative(&0.0);
+        let phi1 = sf.eval(&1.0);
         let res = zoom(
             0.0, 1.0, phi0, phi1, dphi0, &mut sf, phi0, dphi0, 1e-4, 0.9, 10,
         );
@@ -423,13 +427,13 @@ mod tests {
         let mut sf = ScalarFunction::new(f, df_dx);
 
         let a0 = -10.0;
-        let phi0 = sf.eval(a0);
-        let dphi0 = sf.diff(a0);
+        let phi0 = sf.eval(&a0);
+        let dphi0 = sf.derivative(&a0);
         let a_lo = -5.0;
         let a_hi = 15.0;
-        let phi_lo = sf.eval(a_lo);
-        let dphi_lo = sf.diff(a_lo);
-        let phi_hi = sf.eval(a_hi);
+        let phi_lo = sf.eval(&a_lo);
+        let dphi_lo = sf.derivative(&a_lo);
+        let phi_hi = sf.eval(&a_hi);
         let res = zoom(
             a_lo, a_hi, phi_lo, phi_hi, dphi_lo, &mut sf, phi0, dphi0, 1e-4, 0.9, 10,
         );
@@ -449,13 +453,13 @@ mod tests {
         let mut sf = ScalarFunction::new(f, df_dx);
 
         let a0 = 3.0;
-        let phi0 = sf.eval(a0);
-        let dphi0 = sf.diff(a0);
+        let phi0 = sf.eval(&a0);
+        let dphi0 = sf.derivative(&a0);
         let a_lo = 5.0;
         let a_hi = 100.0;
-        let phi_lo = sf.eval(a_lo);
-        let dphi_lo = sf.diff(a_lo);
-        let phi_hi = sf.eval(a_hi);
+        let phi_lo = sf.eval(&a_lo);
+        let dphi_lo = sf.derivative(&a_lo);
+        let phi_hi = sf.eval(&a_hi);
         let res = zoom(
             a_lo, a_hi, phi_lo, phi_hi, dphi_lo, &mut sf, phi0, dphi0, 1e-4, 0.9, 10,
         );
@@ -471,13 +475,13 @@ mod tests {
         let mut sf = ScalarFunction::new(f, df_dx);
 
         let a0 = 1.0;
-        let phi0 = sf.eval(a0);
-        let dphi0 = sf.diff(a0);
+        let phi0 = sf.eval(&a0);
+        let dphi0 = sf.derivative(&a0);
         let a_lo = 1.5;
         let a_hi = 100.0;
-        let phi_lo = sf.eval(a_lo);
-        let dphi_lo = sf.diff(a_lo);
-        let phi_hi = sf.eval(a_hi);
+        let phi_lo = sf.eval(&a_lo);
+        let dphi_lo = sf.derivative(&a_lo);
+        let phi_hi = sf.eval(&a_hi);
         let res = zoom(
             a_lo, a_hi, phi_lo, phi_hi, dphi_lo, &mut sf, phi0, dphi0, 1e-4, 0.9, 10,
         );

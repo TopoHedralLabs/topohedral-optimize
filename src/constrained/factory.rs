@@ -4,13 +4,14 @@
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
+use crate::common::Minimizer;
 use crate::{
     constrained::{
         augmented_lagrangian::AugmentedLagrangian, common::Error, AugmentedLagrangianOptions,
         ConstriainedOptions,
     },
     constraints::BoundsConstraints,
-    Minimizer, RealFn, RealVectorFn, Returns, Vector,
+    RealFn, RealVectorFn, Vector, VectorReturns,
 };
 //}}}
 //{{{ std imports
@@ -51,7 +52,7 @@ pub fn create<'a, F1: RealFn + 'a, F2: RealVectorFn + 'a, F3: RealVectorFn + 'a>
     ieq_constraints: Option<F3>,
     x0: Vector,
     method: Method,
-) -> Result<Box<dyn Minimizer<Error = Error, Returns = Returns> + 'a>, Error> {
+) -> Result<Box<dyn Minimizer<Error = Error, Returns = VectorReturns> + 'a>, Error> {
     match method {
         Method::AugmentedLagrangian(opts) => Ok(Box::new(AugmentedLagrangian::new(
             fcn,
