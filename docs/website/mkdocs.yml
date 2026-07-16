@@ -1,4 +1,4 @@
-site_name: TopoHedral-Linalg Documentation
+site_name: TopoHedral-Optimize Documentation
 site_url: https://topohedrallabs.github.io/topohedral-optimize/
 theme:
   name: material
@@ -31,5 +31,4 @@ nav:
   - API Docs: api/
   - Developers:
       - Overview: developers/index.md
-      - Elementwise Vectorisation: developers/elementwise-vectorization.md
       - Building Docs: developers/building-docs.md
