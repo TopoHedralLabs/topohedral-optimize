@@ -214,7 +214,7 @@ pub fn quadcubmin<F: RealFn1>(
     phi_c: f64,
 ) -> Option<(f64, f64)> {
     let to_pair = |x: &Option<f64>| -> Option<(f64, f64)> {
-        x.as_ref().map(|alpha| (*alpha, f.eval(&*alpha)))
+        x.as_ref().map(|alpha| (*alpha, f.eval(alpha)))
     };
     let cubic_min_alpha = cubicmin3(a, phi_a, dphi_a, b, phi_b, c, phi_c);
     let quad_min1_alpha = quadmin(a, phi_a, dphi_a, b, phi_b);
