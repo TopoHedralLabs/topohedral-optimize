@@ -110,7 +110,10 @@ impl<F: RealFn> RestrictedFunction<F> {
 }
 //}}}
 //{{{ impl: RealFn for BoundedFunction
-impl<F: RealFn> RealFn for RestrictedFunction<F> {
+impl<F: RealFn> crate::DifferentiableFn for RestrictedFunction<F> {
+    type Input = Vector;
+    type Output = f64;
+    type Derivative = Vector;
     //{{{ fn: dimension
     #[trace_fn]
     fn dimension(&self) -> usize {
@@ -132,12 +135,12 @@ impl<F: RealFn> RealFn for RestrictedFunction<F> {
     //}}}
     //{{{ fn: grad
     #[trace_fn]
-    fn grad(
+    fn derivative(
         &mut self,
         x: &Vector,
     ) -> Vector {
         let x_full = lift(&self.bound_statuses, x);
-        let grad_f_full = self.fcn.grad(&x_full);
+        let grad_f_full = self.fcn.derivative(&x_full);
         restrict(&self.bound_statuses, &grad_f_full)
     }
     //}}}
@@ -172,7 +175,7 @@ impl<F: RealFn> ActiveSetAlgorithm<F> {
         opts: Options,
     ) -> Self {
         bounds.clamp(&mut x0);
-        let grad_0 = fcn.grad(&x0);
+        let grad_0 = fcn.derivative(&x0);
         let negative_grad_0 = -grad_0.clone();
         let projectd_grad_0 = bounds.projected_direction(&x0, &negative_grad_0, 1.0);
         let norm_projected_grad_0 = projectd_grad_0.abs_max().unwrap();
@@ -320,7 +323,7 @@ impl<F: RealFn> ActiveSetAlgorithm<F> {
             f_trial = self.fcn.eval(&x_trial)
         }
 
-        let grad_fx_new = self.fcn.grad(&x_trial);
+        let grad_fx_new = self.fcn.derivative(&x_trial);
         let norm_grad_fx_new = grad_fx_new.abs_max().unwrap_or(0.0);
         //{{{ trace
         debug!(target: "asa", "NGPA accepted point: f = {f_trial:.4e}, ||∇f|| = {norm_grad_fx_new:.4e}");
@@ -604,7 +607,7 @@ impl<F: RealFn> Minimizer for ActiveSetAlgorithm<F> {
                     iter_k.x.copy_from(lift(&bounds_statuses, &res.xmin));
                     self.bounds.clamp(&mut iter_k.x);
                     iter_k.fx = res.fmin;
-                    iter_k.grad_fx.copy_from(self.fcn.grad(&iter_k.x));
+                    iter_k.grad_fx.copy_from(self.fcn.derivative(&iter_k.x));
                     iter_k.fx = self.fcn.eval(&iter_k.x);
                     iter_k.norm_grad_fx = iter_k.grad_fx.abs_max().unwrap_or(0.0);
 

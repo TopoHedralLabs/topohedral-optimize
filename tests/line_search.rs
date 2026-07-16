@@ -1,7 +1,6 @@
 //{{{ crate imports
 use topohedral_optimize::{
-    lsearch1d as search1d, LineSearchMethod, LineSearchOptions, NocedalOptions, RealFn1,
-    ThuenteOptions,
+    lsearch1d as search1d, LineSearchMethod, LineSearchOptions, NocedalOptions, ThuenteOptions,
 };
 //}}}
 //{{{ std imports
@@ -24,17 +23,20 @@ struct Quadratic1D {
     pub root1: f64,
     pub root2: f64,
 }
-impl RealFn1 for Quadratic1D {
+impl topohedral_optimize::DifferentiableFn for Quadratic1D {
+    type Input = f64;
+    type Output = f64;
+    type Derivative = f64;
     fn eval(
         &mut self,
-        x: f64,
+        x: &f64,
     ) -> f64 {
         (x - self.root1) * (x - self.root2)
     }
 
-    fn diff(
+    fn derivative(
         &mut self,
-        x: f64,
+        x: &f64,
     ) -> f64 {
         2.0 * x - (self.root1 + self.root2)
     }
@@ -47,17 +49,20 @@ struct Cubic1D {
     pub root2: f64,
     pub root3: f64,
 }
-impl RealFn1 for Cubic1D {
+impl topohedral_optimize::DifferentiableFn for Cubic1D {
+    type Input = f64;
+    type Output = f64;
+    type Derivative = f64;
     fn eval(
         &mut self,
-        x: f64,
+        x: &f64,
     ) -> f64 {
         (x - self.root1) * (x - self.root2) * (x - self.root3)
     }
 
-    fn diff(
+    fn derivative(
         &mut self,
-        x: f64,
+        x: &f64,
     ) -> f64 {
         let mut out = 0.0;
         out += (x - self.root2) * (x - self.root3);
@@ -72,18 +77,21 @@ impl RealFn1 for Cubic1D {
 struct RationalQuad1D {
     beta: f64,
 }
-impl RealFn1 for RationalQuad1D {
+impl topohedral_optimize::DifferentiableFn for RationalQuad1D {
+    type Input = f64;
+    type Output = f64;
+    type Derivative = f64;
     fn eval(
         &mut self,
-        x: f64,
+        x: &f64,
     ) -> f64 {
         let alpha = x;
         -alpha / (alpha.powi(2) + self.beta)
     }
 
-    fn diff(
+    fn derivative(
         &mut self,
-        x: f64,
+        x: &f64,
     ) -> f64 {
         let alpha = x;
         (alpha.powi(2) - self.beta) / (alpha.powi(2) + self.beta).powi(2)

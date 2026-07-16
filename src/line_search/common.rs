@@ -41,29 +41,32 @@ impl<F: RealFn> LineSearchFcn<F> {
     ) -> (Vector, f64, Vector) {
         let new_x: Vector = (&self.x + alpha * &self.dir).into();
         let new_fx = self.f.eval(&new_x);
-        let new_grad_fx = self.f.grad(&new_x);
+        let new_grad_fx = self.f.derivative(&new_x);
         (new_x, new_fx, new_grad_fx)
     }
 }
 //}}}
 //{{{ impl: RealFn1 for LineSearchFcn
-impl<F: RealFn> RealFn1 for LineSearchFcn<F> {
+impl<F: RealFn> crate::DifferentiableFn for LineSearchFcn<F> {
+    type Input = f64;
+    type Output = f64;
+    type Derivative = f64;
     #[trace_fn]
     fn eval(
         &mut self,
-        alpha: f64,
+        alpha: &f64,
     ) -> f64 {
-        let x = self.x.clone() + alpha * self.dir.clone();
+        let x = self.x.clone() + *alpha * self.dir.clone();
         self.f.eval(&x)
     }
 
     #[trace_fn]
-    fn diff(
+    fn derivative(
         &mut self,
-        alpha: f64,
+        alpha: &f64,
     ) -> f64 {
-        let x = self.x.clone() + alpha * self.dir.clone();
-        let grad = self.f.grad(&x);
+        let x = self.x.clone() + *alpha * self.dir.clone();
+        let grad = self.f.derivative(&x);
         grad.dot(&self.dir)
     }
 }
@@ -145,6 +148,7 @@ pub trait LineSearch {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::DifferentiableFn;
 
     //{{{ std imports
     use std::cell::RefCell;
@@ -171,7 +175,10 @@ mod tests {
     }
     //}}}
     //{{{ impl: RealFn for QuadraticDynamic
-    impl RealFn for QuadraticDynamic {
+    impl DifferentiableFn for QuadraticDynamic {
+        type Input = Vector;
+        type Output = f64;
+        type Derivative = Vector;
         #[trace_fn]
         fn dimension(&self) -> usize {
             self.center.len()
@@ -188,7 +195,7 @@ mod tests {
         }
 
         #[trace_fn]
-        fn grad(
+        fn derivative(
             &mut self,
             x: &Vector,
         ) -> Vector {
@@ -239,14 +246,14 @@ mod tests {
             dir: colvec(&[1.0, -2.0, 1.0]),
         };
 
-        let phi1 = line_fcn1.eval(0.0);
-        let dphi1 = line_fcn1.diff(0.0);
+        let phi1 = line_fcn1.eval(&0.0);
+        let dphi1 = line_fcn1.derivative(&0.0);
         assert_relative_eq!(phi1, 0.0, epsilon = 1e-10);
         assert_relative_eq!(dphi1, 0.0, epsilon = 1e-10);
 
         line_fcn1.x = DVector::<f64>::ones_vec(3, VecType::Col);
-        let phi2 = line_fcn1.eval(0.0);
-        let dphi2 = line_fcn1.diff(0.0);
+        let phi2 = line_fcn1.eval(&0.0);
+        let dphi2 = line_fcn1.derivative(&0.0);
         assert_relative_eq!(phi2, 27.0, epsilon = 1e-10);
         assert_relative_eq!(dphi2, 16.0 - 2.0 * 18.0 + 20.0, epsilon = 1e-10);
     }
@@ -264,14 +271,14 @@ mod tests {
             dir,
         };
 
-        let phi1 = line_fcn1.eval(0.0);
-        let dphi1 = line_fcn1.diff(0.0);
+        let phi1 = line_fcn1.eval(&0.0);
+        let dphi1 = line_fcn1.derivative(&0.0);
         assert_relative_eq!(phi1, 0.0, epsilon = 1e-10);
         assert_relative_eq!(dphi1, 0.0, epsilon = 1e-10);
 
         line_fcn1.x = DVector::<f64>::ones_vec(3, VecType::Col);
-        let phi2 = line_fcn1.eval(0.0);
-        let dphi2 = line_fcn1.diff(0.0);
+        let phi2 = line_fcn1.eval(&0.0);
+        let dphi2 = line_fcn1.derivative(&0.0);
         assert_relative_eq!(phi2, 27.0, epsilon = 1e-10);
         assert_relative_eq!(dphi2, 16.0 - 2.0 * 18.0 + 20.0, epsilon = 1e-10);
     }
@@ -290,14 +297,14 @@ mod tests {
             dir,
         };
 
-        let phi1 = line_fcn1.eval(0.0);
-        let dphi1 = line_fcn1.diff(0.0);
+        let phi1 = line_fcn1.eval(&0.0);
+        let dphi1 = line_fcn1.derivative(&0.0);
         assert_relative_eq!(phi1, 0.0, epsilon = 1e-10);
         assert_relative_eq!(dphi1, 0.0, epsilon = 1e-10);
 
         line_fcn1.x = DVector::<f64>::ones_vec(3, VecType::Col);
-        let phi2 = line_fcn1.eval(0.0);
-        let dphi2 = line_fcn1.diff(0.0);
+        let phi2 = line_fcn1.eval(&0.0);
+        let dphi2 = line_fcn1.derivative(&0.0);
         assert_relative_eq!(phi2, 27.0, epsilon = 1e-10);
         assert_relative_eq!(dphi2, 16.0 - 2.0 * 18.0 + 20.0, epsilon = 1e-10);
     }

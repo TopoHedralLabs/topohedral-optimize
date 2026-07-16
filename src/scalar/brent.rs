@@ -153,7 +153,7 @@ impl<F: RealFn1> Minimizer for Brent<F> {
             } else {
                 x + rat
             };
-            let fu = self.fcn.eval(u);
+            let fu = self.fcn.eval(&u);
             num_fun_evals += 1;
 
             if fu > fx {

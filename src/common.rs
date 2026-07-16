@@ -23,30 +23,52 @@ use topohedral_tracing::trace_fn;
 pub type Vector = DVector<f64>;
 pub type Matrix = DMatrix<f64>;
 //}}}
-//{{{ trait: RealFn1
-/// 1D real-valued function trait
-pub trait RealFn1 {
+//{{{ trait: DifferentiableFn
+/// A differentiable function with associated input, output, and derivative types.
+pub trait DifferentiableFn {
+    type Input;
+    type Output;
+    type Derivative;
+
     fn eval(
         &mut self,
-        x: f64,
-    ) -> f64;
-    fn diff(
+        x: &Self::Input,
+    ) -> Self::Output;
+
+    fn derivative(
         &mut self,
-        x: f64,
-    ) -> f64;
+        x: &Self::Input,
+    ) -> Self::Derivative;
+
+    fn dimension(&self) -> usize {
+        1
+    }
+
+    fn dimension_domain(&self) -> usize {
+        self.dimension()
+    }
+
+    fn dimension_range(&self) -> usize {
+        1
+    }
 }
 //}}}
+//{{{ trait: RealFn1
+/// Stable-Rust equivalent of a trait alias for a differentiable `f64 -> f64` function.
+pub trait RealFn1: DifferentiableFn<Input = f64, Output = f64, Derivative = f64> {}
+
+impl<F> RealFn1 for F where F: DifferentiableFn<Input = f64, Output = f64, Derivative = f64> {}
+//}}}
 //{{{ trait: RealFn
-pub trait RealFn: Clone + Debug {
-    fn dimension(&self) -> usize;
-    fn eval(
-        &mut self,
-        x: &Vector,
-    ) -> f64;
-    fn grad(
-        &mut self,
-        x: &Vector,
-    ) -> Vector;
+/// Stable-Rust equivalent of a trait alias for a scalar-valued function on `Vector`.
+pub trait RealFn:
+    DifferentiableFn<Input = Vector, Output = f64, Derivative = Vector> + Clone + Debug
+{
+}
+
+impl<F> RealFn for F where
+    F: DifferentiableFn<Input = Vector, Output = f64, Derivative = Vector> + Clone + Debug
+{
 }
 //}}}
 //{{{ enum: ConvergedReason
@@ -105,7 +127,7 @@ impl IterData {
         x: &Vector,
     ) -> Self {
         let fx = fcn.eval(x);
-        let grad_fx = fcn.grad(x);
+        let grad_fx = fcn.derivative(x);
         let norm_grad_fx = grad_fx.norm();
         IterData {
             x: x.clone(),
@@ -140,57 +162,85 @@ impl Display for IterData {
     }
 }
 //}}}
-//{{{ impl: RealFn for Rc<RefCell<T>>
-impl<F> RealFn for Rc<RefCell<F>>
+//{{{ impl: DifferentiableFn for Rc<RefCell<T>>
+impl<F> DifferentiableFn for Rc<RefCell<F>>
 where
-    F: RealFn,
+    F: DifferentiableFn,
 {
+    type Input = F::Input;
+    type Output = F::Output;
+    type Derivative = F::Derivative;
+
+    #[trace_fn]
+    fn eval(
+        &mut self,
+        x: &Self::Input,
+    ) -> Self::Output {
+        self.borrow_mut().eval(x)
+    }
+
+    #[trace_fn]
+    fn derivative(
+        &mut self,
+        x: &Self::Input,
+    ) -> Self::Derivative {
+        self.borrow_mut().derivative(x)
+    }
+
     #[trace_fn]
     fn dimension(&self) -> usize {
         self.borrow().dimension()
     }
 
     #[trace_fn]
-    fn eval(
-        &mut self,
-        x: &Vector,
-    ) -> f64 {
-        self.borrow_mut().eval(x)
+    fn dimension_domain(&self) -> usize {
+        self.borrow().dimension_domain()
     }
 
     #[trace_fn]
-    fn grad(
-        &mut self,
-        x: &Vector,
-    ) -> Vector {
-        self.borrow_mut().grad(x)
+    fn dimension_range(&self) -> usize {
+        self.borrow().dimension_range()
     }
 }
 //}}}
-//{{{ impl: RealFn for Arc<Mutex<T>>
-impl<F> RealFn for Arc<Mutex<F>>
+//{{{ impl: DifferentiableFn for Arc<Mutex<T>>
+impl<F> DifferentiableFn for Arc<Mutex<F>>
 where
-    F: RealFn,
+    F: DifferentiableFn,
 {
+    type Input = F::Input;
+    type Output = F::Output;
+    type Derivative = F::Derivative;
+
+    #[trace_fn]
+    fn eval(
+        &mut self,
+        x: &Self::Input,
+    ) -> Self::Output {
+        self.lock().unwrap().eval(x)
+    }
+
+    #[trace_fn]
+    fn derivative(
+        &mut self,
+        x: &Self::Input,
+    ) -> Self::Derivative {
+        self.lock().unwrap().derivative(x)
+    }
+
     #[trace_fn]
     fn dimension(&self) -> usize {
         self.lock().unwrap().dimension()
     }
 
     #[trace_fn]
-    fn eval(
-        &mut self,
-        x: &Vector,
-    ) -> f64 {
-        self.lock().unwrap().eval(x)
+    fn dimension_domain(&self) -> usize {
+        self.lock().unwrap().dimension_domain()
     }
 
     #[trace_fn]
-    fn grad(
-        &mut self,
-        x: &Vector,
-    ) -> Vector {
-        self.lock().unwrap().grad(x)
+    fn dimension_range(&self) -> usize {
+        self.lock().unwrap().dimension_range()
     }
 }
 //}}}
@@ -202,12 +252,11 @@ pub(crate) struct CountingRealFn<F: RealFn> {
     pub num_grad_evals: usize,
 }
 //}}}
-//{{{ impl: RealFn for CountingRealFn
-impl<F: RealFn> RealFn for CountingRealFn<F> {
-    #[trace_fn]
-    fn dimension(&self) -> usize {
-        self.fcn.dimension()
-    }
+//{{{ impl: DifferentiableFn for CountingRealFn
+impl<F: RealFn> DifferentiableFn for CountingRealFn<F> {
+    type Input = Vector;
+    type Output = f64;
+    type Derivative = Vector;
 
     #[trace_fn]
     fn eval(
@@ -219,12 +268,17 @@ impl<F: RealFn> RealFn for CountingRealFn<F> {
     }
 
     #[trace_fn]
-    fn grad(
+    fn derivative(
         &mut self,
         x: &Vector,
     ) -> Vector {
         self.num_grad_evals += 1;
-        self.fcn.grad(x)
+        self.fcn.derivative(x)
+    }
+
+    #[trace_fn]
+    fn dimension(&self) -> usize {
+        self.fcn.dimension()
     }
 }
 //}}}
@@ -274,88 +328,15 @@ pub fn arc_real_fn<F: RealFn>(fcn: F) -> ArcRealFn<F> {
 }
 //}}}
 //{{{ trait: RealVectorFn
-pub trait RealVectorFn: Clone + Debug {
-    fn dimension_domain(&self) -> usize;
-    fn dimension_range(&self) -> usize;
-
-    fn eval(
-        &mut self,
-        x: &Vector,
-        val: &mut Vector,
-    );
-    fn grad(
-        &mut self,
-        x: &Vector,
-        val: &mut Matrix,
-    );
-}
-//}}}
-//{{{ impl: RealVectorFn for Rc<RefCell<T>>
-impl<T> RealVectorFn for Rc<RefCell<T>>
-where
-    T: RealVectorFn,
+/// Stable-Rust equivalent of a trait alias for a vector-valued function on `Vector`.
+pub trait RealVectorFn:
+    DifferentiableFn<Input = Vector, Output = Vector, Derivative = Matrix> + Clone + Debug
 {
-    #[trace_fn]
-    fn dimension_domain(&self) -> usize {
-        self.borrow().dimension_domain()
-    }
-
-    #[trace_fn]
-    fn dimension_range(&self) -> usize {
-        self.borrow().dimension_range()
-    }
-
-    #[trace_fn]
-    fn eval(
-        &mut self,
-        x: &Vector,
-        val: &mut Vector,
-    ) {
-        self.borrow_mut().eval(x, val)
-    }
-
-    #[trace_fn]
-    fn grad(
-        &mut self,
-        x: &Vector,
-        val: &mut Matrix,
-    ) {
-        self.borrow_mut().grad(x, val)
-    }
 }
-//}}}
-//{{{ impl: RealVectorFn for Arc<Mutex<T>>
-impl<T> RealVectorFn for Arc<Mutex<T>>
-where
-    T: RealVectorFn,
+
+impl<F> RealVectorFn for F where
+    F: DifferentiableFn<Input = Vector, Output = Vector, Derivative = Matrix> + Clone + Debug
 {
-    #[trace_fn]
-    fn dimension_domain(&self) -> usize {
-        self.lock().unwrap().dimension_domain()
-    }
-
-    #[trace_fn]
-    fn dimension_range(&self) -> usize {
-        self.lock().unwrap().dimension_range()
-    }
-
-    #[trace_fn]
-    fn eval(
-        &mut self,
-        x: &Vector,
-        val: &mut Vector,
-    ) {
-        self.lock().unwrap().eval(x, val)
-    }
-
-    #[trace_fn]
-    fn grad(
-        &mut self,
-        x: &Vector,
-        val: &mut DMatrix<f64>,
-    ) {
-        self.lock().unwrap().grad(x, val)
-    }
 }
 //}}}
 //{{{ type: aliases for Rc<RefCell<F>> and Arc<Mutex<F>>

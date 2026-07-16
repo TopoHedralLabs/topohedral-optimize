@@ -11,7 +11,7 @@ use crate::{
     constrained::{ConstrainedError, ConstriainedOptions},
     constraints::BoundsConstraints,
     unconstrained::{minimize as uncon_minimize, UnconstrainedMethod},
-    Matrix, RealFn, RealVectorFn, Vector,
+    DifferentiableFn, Matrix, RealFn, RealVectorFn, Vector,
 };
 use core::f64;
 //}}}
@@ -132,7 +132,7 @@ impl<F: RealVectorFn> LagrangianPenaltyData<F> {
         &mut self,
         x: &Vector,
     ) {
-        self.function.eval(x, &mut self.values);
+        self.values = self.function.eval(x);
     }
     //}}}
     //{{{ fn: update_gradients
@@ -141,7 +141,7 @@ impl<F: RealVectorFn> LagrangianPenaltyData<F> {
         &mut self,
         x: &Vector,
     ) {
-        self.function.grad(x, &mut self.gradients);
+        self.gradients = self.function.derivative(x);
     }
     //}}}
     //{{{ fn: update_max_violations
@@ -236,7 +236,10 @@ impl<F: RealVectorFn> EqPenalty<F> {
 }
 //}}}
 //{{{ impl RealFn for EqPenalty
-impl<F: RealVectorFn> RealFn for EqPenalty<F> {
+impl<F: RealVectorFn> crate::DifferentiableFn for EqPenalty<F> {
+    type Input = Vector;
+    type Output = f64;
+    type Derivative = Vector;
     //{{{ fn: dimension
     #[trace_fn]
     fn dimension(&self) -> usize {
@@ -276,7 +279,7 @@ impl<F: RealVectorFn> RealFn for EqPenalty<F> {
     //}}}
     //{{{ fn: grad
     #[trace_fn]
-    fn grad(
+    fn derivative(
         &mut self,
         x: &Vector,
     ) -> Vector {
@@ -350,7 +353,10 @@ impl<F: RealVectorFn> IeqPenalty<F> {
 }
 //}}}
 //{{{ impl RealFn  for IeqPenalty
-impl<F: RealVectorFn> RealFn for IeqPenalty<F> {
+impl<F: RealVectorFn> crate::DifferentiableFn for IeqPenalty<F> {
+    type Input = Vector;
+    type Output = f64;
+    type Derivative = Vector;
     //{{{ fn: dimension
     #[trace_fn]
     fn dimension(&self) -> usize {
@@ -379,7 +385,7 @@ impl<F: RealVectorFn> RealFn for IeqPenalty<F> {
     //}}}
     //{{{ fn: grad
     #[trace_fn]
-    fn grad(
+    fn derivative(
         &mut self,
         x: &Vector,
     ) -> Vector {
@@ -560,7 +566,12 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangianFcn<F1, 
 
 //}}}
 //{{{ impl: RealFn for AugmentedLagrangianFcn
-impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> RealFn for AugmentedLagrangianFcn<F1, F2, F3> {
+impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> crate::DifferentiableFn
+    for AugmentedLagrangianFcn<F1, F2, F3>
+{
+    type Input = Vector;
+    type Output = f64;
+    type Derivative = Vector;
     //{{{ fn: dimension
     #[trace_fn]
     fn dimension(&self) -> usize {
@@ -618,13 +629,13 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> RealFn for AugmentedLagrang
     //}}}
     //{{{ fn: grad
     #[trace_fn]
-    fn grad(
+    fn derivative(
         &mut self,
         x: &Vector,
     ) -> Vector {
         let n = self.dimension();
 
-        let fcn_grad = self.fcn.grad(x);
+        let fcn_grad = self.fcn.derivative(x);
 
         //{{{ trace
         trace!(target: "aug", "Evaluated Objective Gradient = {}",
@@ -632,7 +643,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> RealFn for AugmentedLagrang
         //}}}
 
         let eq_penalty_grad = if let Some(eq_constraint_data) = &mut self.eq_penalty {
-            let eq_penalty_grad = eq_constraint_data.grad(x);
+            let eq_penalty_grad = eq_constraint_data.derivative(x);
             //{{{ trace
             trace!(target: "aug", "Evaluated EQ Gradient = {}",
                     eq_penalty_grad.clone().transpose());
@@ -643,7 +654,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> RealFn for AugmentedLagrang
         };
 
         let ieq_penalty_grad = if let Some(ieq_constraint_data) = &mut self.ieq_penalty {
-            let ieq_penalty_grad = ieq_constraint_data.grad(x);
+            let ieq_penalty_grad = ieq_constraint_data.derivative(x);
             //{{{ trace
             trace!(target: "aug", "Evaluated IEQ Gradient = {}",
                     ieq_penalty_grad.clone().transpose());
@@ -715,7 +726,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
         )));
 
         let _ = fcn_shared.eval(&x0);
-        let _ = fcn_shared.grad(&x0);
+        let _ = fcn_shared.derivative(&x0);
 
         let user_omega = opts.constrained_opts.base_opts.grad_atol;
         let mu0 = opts.initial_penalty;
@@ -742,7 +753,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
             let mut classical_auglag = fcn.clone();
             classical_auglag.set_lagrangian_type(LagrangianType::Lagrangian);
             let _ = classical_auglag.eval(&iter_k.x);
-            let _ = classical_auglag.grad(&iter_k.x);
+            let _ = classical_auglag.derivative(&iter_k.x);
 
             let norm_eq = if let Some(eq_penalty) = &classical_auglag.eq_penalty
             {

@@ -55,7 +55,7 @@ impl<F: RealFn> QuasiNewton<F> {
         x0: Vector,
         opts: Options,
     ) -> Self {
-        let grad_0 = fcn.grad(&x0);
+        let grad_0 = fcn.derivative(&x0);
         let norm_grad_0 = grad_0.abs_max().unwrap_or(0.0);
         let n = x0.len();
         Self {

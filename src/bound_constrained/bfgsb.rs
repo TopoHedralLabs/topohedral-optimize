@@ -320,7 +320,7 @@ impl<F: RealFn> Bfgsb<F> {
         opts: Options,
     ) -> Self {
         bounds.clamp(&mut x0);
-        let grad_0 = fcn.grad(&x0);
+        let grad_0 = fcn.derivative(&x0);
         let projected_grad_0 = projected_gradient_inf_norm(&bounds, &x0, &grad_0);
 
         let n = x0.len();
@@ -410,7 +410,7 @@ impl<F: RealFn> Minimizer for Bfgsb<F> {
     fn minimize(&mut self) -> Result<crate::VectorReturns, Self::Error> {
         let mut xk = self.x_init.clone();
         let mut fk = self.fcn.eval(&xk);
-        let mut gk = self.fcn.grad(&xk);
+        let mut gk = self.fcn.derivative(&xk);
         let mut projected_grad_norm = projected_gradient_inf_norm(&self.bounds, &xk, &gk);
         let max_iter = self.opts.bound_opts.base_opts.max_iter;
         let ftol = self.opts.bound_opts.constraint_tol.max(f64::EPSILON);
@@ -585,7 +585,7 @@ impl<F: RealFn> Minimizer for Bfgsb<F> {
             let mut xk_new = search_result.x;
             self.bounds.clamp(&mut xk_new);
             let fk_new = self.fcn.eval(&xk_new);
-            let gk_new = self.fcn.grad(&xk_new);
+            let gk_new = self.fcn.derivative(&xk_new);
             let sk: Vector = (&xk_new - &xk).into();
             let yk: Vector = (&gk_new - &gk).into();
             let rel_red = (fk - fk_new) / fk.abs().max(fk_new.abs()).max(1.0);

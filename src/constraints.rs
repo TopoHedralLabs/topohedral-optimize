@@ -4,13 +4,13 @@
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
-use crate::{Matrix, RealVectorFn, Vector};
+use crate::{DifferentiableFn, Matrix, Vector};
 //}}}
 //{{{ std imports
 use std::collections::HashMap;
 //}}}
 //{{{ dep imports
-use topohedral_linalg::{Shape, TransformOps, VecType, VectorOps};
+use topohedral_linalg::{VecType, VectorOps};
 use topohedral_tracing::*;
 //}}}
 //--------------------------------------------------------------------------------------------------
@@ -28,7 +28,10 @@ pub struct CauchyPathPoint {
 pub struct NoConstraints;
 //}}}
 //{{{ impl: RealVectorFn for NoConstraints
-impl RealVectorFn for NoConstraints {
+impl crate::DifferentiableFn for NoConstraints {
+    type Input = Vector;
+    type Output = Vector;
+    type Derivative = Matrix;
     #[trace_fn]
     fn dimension_domain(&self) -> usize {
         0
@@ -43,16 +46,16 @@ impl RealVectorFn for NoConstraints {
     fn eval(
         &mut self,
         _x: &Vector,
-        _val: &mut Vector,
-    ) {
+    ) -> Vector {
+        Vector::zeros_vec(0, VecType::Col)
     }
 
     #[trace_fn]
-    fn grad(
+    fn derivative(
         &mut self,
         _x: &Vector,
-        _val: &mut Matrix,
-    ) {
+    ) -> Matrix {
+        Matrix::zeros(0, 0)
     }
 }
 //}}}
@@ -421,7 +424,10 @@ impl BoundsConstraints {
 }
 //}}}
 //{{{ impl: RealVectorFn for BoundsConstraints
-impl RealVectorFn for BoundsConstraints {
+impl crate::DifferentiableFn for BoundsConstraints {
+    type Input = Vector;
+    type Output = Vector;
+    type Derivative = Matrix;
     #[trace_fn]
     fn dimension_domain(&self) -> usize {
         self.num_variables
@@ -436,49 +442,46 @@ impl RealVectorFn for BoundsConstraints {
     fn eval(
         &mut self,
         x: &Vector,
-        val: &mut Vector,
-    ) {
+    ) -> Vector {
         assert_eq!(x.len(), self.dimension_domain());
-        assert_eq!(val.len(), self.dimension_range());
+        let mut val = Vector::zeros_vec(self.dimension_range(), VecType::Col);
 
         let mut constraint_index = 0;
         for (variable_index, (opt_lower, opt_upper)) in self.bounds.iter() {
             let xi = x[*variable_index];
             if let Some(lower) = opt_lower {
-                (*val)[constraint_index] = lower - xi;
+                val[constraint_index] = lower - xi;
                 constraint_index += 1;
             }
 
             if let Some(upper) = opt_upper {
-                (*val)[constraint_index] = xi - upper;
+                val[constraint_index] = xi - upper;
                 constraint_index += 1;
             }
         }
+        val
     }
 
     #[trace_fn]
-    fn grad(
+    fn derivative(
         &mut self,
         x: &Vector,
-        val: &mut crate::Matrix,
-    ) {
+    ) -> Matrix {
         assert_eq!(x.len(), self.dimension_domain());
-        assert_eq!(val.ncols(), self.dimension_range());
-        assert_eq!(val.nrows(), self.dimension_domain());
-
-        val.fill(0.0);
+        let mut val = Matrix::zeros(self.dimension_domain(), self.dimension_range());
         let mut constraint_index = 0;
         for (variable_index, (opt_lower, opt_upper)) in self.bounds.iter() {
             if opt_lower.is_some() {
-                (*val)[(*variable_index, constraint_index)] = -1.0;
+                val[(*variable_index, constraint_index)] = -1.0;
                 constraint_index += 1;
             }
 
             if opt_upper.is_some() {
-                (*val)[(*variable_index, constraint_index)] = 1.0;
+                val[(*variable_index, constraint_index)] = 1.0;
                 constraint_index += 1;
             }
         }
+        val
     }
 }
 //}}}

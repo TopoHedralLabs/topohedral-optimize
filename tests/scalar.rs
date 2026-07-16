@@ -3,7 +3,6 @@
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
-use topohedral_optimize::RealFn1;
 use topohedral_optimize::{
     scalar_minimze as minimize, BoundedOptions, Bracket, BrentOptions, GoldenOptions, ScalarError,
     ScalarMethod,
@@ -37,17 +36,20 @@ impl<G: Fn(f64) -> f64> ScalarFunction<G> {
 }
 //}}}
 //{{{ impl: RealFn1 for ScalarFunction
-impl<G: Fn(f64) -> f64> RealFn1 for ScalarFunction<G> {
+impl<G: Fn(f64) -> f64> topohedral_optimize::DifferentiableFn for ScalarFunction<G> {
+    type Input = f64;
+    type Output = f64;
+    type Derivative = f64;
     fn eval(
         &mut self,
-        x: f64,
+        x: &f64,
     ) -> f64 {
-        (self.f)(x)
+        (self.f)(*x)
     }
 
-    fn diff(
+    fn derivative(
         &mut self,
-        _x: f64,
+        _x: &f64,
     ) -> f64 {
         unimplemented!("not needed by scalar minimizers")
     }

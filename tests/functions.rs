@@ -3,9 +3,9 @@
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
+use topohedral_optimize::DifferentiableFn;
 use topohedral_optimize::{
-    arc_real_vector_fn, rc_real_vector_fn, ArcRealVectorFn, RcRealVectorFn, RealFn, RealVectorFn,
-    Vector,
+    arc_real_vector_fn, rc_real_vector_fn, ArcRealVectorFn, RcRealVectorFn, RealVectorFn, Vector,
 };
 
 //}}}
@@ -53,7 +53,10 @@ struct QuadraticDynamic {
 }
 //}}}
 //{{{ impl: RealFn for QuadraticDynamic
-impl RealFn for QuadraticDynamic {
+impl topohedral_optimize::DifferentiableFn for QuadraticDynamic {
+    type Input = Vector;
+    type Output = f64;
+    type Derivative = Vector;
     fn dimension(&self) -> usize {
         self.center.len()
     }
@@ -67,7 +70,7 @@ impl RealFn for QuadraticDynamic {
         x1.dot(&x2)
     }
 
-    fn grad(
+    fn derivative(
         &mut self,
         x: &Vector,
     ) -> Vector {
@@ -113,7 +116,7 @@ fn test_quadratic_dynamic_3d() {
     let x1 = DVector::<f64>::zeros_vec(3, VecType::Col);
     let fx1 = f.eval(&x1);
     assert_relative_eq!(fx1, 0.0, epsilon = 1e-10);
-    let grad_fx1 = f.grad(&x1);
+    let grad_fx1 = f.derivative(&x1);
     let exp_grad_fx1 = DVector::<f64>::zeros_vec(3, VecType::Col);
     for (actual, expected) in grad_fx1.iter().zip(exp_grad_fx1.iter()) {
         assert_relative_eq!(*actual, *expected, epsilon = 1e-10);
@@ -122,7 +125,7 @@ fn test_quadratic_dynamic_3d() {
     let x2 = DVector::<f64>::ones_vec(3, VecType::Col);
     let fx2 = f.eval(&x2);
     assert_relative_eq!(fx2, 27.0);
-    let grad_fx2 = f.grad(&x2);
+    let grad_fx2 = f.derivative(&x2);
     let exp_grad_fx2 = colvec(&[16.0, 18.0, 20.0]);
     for (actual, expected) in grad_fx2.iter().zip(exp_grad_fx2.iter()) {
         assert_relative_eq!(*actual, *expected, epsilon = 1e-10);
@@ -140,7 +143,10 @@ struct LinearVectorDynamic {
 }
 //}}}
 //{{{ impl: RealVectorFn for LinearVectorDynamic
-impl RealVectorFn for LinearVectorDynamic {
+impl topohedral_optimize::DifferentiableFn for LinearVectorDynamic {
+    type Input = Vector;
+    type Output = Vector;
+    type Derivative = DMatrix<f64>;
     fn dimension_domain(&self) -> usize {
         self.cols
     }
@@ -152,26 +158,22 @@ impl RealVectorFn for LinearVectorDynamic {
     fn eval(
         &mut self,
         x: &Vector,
-        val: &mut Vector,
-    ) {
+    ) -> Vector {
+        let mut val = DVector::<f64>::zeros_vec(self.rows, VecType::Col);
         for i in 0..self.rows {
-            (*val)[i] = self.bias[i];
+            val[i] = self.bias[i];
             for j in 0..self.cols {
-                (*val)[i] += self.jacobian[(i, j)] * x[j];
+                val[i] += self.jacobian[(i, j)] * x[j];
             }
         }
+        val
     }
 
-    fn grad(
+    fn derivative(
         &mut self,
         _x: &Vector,
-        val: &mut DMatrix<f64>,
-    ) {
-        for i in 0..self.rows {
-            for j in 0..self.cols {
-                (*val)[(i, j)] = self.jacobian[(i, j)];
-            }
-        }
+    ) -> DMatrix<f64> {
+        self.jacobian.clone()
     }
 }
 //}}}
@@ -195,13 +197,10 @@ impl LinearVectorDynamic {
 //{{{ fun: run_linear_vector_checks
 fn run_linear_vector_checks<F: RealVectorFn>(mut f: F) {
     let x = colvec(&[2.0, -1.0, 3.0]);
-    let mut value = DVector::<f64>::zeros_vec(2, VecType::Col);
-    let mut jac = DMatrix::<f64>::from_row_slice(&[0.0, 0.0, 0.0, 0.0, 0.0, 0.0], 2, 3);
+    let value = f.eval(&x);
+    let jac = f.derivative(&x);
     let exp_value = colvec(&[6.0, 6.0]);
     let exp_jac = DMatrix::<f64>::from_row_slice(&[1.0, -2.0, 0.5, -1.0, 3.0, 4.0], 2, 3);
-
-    f.eval(&x, &mut value);
-    f.grad(&x, &mut jac);
 
     assert_vector_close(&value, &exp_value);
     assert_matrix_close(&jac, &exp_jac, 2, 3);

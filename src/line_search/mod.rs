@@ -67,7 +67,7 @@ pub fn search<F: RealFn>(
     let ret = line_searcher.search(*fx, dphi0, alpha_init)?;
     let new_x: Vector = (x + ret.alpha * dir).into();
     let new_fx = ret.phi_alpha;
-    let new_grad_fx = fcn.grad(&new_x);
+    let new_grad_fx = fcn.derivative(&new_x);
     let new_norm_grad_fx = new_grad_fx.norm();
     Ok(IterData {
         x: new_x,
@@ -84,8 +84,8 @@ pub fn search1d<F: RealFn1>(
     alpha_init: f64,
     method: LineSearchMethod,
 ) -> Result<LineSearchReturns, LineSearchError> {
-    let phi0 = fcn.eval(0.0);
-    let dphi0 = fcn.diff(0.0);
+    let phi0 = fcn.eval(&0.0);
+    let dphi0 = fcn.derivative(&0.0);
     let mut line_searcher = factory::create(fcn, method);
     line_searcher.search(phi0, dphi0, alpha_init)
 }

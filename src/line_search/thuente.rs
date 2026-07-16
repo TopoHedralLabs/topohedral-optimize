@@ -261,8 +261,8 @@ impl<F: RealFn1> Thuente<F> {
             new_step = self.interval_endpoint1.alpha;
         }
 
-        let new_phi = self.f.eval(new_step);
-        let new_dphi = self.f.diff(new_step);
+        let new_phi = self.f.eval(&new_step);
+        let new_dphi = self.f.derivative(&new_step);
         Values {
             alpha: new_step,
             phi: new_phi,
@@ -306,8 +306,8 @@ impl<F: RealFn1> LineSearch for Thuente<F> {
         self.initialize(phi0, dphi0, alpha1);
         let mut cur_step = Values {
             alpha: alpha1,
-            phi: self.f.eval(alpha1),
-            dphi: self.f.diff(alpha1),
+            phi: self.f.eval(&alpha1),
+            dphi: self.f.derivative(&alpha1),
         };
 
         for _iter in 0..self.opts.maxiter {

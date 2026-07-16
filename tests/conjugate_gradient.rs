@@ -2,7 +2,7 @@
 use topohedral_optimize::{
     unconstrained_minimize as minimize, ConjugateGradientDirection as Direction,
     ConjugateGradientOptions, ConvergedReason as UnconstrainedConvergedReason, LineSearchMethod,
-    LineSearchOptions, NocedalOptions, RealFn, ThuenteOptions, UnconstrainedMethod,
+    LineSearchOptions, NocedalOptions, ThuenteOptions, UnconstrainedMethod,
     UnconstrainedOptions as UnonstrainedOptions, Vector, VectorReturns as UnconstrainedReturns,
 };
 //}}}
@@ -34,7 +34,10 @@ struct Quadratic {
 }
 //}}}
 //{{{ impl: RealFn for Quadratic
-impl RealFn for Quadratic {
+impl topohedral_optimize::DifferentiableFn for Quadratic {
+    type Input = Vector;
+    type Output = f64;
+    type Derivative = Vector;
     fn dimension(&self) -> usize {
         self.xmin.len()
     }
@@ -51,7 +54,7 @@ impl RealFn for Quadratic {
         out
     }
 
-    fn grad(
+    fn derivative(
         &mut self,
         x_in: &Vector,
     ) -> Vector {
@@ -71,7 +74,10 @@ struct Quartic {
 }
 //}}}
 //{{{ impl: RealFn for Quartic
-impl RealFn for Quartic {
+impl topohedral_optimize::DifferentiableFn for Quartic {
+    type Input = Vector;
+    type Output = f64;
+    type Derivative = Vector;
     fn dimension(&self) -> usize {
         self.xmin.len()
     }
@@ -88,7 +94,7 @@ impl RealFn for Quartic {
         out
     }
 
-    fn grad(
+    fn derivative(
         &mut self,
         x_in: &Vector,
     ) -> Vector {
@@ -116,7 +122,10 @@ impl Rosenbrock {
 }
 //}}}
 //{{{ impl: RealFn for Rosenbrock
-impl RealFn for Rosenbrock {
+impl topohedral_optimize::DifferentiableFn for Rosenbrock {
+    type Input = Vector;
+    type Output = f64;
+    type Derivative = Vector;
     fn dimension(&self) -> usize {
         2
     }
@@ -130,7 +139,7 @@ impl RealFn for Rosenbrock {
         (self.a - x).powi(2) + self.b * (y - x.powi(2)).powi(2)
     }
 
-    fn grad(
+    fn derivative(
         &mut self,
         xvec: &Vector,
     ) -> Vector {

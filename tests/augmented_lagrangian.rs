@@ -5,9 +5,8 @@ use topohedral_optimize::{
     BfgsbOptions, BoundConstrainedMethod, BoundConstrainedOptions, BoundsConstraints,
     ConjugateGradientDirection as Direction, ConjugateGradientOptions, ConstrainedMethod,
     ConstriainedOptions, LineSearchMethod, LineSearchOptions, NoConstraints, NocedalOptions,
-    QuasiNewtonOptions, QuasiNewtonUpdateMethod as UpdateMethod, RealFn, RealVectorFn,
-    ThuenteOptions, UnconstrainedMethod, UnconstrainedOptions as UnonstrainedOptions, Vector,
-    VectorReturns,
+    QuasiNewtonOptions, QuasiNewtonUpdateMethod as UpdateMethod, ThuenteOptions,
+    UnconstrainedMethod, UnconstrainedOptions as UnonstrainedOptions, Vector, VectorReturns,
 };
 //}}}
 //{{{ std imports
@@ -281,7 +280,10 @@ struct HyperSphereBound {
     center: Vector,
     radius: f64,
 }
-impl RealVectorFn for HyperSphereBound {
+impl topohedral_optimize::DifferentiableFn for HyperSphereBound {
+    type Input = Vector;
+    type Output = Vector;
+    type Derivative = topohedral_optimize::Matrix;
     fn dimension_domain(&self) -> usize {
         self.center.len()
     }
@@ -293,21 +295,21 @@ impl RealVectorFn for HyperSphereBound {
     fn eval(
         &mut self,
         x: &Vector,
-        val: &mut Vector,
-    ) {
+    ) -> Vector {
         let mut value = 0.0;
         for i in 0..x.len() {
             value += (x[i] - self.center[i]).powi(2)
         }
-        (*val)[0] = value - self.radius.powi(2);
+        colvec(&[value - self.radius.powi(2)])
     }
 
-    fn grad(
+    fn derivative(
         &mut self,
         x: &Vector,
-        val: &mut topohedral_optimize::Matrix,
-    ) {
+    ) -> topohedral_optimize::Matrix {
+        let mut val = topohedral_optimize::Matrix::zeros(x.len(), 1);
         val.col_mut(0).copy_from(2.0 * (x - &self.center));
+        val
     }
 }
 //}}}
@@ -320,7 +322,10 @@ struct Quadratic {
 }
 //}}}
 //{{{ impl: RealFn for Quadratic
-impl RealFn for Quadratic {
+impl topohedral_optimize::DifferentiableFn for Quadratic {
+    type Input = Vector;
+    type Output = f64;
+    type Derivative = Vector;
     fn dimension(&self) -> usize {
         self.xmin.len()
     }
@@ -337,7 +342,7 @@ impl RealFn for Quadratic {
         out
     }
 
-    fn grad(
+    fn derivative(
         &mut self,
         x_in: &Vector,
     ) -> Vector {
@@ -643,7 +648,10 @@ struct Quartic {
 }
 //}}}
 //{{{ impl: RealFn for Quartic
-impl RealFn for Quartic {
+impl topohedral_optimize::DifferentiableFn for Quartic {
+    type Input = Vector;
+    type Output = f64;
+    type Derivative = Vector;
     fn dimension(&self) -> usize {
         self.xmin.len()
     }
@@ -660,7 +668,7 @@ impl RealFn for Quartic {
         out
     }
 
-    fn grad(
+    fn derivative(
         &mut self,
         x_in: &Vector,
     ) -> Vector {
@@ -934,7 +942,10 @@ impl Rosenbrock {
 }
 //}}}
 //{{{ impl: RealFn for Rosenbrock
-impl RealFn for Rosenbrock {
+impl topohedral_optimize::DifferentiableFn for Rosenbrock {
+    type Input = Vector;
+    type Output = f64;
+    type Derivative = Vector;
     fn dimension(&self) -> usize {
         2
     }
@@ -948,7 +959,7 @@ impl RealFn for Rosenbrock {
         (self.a - x).powi(2) + self.b * (y - x.powi(2)).powi(2)
     }
 
-    fn grad(
+    fn derivative(
         &mut self,
         xvec: &Vector,
     ) -> Vector {

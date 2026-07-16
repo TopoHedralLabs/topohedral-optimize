@@ -1,4 +1,5 @@
 //{{{ crate imports
+use topohedral_optimize::DifferentiableFn;
 use topohedral_optimize::{
     bound_constrained_minimize, AsaOptions, BaseOptions, BoundConstrainedMethod,
     BoundConstrainedOptions, BoundsConstraints, LineSearchMethod, LineSearchOptions,
@@ -58,7 +59,7 @@ fn kkt_residual<F: RealFn>(
     lower: &[Option<f64>],
     upper: &[Option<f64>],
 ) -> f64 {
-    let grad = fcn.grad(x);
+    let grad = fcn.derivative(x);
     let mut projected = x.clone() - grad;
 
     for i in 0..projected.len() {
@@ -131,7 +132,10 @@ struct ShiftedQuadratic {
 }
 //}}}
 //{{{ impl: RealFn for ShiftedQuadratic
-impl RealFn for ShiftedQuadratic {
+impl topohedral_optimize::DifferentiableFn for ShiftedQuadratic {
+    type Input = Vector;
+    type Output = f64;
+    type Derivative = Vector;
     fn dimension(&self) -> usize {
         self.target.len()
     }
@@ -144,7 +148,7 @@ impl RealFn for ShiftedQuadratic {
         diff.dot(&diff)
     }
 
-    fn grad(
+    fn derivative(
         &mut self,
         x: &Vector,
     ) -> Vector {
@@ -159,7 +163,10 @@ struct Rosenbrock {
 }
 //}}}
 //{{{ impl: RealFn for Rosenbrock
-impl RealFn for Rosenbrock {
+impl topohedral_optimize::DifferentiableFn for Rosenbrock {
+    type Input = Vector;
+    type Output = f64;
+    type Derivative = Vector;
     fn dimension(&self) -> usize {
         self.n
     }
@@ -175,7 +182,7 @@ impl RealFn for Rosenbrock {
         value
     }
 
-    fn grad(
+    fn derivative(
         &mut self,
         x: &Vector,
     ) -> Vector {
@@ -211,7 +218,10 @@ impl DiagonalSpdQuadratic {
 }
 //}}}
 //{{{ impl: RealFn for DiagonalSpdQuadratic
-impl RealFn for DiagonalSpdQuadratic {
+impl topohedral_optimize::DifferentiableFn for DiagonalSpdQuadratic {
+    type Input = Vector;
+    type Output = f64;
+    type Derivative = Vector;
     fn dimension(&self) -> usize {
         self.diagonal.len()
     }
@@ -227,7 +237,7 @@ impl RealFn for DiagonalSpdQuadratic {
         value
     }
 
-    fn grad(
+    fn derivative(
         &mut self,
         x: &Vector,
     ) -> Vector {
