@@ -59,6 +59,10 @@ impl topohedral_optimize::DifferentiableFn for QuadraticDynamic {
         self.center.len()
     }
 
+    fn dimension_range(&self) -> usize {
+        1
+    }
+
     fn eval(
         &mut self,
         x: &Vector,

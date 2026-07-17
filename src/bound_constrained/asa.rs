@@ -125,6 +125,11 @@ impl<F: RealFn> crate::DifferentiableFn for RestrictedFunction<F> {
             .filter(|status| **status == BoundStatus::Free)
             .count()
     }
+
+    #[trace_fn]
+    fn dimension_range(&self) -> usize {
+        1
+    }
     //}}}
     //{{{ fn: eval
     #[trace_fn]

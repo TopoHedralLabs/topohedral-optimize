@@ -111,6 +111,10 @@ impl topohedral_optimize::DifferentiableFn for Quadratic {
         self.b.len()
     }
 
+    fn dimension_range(&self) -> usize {
+        1
+    }
+
     fn eval(
         &mut self,
         x: &Vector,
@@ -140,6 +144,10 @@ impl topohedral_optimize::DifferentiableFn for Linear {
         self.c.len()
     }
 
+    fn dimension_range(&self) -> usize {
+        1
+    }
+
     fn eval(
         &mut self,
         x: &Vector,
@@ -166,6 +174,10 @@ impl topohedral_optimize::DifferentiableFn for Rosenbrock {
     type Derivative = Vector;
     fn dimension_domain(&self) -> usize {
         self.n
+    }
+
+    fn dimension_range(&self) -> usize {
+        1
     }
 
     fn eval(
@@ -205,6 +217,10 @@ impl<F: RealFn> topohedral_optimize::DifferentiableFn for FiniteDiff<F> {
     type Derivative = Vector;
     fn dimension_domain(&self) -> usize {
         self.fcn.dimension_domain()
+    }
+
+    fn dimension_range(&self) -> usize {
+        1
     }
 
     fn eval(

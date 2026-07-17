@@ -52,6 +52,15 @@ impl<F: RealFn + ?Sized> crate::DifferentiableFn for LineSearchFcn<'_, F> {
     type Output = f64;
     type Derivative = f64;
     #[trace_fn]
+    fn dimension_domain(&self) -> usize {
+        1
+    }
+
+    #[trace_fn]
+    fn dimension_range(&self) -> usize {
+        1
+    }
+    #[trace_fn]
     fn eval(
         &mut self,
         alpha: &f64,
@@ -191,6 +200,11 @@ mod tests {
         #[trace_fn]
         fn dimension_domain(&self) -> usize {
             self.center.len()
+        }
+
+        #[trace_fn]
+        fn dimension_range(&self) -> usize {
+            1
         }
 
         #[trace_fn]

@@ -386,6 +386,15 @@ mod tests {
         type Output = f64;
         type Derivative = f64;
         #[trace_fn]
+        fn dimension_domain(&self) -> usize {
+            1
+        }
+
+        #[trace_fn]
+        fn dimension_range(&self) -> usize {
+            1
+        }
+        #[trace_fn]
         fn eval(
             &mut self,
             x: &f64,

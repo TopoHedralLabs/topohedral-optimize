@@ -251,6 +251,11 @@ impl<F: RealVectorFn> crate::DifferentiableFn for EqPenalty<F> {
     fn dimension_domain(&self) -> usize {
         self.data.function.dimension_domain()
     }
+
+    #[trace_fn]
+    fn dimension_range(&self) -> usize {
+        1
+    }
     //}}}
     //{{{ fn: eval
     #[trace_fn]
@@ -367,6 +372,11 @@ impl<F: RealVectorFn> crate::DifferentiableFn for IeqPenalty<F> {
     #[trace_fn]
     fn dimension_domain(&self) -> usize {
         self.data.function.dimension_domain()
+    }
+
+    #[trace_fn]
+    fn dimension_range(&self) -> usize {
+        1
     }
     //}}}
     //{{{ fn: eval
@@ -594,6 +604,11 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> crate::DifferentiableFn
     #[trace_fn]
     fn dimension_domain(&self) -> usize {
         self.fcn.dimension_domain()
+    }
+
+    #[trace_fn]
+    fn dimension_range(&self) -> usize {
+        1
     }
     //}}}
     //{{{ fn: eval
