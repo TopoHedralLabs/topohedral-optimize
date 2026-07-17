@@ -117,9 +117,9 @@ impl<F: RealFn> crate::DifferentiableFn for RestrictedFunction<F> {
     type Input = Vector;
     type Output = f64;
     type Derivative = Vector;
-    //{{{ fn: dimension
+    //{{{ fn: dimension_domain
     #[trace_fn]
-    fn dimension(&self) -> usize {
+    fn dimension_domain(&self) -> usize {
         self.bound_statuses
             .iter()
             .filter(|status| **status == BoundStatus::Free)

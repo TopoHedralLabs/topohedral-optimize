@@ -44,14 +44,9 @@ pub trait DifferentiableFn {
         x: &Self::Input,
     ) -> Self::Derivative;
 
-    /// Returns the primary dimension of the function.
-    fn dimension(&self) -> usize {
-        1
-    }
-
     /// Returns the dimension of the input space.
     fn dimension_domain(&self) -> usize {
-        self.dimension()
+        1
     }
 
     /// Returns the dimension of the output space.
@@ -78,10 +73,6 @@ impl<F: DifferentiableFn + ?Sized> DifferentiableFn for &mut F {
         x: &Self::Input,
     ) -> Self::Derivative {
         (**self).derivative(x)
-    }
-
-    fn dimension(&self) -> usize {
-        (**self).dimension()
     }
 
     fn dimension_domain(&self) -> usize {
@@ -257,8 +248,8 @@ impl<F: RealFn + ?Sized> DifferentiableFn for Evaluator<'_, F> {
     }
 
     #[trace_fn]
-    fn dimension(&self) -> usize {
-        self.fcn.dimension()
+    fn dimension_domain(&self) -> usize {
+        self.fcn.dimension_domain()
     }
 }
 //}}}

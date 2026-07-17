@@ -246,9 +246,9 @@ impl<F: RealVectorFn> crate::DifferentiableFn for EqPenalty<F> {
     type Input = Vector;
     type Output = f64;
     type Derivative = Vector;
-    //{{{ fn: dimension
+    //{{{ fn: dimension_domain
     #[trace_fn]
-    fn dimension(&self) -> usize {
+    fn dimension_domain(&self) -> usize {
         self.data.function.dimension_domain()
     }
     //}}}
@@ -363,9 +363,9 @@ impl<F: RealVectorFn> crate::DifferentiableFn for IeqPenalty<F> {
     type Input = Vector;
     type Output = f64;
     type Derivative = Vector;
-    //{{{ fn: dimension
+    //{{{ fn: dimension_domain
     #[trace_fn]
-    fn dimension(&self) -> usize {
+    fn dimension_domain(&self) -> usize {
         self.data.function.dimension_domain()
     }
     //}}}
@@ -475,7 +475,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangianFcn<F1, 
         let ieq_penalty = ieq_constraints
             .map(|ieq_con| IeqPenalty::new(ieq_con, initial_penalty, lagrangian_type));
 
-        let n = fcn.dimension();
+        let n = fcn.dimension_domain();
         let mut cached_values = HashMap::<LagrangianType, CachedValues>::new();
         cached_values.insert(LagrangianType::AugmentedLagrangian, CachedValues::new(n));
         cached_values.insert(LagrangianType::Lagrangian, CachedValues::new(n));
@@ -590,10 +590,10 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> crate::DifferentiableFn
     type Input = Vector;
     type Output = f64;
     type Derivative = Vector;
-    //{{{ fn: dimension
+    //{{{ fn: dimension_domain
     #[trace_fn]
-    fn dimension(&self) -> usize {
-        self.fcn.dimension()
+    fn dimension_domain(&self) -> usize {
+        self.fcn.dimension_domain()
     }
     //}}}
     //{{{ fn: eval
@@ -651,7 +651,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> crate::DifferentiableFn
         &mut self,
         x: &Vector,
     ) -> Vector {
-        let n = self.dimension();
+        let n = self.dimension_domain();
 
         let fcn_grad = self.fcn.derivative(x);
 

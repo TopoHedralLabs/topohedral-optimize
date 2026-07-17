@@ -55,7 +55,7 @@ impl topohedral_optimize::DifferentiableFn for QuadraticDynamic {
     type Input = Vector;
     type Output = f64;
     type Derivative = Vector;
-    fn dimension(&self) -> usize {
+    fn dimension_domain(&self) -> usize {
         self.center.len()
     }
 

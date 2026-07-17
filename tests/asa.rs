@@ -39,8 +39,8 @@ impl<F: RealFn> DifferentiableFn for Observed<F> {
     type Output = f64;
     type Derivative = Vector;
 
-    fn dimension(&self) -> usize {
-        self.inner.dimension()
+    fn dimension_domain(&self) -> usize {
+        self.inner.dimension_domain()
     }
 
     fn eval(
@@ -166,7 +166,7 @@ impl topohedral_optimize::DifferentiableFn for ShiftedQuadratic {
     type Input = Vector;
     type Output = f64;
     type Derivative = Vector;
-    fn dimension(&self) -> usize {
+    fn dimension_domain(&self) -> usize {
         self.target.len()
     }
 
@@ -197,7 +197,7 @@ impl topohedral_optimize::DifferentiableFn for Rosenbrock {
     type Input = Vector;
     type Output = f64;
     type Derivative = Vector;
-    fn dimension(&self) -> usize {
+    fn dimension_domain(&self) -> usize {
         self.n
     }
 
@@ -252,7 +252,7 @@ impl topohedral_optimize::DifferentiableFn for DiagonalSpdQuadratic {
     type Input = Vector;
     type Output = f64;
     type Derivative = Vector;
-    fn dimension(&self) -> usize {
+    fn dimension_domain(&self) -> usize {
         self.diagonal.len()
     }
 

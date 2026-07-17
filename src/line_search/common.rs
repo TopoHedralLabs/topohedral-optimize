@@ -189,7 +189,7 @@ mod tests {
         type Output = f64;
         type Derivative = Vector;
         #[trace_fn]
-        fn dimension(&self) -> usize {
+        fn dimension_domain(&self) -> usize {
             self.center.len()
         }
 

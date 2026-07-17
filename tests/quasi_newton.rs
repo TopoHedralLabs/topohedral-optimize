@@ -44,7 +44,7 @@ impl DifferentiableFn for StatefulQuadratic {
     type Output = f64;
     type Derivative = Vector;
 
-    fn dimension(&self) -> usize {
+    fn dimension_domain(&self) -> usize {
         2
     }
 
@@ -69,7 +69,7 @@ impl topohedral_optimize::DifferentiableFn for Quadratic {
     type Input = Vector;
     type Output = f64;
     type Derivative = Vector;
-    fn dimension(&self) -> usize {
+    fn dimension_domain(&self) -> usize {
         self.xmin.len()
     }
 
@@ -109,7 +109,7 @@ impl topohedral_optimize::DifferentiableFn for Quartic {
     type Input = Vector;
     type Output = f64;
     type Derivative = Vector;
-    fn dimension(&self) -> usize {
+    fn dimension_domain(&self) -> usize {
         self.xmin.len()
     }
 
@@ -157,7 +157,7 @@ impl topohedral_optimize::DifferentiableFn for Rosenbrock {
     type Input = Vector;
     type Output = f64;
     type Derivative = Vector;
-    fn dimension(&self) -> usize {
+    fn dimension_domain(&self) -> usize {
         2
     }
 
