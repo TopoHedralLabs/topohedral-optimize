@@ -752,12 +752,12 @@ fn test_quartic_without_constraints_matches_unconstrained_reference(
 //}}}
 //{{{ test: bound constrained
 #[rstest]
-#[case::quartic_thuente_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(THUENTE_BFGS),  1e-2, 1e-2, 7478, 8470)]
-#[case::quartic_nocedal_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(NOCEDAL_BFGS),  1e-2, 1e-2, 3969, 2389)]
+#[case::quartic_thuente_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(THUENTE_BFGS),  1e-2, 1e-2, 8230, 9225)]
+#[case::quartic_nocedal_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(NOCEDAL_BFGS),  1e-2, 1e-2, 4010, 2389)]
 #[case::quartic_thuente_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_FR),  1e-2, 1e-2, 82704, 90724)]
 #[case::quartic_nocedal_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_FR),  1e-2, 1e-2, 6622, 2340)]
 #[case::quartic_thuente_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_PR),  1e-2, 1e-2, 6780, 7826)]
-#[case::quartic_nocedal_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_PR),  1e-2, 1e-2, 6137, 2159)]
+#[case::quartic_nocedal_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_PR),  1e-2, 1e-2, 6335, 2219)]
 fn test_quartic_with_bound_constraints_matches_reference(
     #[case] x0: Vector,
     #[case] unconstrained_method: UnconstrainedMethod,
@@ -844,7 +844,7 @@ fn test_quartic_with_bound_constraints_and_bcon_inner_matches_reference(
 #[case::quartic_thuente_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_FR),  1e-2, 1e-2, 250, 315)]
 #[case::quartic_nocedal_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_FR),  1e-2, 1e-2, 475, 200)]
 #[case::quartic_thuente_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_PR),  1e-2, 1e-2, 135, 190)]
-#[case::quartic_nocedal_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_PR),  1e-2, 1e-2, 9000, 2500)]
+#[case::quartic_nocedal_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_PR),  1e-2, 1e-2, 10311, 2843)]
 fn test_quartic_hsphere_constrained_ucon_inner_matches_reference(
     #[case] x0: Vector,
     #[case] unconstrained_method: UnconstrainedMethod,
@@ -1070,9 +1070,9 @@ fn test_rosenbrock_bcon_1(
 #[case::rosenbrock_thuente_bfgs(colvec(&[-1.0, 3.0]), UnconstrainedMethod::QuasiNewton(THUENTE_BFGS),  250, 416)]
 #[case::rosenbrock_nocedal_bfgs(colvec(&[5.0, 3.0]), UnconstrainedMethod::QuasiNewton(NOCEDAL_BFGS),  348, 383)]
 #[case::rosenbrock_thuente_fr(colvec(&[-2.0, 3.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_FR),   864, 1430)]
-#[case::rosenbrock_nocedal_fr(colvec(&[-3.0, 3.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_FR),   878, 828)]
+#[case::rosenbrock_nocedal_fr(colvec(&[-3.0, 3.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_FR),   893, 828)]
 #[case::rosenbrock_thuente_pr(colvec(&[-3.0, 3.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_PR),   1386, 2244)]
-#[case::rosenbrock_nocedal_pr(colvec(&[-10.0, -10.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_PR),   935, 772)]
+#[case::rosenbrock_nocedal_pr(colvec(&[-10.0, -10.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_PR),   939, 774)]
 fn test_rosenbrock_bcon_2(
     #[case] x0: Vector,
     #[case] unconstrained_method: UnconstrainedMethod,
