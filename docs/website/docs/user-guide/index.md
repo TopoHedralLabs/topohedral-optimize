@@ -219,6 +219,9 @@ The return value is `VectorReturns`. Its `xmin` is feasible with respect to the 
 and it also reports `fmin`, the convergence reason, iteration count, and function and gradient
 evaluation counts.
 
+See the [bound-constrained box example](examples/bound-constrained-box.md) for a complete BFGS-B
+configuration whose solution has active upper bounds.
+
 ## Generally-Constrained Minimization
 
 Generally-constrained minimization supports bounds, vector-valued equality constraints, and
@@ -226,8 +229,8 @@ vector-valued inequality constraints:
 
 $$
 \begin{aligned}
-\mathbf{x}_{\text{min}}
-&= \argmin_{\mathbf{x} \in \mathbb{R}^{n}} f(\mathbf{x}) \\
+\mathbf{x}_{\text{min}} =
+\argmin_{\mathbf{x} \in \mathbb{R}^{n}} f(\mathbf{x}) \\
 \text{subject to} \quad
 \mathbf{h}(\mathbf{x}) &= \mathbf{0}, \\
 \mathbf{g}(\mathbf{x}) &\leq \mathbf{0}, \\
@@ -298,6 +301,9 @@ control stationarity. `AugmentedLagrangianOptions::new` supplies defaults for `i
 `constraint_improvement_factor`, and `penalty_growth_factor`; these public fields may be adjusted
 after construction.
 
+See the [generally-constrained hypersphere example](examples/generally-constrained-hypersphere.md)
+for a complete augmented-Lagrangian solve with a nonlinear inequality.
+
 ## Line-Search Methods
 
 A line search chooses a step length $\alpha$ along a direction $\mathbf{d}$ by applying a scalar
@@ -366,3 +372,6 @@ Both option structs contain `ls_opts: LineSearchOptions`. Its fields are the Wol
 and `c2`, and the permitted step interval `step_min` to `step_max`. `LineSearchOptions::default()`
 uses `c1 = 1e-4`, `c2 = 0.9`, `step_min = 0`, and `step_max = 50`. Set the method-specific
 iteration limits explicitly when constructing `ThuenteOptions` or `NocedalOptions`.
+
+See the [one-dimensional line-search example](examples/line-search-quadratic.md) for both methods
+applied to the same scalar function.
