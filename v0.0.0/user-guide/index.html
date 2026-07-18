@@ -1,0 +1,1300 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://topohedrallabs.github.io/topohedral-optimize/v0.0.0/user-guide/">
+      
+      
+        <link rel="prev" href="../getting-started/">
+      
+      
+        <link rel="next" href="examples/quartic-functions/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>User Guide - TopoHedral-Optimize Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="https://unpkg.com/katex@0/dist/katex.min.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#user-guide" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="TopoHedral-Optimize Documentation" class="md-header__button md-logo" aria-label="TopoHedral-Optimize Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            TopoHedral-Optimize Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              User Guide
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="TopoHedral-Optimize Documentation" class="md-nav__button md-logo" aria-label="TopoHedral-Optimize Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    TopoHedral-Optimize Documentation
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="./" class="md-nav__link md-nav__link--active">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guide
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link md-nav__link--active" for="__nav_3" id="__nav_3_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2" id="__nav_3_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Examples
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="examples/quartic-functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quartic Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="examples/inequality-constraints/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Inequality Constraints
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="examples/scalar-parabola/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Parabola
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="examples/unconstrained-rosenbrock/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rosenbrock
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="examples/bound-constrained-box/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Bound-Constrained Box
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="examples/generally-constrained-hypersphere/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Generally-Constrained Hypersphere
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="examples/line-search-quadratic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    One-Dimensional Line Search
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Docs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../developers/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Developers
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5" id="__nav_5_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Developers
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../developers/building-docs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Building Docs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#a-tour-of-the-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A Tour of the API
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#specifying-a-function" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Specifying a Function
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scalar-minimization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scalar minimization
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#unconstrained-minimization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unconstrained Minimization
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bound-constrained-minimization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bound-Constrained Minimization
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Bound-Constrained Minimization">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#specifying-bounds" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Specifying Bounds
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#choosing-a-method" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Choosing a Method
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#generally-constrained-minimization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Generally-Constrained Minimization
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#line-search-methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Line-Search Methods
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Line-Search Methods">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#searching-along-a-vector-direction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Searching Along a Vector Direction
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#searching-a-scalar-function" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Searching a Scalar Function
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuring-a-line-search" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuring a Line Search
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="user-guide">User Guide</h1>
+<p>This guide gives an overview of the public API. The generated <a href="../api/">API Docs</a>
+remain the reference for every option field and method. The public API has the following
+areas of functionality:</p>
+<ul>
+<li>Scalar minimization (exact minimization in 1D)</li>
+<li>Scalar line search (sufficient-decrease step-finder in 1D)</li>
+<li>Multi-dimensional, unconstrained optimization.</li>
+<li>Multi-dimensional, bound-constrained optimization.</li>
+<li>Multi-dimensional, generally-constrained optimization.</li>
+</ul>
+<p>A constraint is considered "general" if is not a bound constraint, so both linear and non-linear
+constraints fall into this category.</p>
+<h2 id="a-tour-of-the-api">A Tour of the API</h2>
+<ul>
+<li>
+<p>The first thing to notice is that each area of functionality has a single entry point:</p>
+<ul>
+<li><code>scalar_minimize(fcn, method)</code>: Minimize a scalar-scalar function.</li>
+<li><code>unconstrained_minimize(fcn, x0, method)</code>: Minimize an unconstrained vector-scalar function.</li>
+<li><code>bound_constrained_minimize(fcn, bounds, x0, method)</code>: Minimize a bound-constrained
+   vector-scalar function.</li>
+<li><code>constrained_minimize(fcn, bounds, eq_constraints, ieq_constraints, x0, method)</code>: Minimize
+   a generally-constrained vector-scalar function.</li>
+</ul>
+<p>with the exception of the line search functionality which has two entry-points:</p>
+<ul>
+<li><code>lsearch(fcn, iter_data, dir, alpha_init, method)</code>: Find a sufficient-decrease step
+   for a vector-scalar function at a particular point in the iteration and in direction <code>dir</code>.</li>
+<li><code>lsearch1d(fcn, alpha_init, method)</code>: Find a sufficient decrease step for a scalar-scalar
+   function.</li>
+</ul>
+</li>
+<li>
+<p>Each of these minimize functions takes the function you wish to minimize and a set of
+  parameters specific to the area. For example, the scalar optimizers take a function and
+  a bracket or an interval. The bounded optimizers all take a <code>BoundsConstraints</code> struct.
+  The generally-constrained optimizers accept optional bounds and optional vector-valued
+  equality and inequality constraint functions.</p>
+</li>
+<li>
+<p>Every category of solver: so scalar minimizers, unconstrained minimizers, bound constrained minimizers
+  and generally-constrained miminizers, has its own method enum and each value of the enum wraps
+  around an options struct specific to that method.</p>
+<ul>
+<li><code>ScalarMethod</code><ul>
+<li><code>ScalarMethod::Bounded(BoundedOptions)</code></li>
+<li><code>ScalarMethod::Brent(BrentOptions)</code></li>
+<li><code>ScalarMethod::Golden(GoldenOptions)</code></li>
+</ul>
+</li>
+<li><code>UnconstrainedMethod</code><ul>
+<li><code>UnconstrainedMethod::ConjugateGradient(ConjugateGradientOptions)</code></li>
+<li><code>UnconstrainedMethod::QuasiNewton(QuasiNewtonOptions)</code></li>
+</ul>
+</li>
+<li><code>BoundConstrainedMethod</code><ul>
+<li><code>BoundConstrainedMethod::Asa(AsaOptions)</code></li>
+<li><code>BoundConstrainedMethod::Bfgsb(BfgsbOptions)</code></li>
+</ul>
+</li>
+<li><code>ConstrainedMethod</code><ul>
+<li><code>ConstrainedMethod::AugmentedLagrangian(AugmentedLagrangianOptions)</code></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>The options structs are constructed hierarchically by category. So a bound-constrained
+  solver such as <code>Asa</code> will have its own options struct <code>AsaOptions</code> which will contain the
+  settings specific to itself but it will also contain an instance of <code>BoundConstrainedOptions</code>
+  which will contain settings common to all the bound constrained minimizers. Finally,
+  <code>BoundConstrainedOptions</code> will itself contain an instance of <code>BaseOptions</code>, which contains
+  settings which are common to all the descent-based minimizers in the crate.</p>
+</li>
+</ul>
+<h2 id="specifying-a-function">Specifying a Function</h2>
+<p>We shall use the following terminology when describing functions:</p>
+<ul>
+<li>A <strong>scalar-scalar</strong> function is: <span class="arithmatex">\(f(x): \mathbb{R} \rightarrow \mathbb{R}\)</span></li>
+<li>A <strong>vector-scalar</strong> function: <span class="arithmatex">\(f(\mathbf{x}): \mathbb{R}^{n} \rightarrow \mathbb{R}\)</span>:</li>
+<li>A <strong>vector-vector</strong> function is:  <span class="arithmatex">\(f(\mathbf{x}): \mathbb{R}^{n} \rightarrow \mathbb{R}^{n}\)</span></li>
+</ul>
+<p>The first two are the objects which this crate provides methods to minimize. The last is used
+primarily to represent sets of constriant functions.</p>
+<p>The trait which users must implement to make their type compatible with the optimization algorithms
+is <code>DifferentiableFn</code>. It has three types which must be specified:</p>
+<ul>
+<li><code>Input</code>: This is the input type, for example <code>f64</code> for a scalar-scalar function.</li>
+<li><code>Output</code>: This is the output type, so the result of the function <code>eval()</code> for example <code>Vector</code> for a
+            scalar-vector function or a vector-vector funcition.</li>
+<li><code>Derivative</code>: This is the type of the function <code>derivative()</code>, which for scalar-scalar functions is <code>f64</code>.
+                For a vector-vector function this will be a <code>Matrix</code>.</li>
+</ul>
+<p>In addition to providing these three types you must implement the following methods:</p>
+<ul>
+<li><code>eval(&amp;mut self, x: &amp;Self::Input)</code>: evaluates the function at point <code>x</code>.</li>
+<li><code>derivative(&amp;mut self, x: &amp;Self::Input)</code>: evaluates the gradient at point <code>x</code>.</li>
+<li><code>dimension_domain(&amp;self)</code>: tells you the expected dimension of then input.</li>
+<li><code>dimension_range(&amp;self)</code>: tells you the expected dimension of the output.</li>
+</ul>
+<p>For the purpose of annotating types we created the following trait aliases:</p>
+<ul>
+<li><code>RealFn1</code> for the case where <code>Input=f64</code>, <code>Output=f64</code> and <code>Derivative=f64</code></li>
+<li><code>RealFn</code> for the case where <code>Input=Vector</code>, <code>Output=f64</code> and <code>Derivative=Vector</code></li>
+<li><code>RealVectorFn</code> for the case where <code>Input=Vector</code>, <code>Output=Vector</code> and <code>Derivative=Matrix</code></li>
+</ul>
+<p>See the following complete examples:</p>
+<ul>
+<li><a href="examples/quartic-functions/">Quartic Functions</a></li>
+<li><a href="examples/inequality-constraints/">Inequality Constraints</a></li>
+</ul>
+<h2 id="scalar-minimization">Scalar minimization</h2>
+<p>Scalar minimization solves the following problem for <span class="arithmatex">\(f(x): \mathbb{R} \rightarrow \mathbb{R}\)</span></p>
+<div class="arithmatex">\[
+x_{\text{min}} = \argmin_{x \in [a, b]} f(x)
+\]</div>
+<p>The entry-point for this area of functionality is the function:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">fn</span><span class="w"> </span><span class="nf">scalar_minimize</span><span class="p">(</span><span class="n">fcn</span><span class="p">:</span><span class="w"> </span><span class="nc">RealFn1</span><span class="p">,</span><span class="w"> </span><span class="n">method</span><span class="p">:</span><span class="w"> </span><span class="nc">ScalarMethod</span><span class="p">);</span>
+</code></pre></div>
+where <code>method</code> is is one of:</p>
+<ul>
+<li><code>ScalarMethod::Brent</code>: Unbounded, hybrid of bisection, secant and inverse quadratic interpolation.</li>
+<li><code>ScalarMethod::Golden</code>: Unbounded, bisection method.</li>
+<li><code>ScalarMethod::Bounded</code>: Similar to Brant but bounded on a given interval.</li>
+</ul>
+<p>Each member of this enum contains the option struct corresponding to that method, in this way
+one cas specify both the method and its options in one place.
+With the methods <code>Brent</code> and <code>Golden</code>  the user can either specify a initial bracket where they beleive
+the minimum to exist or have the minimizer find one based on two inital points.
+A bracket is an ordered triple <span class="arithmatex">\((a, b, c)\)</span> such that <span class="arithmatex">\(f(a) &gt; f(b) &lt; f(c)\)</span>.
+For the <code>Bounded</code> method the user specifies an interval where to search. As opposed to <code>Brent</code> and
+<code>Golden</code>, where the initial bracketing phase can take you quite far from the initial points you
+specify, <code>Bounded</code> is guaranteed to give you a result in the interval you specify, even if the
+minimum occurs at either of the extrema of the interval.</p>
+<p>See the complete <a href="examples/scalar-parabola/">parabola example</a>, which demonstrates Brent
+minimization with automatic and explicit brackets, as well as bounded minimization.</p>
+<h2 id="unconstrained-minimization">Unconstrained Minimization</h2>
+<p>Unconstrained mimimimzation solve solves the following problem for
+<span class="arithmatex">\(f(\mathbf{x}): \mathbb{R}^{n} \rightarrow \mathbb{R}\)</span>:</p>
+<div class="arithmatex">\[
+\mathbf{x}_{\text{min}} = \argmin_{\mathbf{x} \in \mathbb{R}^{n}} f(\mathbf{x})
+\]</div>
+<p>The entry point for this area of functionality is the function:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">fn</span><span class="w"> </span><span class="nf">unconstrained_minimize</span><span class="p">(</span><span class="n">fcn</span><span class="p">:</span><span class="w"> </span><span class="nc">RealFn</span><span class="p">,</span><span class="w"> </span><span class="n">x0</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">Vector</span><span class="p">,</span><span class="w"> </span><span class="n">method</span><span class="p">:</span><span class="w"> </span><span class="nc">UnconstrainedMethod</span><span class="p">)</span>
+</code></pre></div>
+<p>where <code>x0</code> is some initial point at which to start the optimization. The enum
+<code>UnconstrainedMethod</code> selects the algorithm and owns its algorithm-specific
+options. Current options are:</p>
+<ul>
+<li><code>UnconstraindMethod::ConjugateGradient</code></li>
+<li><code>UnconstrainedMethod::QuasiNewton</code></li>
+</ul>
+<p>See the complete <a href="examples/unconstrained-rosenbrock/">Rosenbrock example</a>, which demonstrates both
+methods.</p>
+<h2 id="bound-constrained-minimization">Bound-Constrained Minimization</h2>
+<p>Bound-constrained minimization solves</p>
+<div class="arithmatex">\[
+\mathbf{x}_{\text{min}}
+=
+\argmin_{\mathbf{x} \in \mathbb{R}^{n}} f(\mathbf{x})
+\quad \text{subject to} \quad
+l_i \leq x_i \leq u_i.
+\]</div>
+<p>Either side of a variable's interval may be omitted. Variables for which no bounds are added
+remain free. The entry point is:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">fn</span><span class="w"> </span><span class="nf">bound_constrained_minimize</span><span class="o">&lt;</span><span class="n">F</span><span class="p">:</span><span class="w"> </span><span class="nc">RealFn</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="o">?</span><span class="nb">Sized</span><span class="o">&gt;</span><span class="p">(</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">    </span><span class="n">fcn</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">mut</span><span class="w"> </span><span class="n">F</span><span class="p">,</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="n">bounds</span><span class="p">:</span><span class="w"> </span><span class="nc">BoundsConstraints</span><span class="p">,</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="n">x0</span><span class="p">:</span><span class="w"> </span><span class="nc">Vector</span><span class="p">,</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">    </span><span class="n">method</span><span class="p">:</span><span class="w"> </span><span class="nc">BoundConstrainedMethod</span><span class="p">,</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nb">Result</span><span class="o">&lt;</span><span class="n">VectorReturns</span><span class="p">,</span><span class="w"> </span><span class="n">BoundConstrainedError</span><span class="o">&gt;</span>
+</code></pre></div>
+<h3 id="specifying-bounds">Specifying Bounds</h3>
+<p>Create <code>BoundsConstraints</code> with the dimension of the objective's domain, then add the bounds for
+each constrained variable:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">bounds</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">BoundsConstraints</span><span class="p">::</span><span class="n">new</span><span class="p">(</span><span class="n">n</span><span class="p">);</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="c1">// 0 &lt;= x[0] &lt;= 1</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">bounds</span><span class="p">.</span><span class="n">add_bounds</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="nb">Some</span><span class="p">(</span><span class="mf">0.0</span><span class="p">),</span><span class="w"> </span><span class="nb">Some</span><span class="p">(</span><span class="mf">1.0</span><span class="p">));</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="c1">// x[2] &lt;= 5; x[2] has no lower bound</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="n">bounds</span><span class="p">.</span><span class="n">add_bounds</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="nb">None</span><span class="p">,</span><span class="w"> </span><span class="nb">Some</span><span class="p">(</span><span class="mf">5.0</span><span class="p">));</span>
+</code></pre></div>
+<p>The variable index must be smaller than <code>n</code>, and bounds for a given index must be added in a
+single call. Both bound-constrained algorithms project <code>x0</code> into the feasible box before starting,
+so the first objective evaluation is made at a feasible point.</p>
+<h3 id="choosing-a-method">Choosing a Method</h3>
+<p><code>BoundConstrainedMethod</code> has two variants:</p>
+<ul>
+<li><code>BoundConstrainedMethod::Asa(AsaOptions)</code> uses an active-set algorithm. It identifies variables
+  at their bounds and invokes a configured <code>UnconstrainedMethod</code> on the remaining free variables.
+  Construct its options with <code>AsaOptions::new(bound_opts, unconstrained_method)</code>; the remaining
+  ASA-specific fields are initialized to their algorithm defaults.</li>
+<li><code>BoundConstrainedMethod::Bfgsb(BfgsbOptions)</code> uses BFGS-B with a configurable
+  <code>LineSearchMethod</code>. Construct <code>BfgsbOptions</code> from its <code>bound_opts</code> and <code>ls_method</code> fields.</li>
+</ul>
+<p>Both methods use <code>BoundConstrainedOptions</code>, which contains:</p>
+<ul>
+<li><code>base_opts: BaseOptions</code> for <code>grad_rtol</code>, <code>grad_atol</code>, and <code>max_iter</code>;</li>
+<li><code>constraint_tol</code>, the shared bound-constrained tolerance. BFGS-B also uses this value as its
+  relative function-reduction tolerance.</li>
+</ul>
+<p>The return value is <code>VectorReturns</code>. Its <code>xmin</code> is feasible with respect to the supplied bounds,
+and it also reports <code>fmin</code>, the convergence reason, iteration count, and function and gradient
+evaluation counts.</p>
+<p>See the <a href="examples/bound-constrained-box/">bound-constrained box example</a> for a complete BFGS-B
+configuration whose solution has active upper bounds.</p>
+<h2 id="generally-constrained-minimization">Generally-Constrained Minimization</h2>
+<p>Generally-constrained minimization supports bounds, vector-valued equality constraints, and
+vector-valued inequality constraints:</p>
+<div class="arithmatex">\[
+\begin{aligned}
+\mathbf{x}_{\text{min}} =
+\argmin_{\mathbf{x} \in \mathbb{R}^{n}} f(\mathbf{x}) \\
+\text{subject to} \quad
+\mathbf{h}(\mathbf{x}) &amp;= \mathbf{0}, \\
+\mathbf{g}(\mathbf{x}) &amp;\leq \mathbf{0}, \\
+l_i \leq x_i &amp;\leq u_i.
+\end{aligned}
+\]</div>
+<p>The entry point is:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">fn</span><span class="w"> </span><span class="nf">constrained_minimize</span><span class="o">&lt;</span><span class="n">F</span><span class="p">:</span><span class="w"> </span><span class="nc">RealFn</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="o">?</span><span class="nb">Sized</span><span class="o">&gt;</span><span class="p">(</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">    </span><span class="n">fcn</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">mut</span><span class="w"> </span><span class="n">F</span><span class="p">,</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span><span class="n">bounds</span><span class="p">:</span><span class="w"> </span><span class="nb">Option</span><span class="o">&lt;</span><span class="n">BoundsConstraints</span><span class="o">&gt;</span><span class="p">,</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="n">eq_constraints</span><span class="p">:</span><span class="w"> </span><span class="nb">Option</span><span class="o">&lt;&amp;</span><span class="k">mut</span><span class="w"> </span><span class="k">dyn</span><span class="w"> </span><span class="n">RealVectorFn</span><span class="o">&gt;</span><span class="p">,</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">    </span><span class="n">ieq_constraints</span><span class="p">:</span><span class="w"> </span><span class="nb">Option</span><span class="o">&lt;&amp;</span><span class="k">mut</span><span class="w"> </span><span class="k">dyn</span><span class="w"> </span><span class="n">RealVectorFn</span><span class="o">&gt;</span><span class="p">,</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">    </span><span class="n">x0</span><span class="p">:</span><span class="w"> </span><span class="nc">Vector</span><span class="p">,</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">    </span><span class="n">method</span><span class="p">:</span><span class="w"> </span><span class="nc">ConstrainedMethod</span><span class="p">,</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nb">Result</span><span class="o">&lt;</span><span class="n">VectorReturns</span><span class="p">,</span><span class="w"> </span><span class="n">ConstrainedError</span><span class="o">&gt;</span>
+</code></pre></div>
+<p>Pass <code>None</code> for any category of constraint that is not present. Equality and inequality
+constraints implement <code>RealVectorFn</code>, returning all constraint values in one <code>Vector</code>. Their
+derivative is an <span class="arithmatex">\(n \times m\)</span> <code>Matrix</code>, where column <span class="arithmatex">\(j\)</span> is the gradient of constraint <span class="arithmatex">\(j\)</span>, as
+described in <a href="#specifying-a-function">Specifying a Function</a>. An inequality is feasible when its
+returned value is non-positive.</p>
+<p>The currently available method is
+<code>ConstrainedMethod::AugmentedLagrangian(AugmentedLagrangianOptions)</code>. It updates penalties and
+Lagrange multipliers in an outer loop and solves each resulting subproblem with one of:</p>
+<ul>
+<li><code>AugmentedLagrangianInnerMethod::Unconstrained(UnconstrainedMethod)</code> when there are no native
+  variable bounds;</li>
+<li><code>AugmentedLagrangianInnerMethod::BoundConstrained(BoundConstrainedMethod)</code> when <code>bounds</code> is
+  <code>Some(...)</code>.</li>
+</ul>
+<p>To enforce native bounds, pair <code>Some(bounds)</code> with the bound-constrained inner method. Conversely,
+the bound-constrained inner method requires bounds to be present.</p>
+<p>Construct the method as follows:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kd">let</span><span class="w"> </span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ConstrainedMethod</span><span class="p">::</span><span class="n">AugmentedLagrangian</span><span class="p">(</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">    </span><span class="n">AugmentedLagrangianOptions</span><span class="p">::</span><span class="n">new</span><span class="p">(</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">        </span><span class="n">ConstrainedOptions</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">            </span><span class="n">base_opts</span><span class="p">:</span><span class="w"> </span><span class="nc">BaseOptions</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">                </span><span class="n">grad_rtol</span><span class="p">:</span><span class="w"> </span><span class="mf">1e-6</span><span class="p">,</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">                </span><span class="n">grad_atol</span><span class="p">:</span><span class="w"> </span><span class="mf">1e-8</span><span class="p">,</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">                </span><span class="n">max_iter</span><span class="p">:</span><span class="w"> </span><span class="mi">1_000</span><span class="p">,</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="w">            </span><span class="p">},</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="w">            </span><span class="n">constraint_tol</span><span class="p">:</span><span class="w"> </span><span class="mf">1e-8</span><span class="p">,</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="w">        </span><span class="p">},</span>
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="w">        </span><span class="n">AugmentedLagrangianInnerMethod</span><span class="p">::</span><span class="n">Unconstrained</span><span class="p">(</span><span class="n">unconstrained_method</span><span class="p">),</span>
+<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="w">    </span><span class="p">),</span>
+<a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="p">);</span>
+<a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a>
+<a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a><span class="kd">let</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">constrained_minimize</span><span class="p">(</span>
+<a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a><span class="w">    </span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="n">objective</span><span class="p">,</span>
+<a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a><span class="w">    </span><span class="nb">None</span><span class="p">,</span>
+<a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a><span class="w">    </span><span class="nb">Some</span><span class="p">(</span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="n">equalities</span><span class="p">),</span>
+<a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a><span class="w">    </span><span class="nb">Some</span><span class="p">(</span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="n">inequalities</span><span class="p">),</span>
+<a id="__codelineno-5-20" name="__codelineno-5-20" href="#__codelineno-5-20"></a><span class="w">    </span><span class="n">x0</span><span class="p">,</span>
+<a id="__codelineno-5-21" name="__codelineno-5-21" href="#__codelineno-5-21"></a><span class="w">    </span><span class="n">method</span><span class="p">,</span>
+<a id="__codelineno-5-22" name="__codelineno-5-22" href="#__codelineno-5-22"></a><span class="p">)</span><span class="o">?</span><span class="p">;</span>
+</code></pre></div>
+<p><code>constraint_tol</code> controls primal feasibility, while the gradient tolerances in <code>base_opts</code>
+control stationarity. <code>AugmentedLagrangianOptions::new</code> supplies defaults for <code>initial_penalty</code>,
+<code>constraint_improvement_factor</code>, and <code>penalty_growth_factor</code>; these public fields may be adjusted
+after construction.</p>
+<p>See the <a href="examples/generally-constrained-hypersphere/">generally-constrained hypersphere example</a>
+for a complete augmented-Lagrangian solve with a nonlinear inequality.</p>
+<h2 id="line-search-methods">Line-Search Methods</h2>
+<p>A line search chooses a step length <span class="arithmatex">\(\alpha\)</span> along a direction <span class="arithmatex">\(\mathbf{d}\)</span> by applying a scalar
+search method to</p>
+<div class="arithmatex">\[
+\phi(\alpha) = f(\mathbf{x} + \alpha \mathbf{d}),
+\qquad
+\phi'(\alpha) = \nabla f(\mathbf{x} + \alpha \mathbf{d})^{T}\mathbf{d}.
+\]</div>
+<p>The initial direction should be a descent direction, so
+<span class="arithmatex">\(\phi'(0) = \nabla f(\mathbf{x})^{T}\mathbf{d} &lt; 0\)</span>. Both available methods seek a step satisfying
+the strong Wolfe conditions:</p>
+<div class="arithmatex">\[
+\begin{aligned}
+\phi(\alpha)
+&amp;\leq \phi(0) + c_1 \alpha \phi'(0), \\
+|\phi'(\alpha)|
+&amp;\leq c_2 |\phi'(0)|.
+\end{aligned}
+\]</div>
+<h3 id="searching-along-a-vector-direction">Searching Along a Vector Direction</h3>
+<p>Use <code>lsearch</code> when the objective implements <code>RealFn</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">fn</span><span class="w"> </span><span class="nf">lsearch</span><span class="o">&lt;</span><span class="n">F</span><span class="p">:</span><span class="w"> </span><span class="nc">RealFn</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="o">?</span><span class="nb">Sized</span><span class="o">&gt;</span><span class="p">(</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">    </span><span class="n">fcn</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">mut</span><span class="w"> </span><span class="n">F</span><span class="p">,</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">    </span><span class="n">iter_data</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">IterData</span><span class="p">,</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">    </span><span class="n">dir</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">Vector</span><span class="p">,</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">    </span><span class="n">alpha_init</span><span class="p">:</span><span class="w"> </span><span class="kt">f64</span><span class="p">,</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">    </span><span class="n">method</span><span class="p">:</span><span class="w"> </span><span class="nc">LineSearchMethod</span><span class="p">,</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nb">Result</span><span class="o">&lt;</span><span class="n">IterData</span><span class="p">,</span><span class="w"> </span><span class="n">LineSearchError</span><span class="o">&gt;</span>
+</code></pre></div>
+<p><code>iter_data</code> contains the current point, function value, gradient, and gradient norm. It can be
+created with <code>IterData::new(&amp;mut fcn, &amp;x)</code>. On success, <code>lsearch</code> returns a new <code>IterData</code> at
+<span class="arithmatex">\(\mathbf{x} + \alpha\mathbf{d}\)</span>, including the function value and freshly evaluated gradient.</p>
+<h3 id="searching-a-scalar-function">Searching a Scalar Function</h3>
+<p>Use <code>lsearch1d</code> when the line-search function <span class="arithmatex">\(\phi\)</span> already implements <code>RealFn1</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kd">let</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">lsearch1d</span><span class="p">(</span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="n">phi</span><span class="p">,</span><span class="w"> </span><span class="n">alpha_init</span><span class="p">,</span><span class="w"> </span><span class="n">method</span><span class="p">)</span><span class="o">?</span><span class="p">;</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="kd">let</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">result</span><span class="p">.</span><span class="n">alpha</span><span class="p">;</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="kd">let</span><span class="w"> </span><span class="n">phi_alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">result</span><span class="p">.</span><span class="n">phi_alpha</span><span class="p">;</span>
+</code></pre></div>
+<p><code>lsearch1d</code> treats zero as the starting point: it evaluates <code>phi(0)</code> and <code>phi'(0)</code>, then searches
+from <code>alpha_init</code>. It returns the accepted step and the function value at that step.</p>
+<h3 id="configuring-a-line-search">Configuring a Line Search</h3>
+<p><code>LineSearchMethod</code> has two variants:</p>
+<ul>
+<li><code>LineSearchMethod::Thuente(ThuenteOptions)</code> selects the More-Thuente method and has a <code>maxiter</code>
+  limit.</li>
+<li><code>LineSearchMethod::Nocedal(NocedalOptions)</code> selects a bracket-and-zoom method and has both
+  <code>maxiter</code> and <code>zoom_maxiter</code> limits.</li>
+</ul>
+<p>Both option structs contain <code>ls_opts: LineSearchOptions</code>. Its fields are the Wolfe constants <code>c1</code>
+and <code>c2</code>, and the permitted step interval <code>step_min</code> to <code>step_max</code>. <code>LineSearchOptions::default()</code>
+uses <code>c1 = 1e-4</code>, <code>c2 = 0.9</code>, <code>step_min = 0</code>, and <code>step_max = 50</code>. Set the method-specific
+iteration limits explicitly when constructing <code>ThuenteOptions</code> or <code>NocedalOptions</code>.</p>
+<p>See the <a href="examples/line-search-quadratic/">one-dimensional line-search example</a> for both methods
+applied to the same scalar function.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.indexes"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+        <script src="../javascripts/katex.js"></script>
+      
+        <script src="https://unpkg.com/katex@0/dist/katex.min.js"></script>
+      
+        <script src="https://unpkg.com/katex@0/dist/contrib/auto-render.min.js"></script>
+      
+    
+  </body>
+</html>
