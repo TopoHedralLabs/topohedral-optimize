@@ -1,0 +1,9 @@
+(function() {
+    const implementors = Object.fromEntries([["topohedral_optimize",[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.97.1/core/default/trait.Default.html\" title=\"trait core::default::Default\">Default</a> for <a class=\"enum\" href=\"topohedral_optimize/enum.Bracket.html\" title=\"enum topohedral_optimize::Bracket\">Bracket</a>",0],["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.97.1/core/default/trait.Default.html\" title=\"trait core::default::Default\">Default</a> for <a class=\"struct\" href=\"topohedral_optimize/struct.BracketOptions.html\" title=\"struct topohedral_optimize::BracketOptions\">BracketOptions</a>",0],["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.97.1/core/default/trait.Default.html\" title=\"trait core::default::Default\">Default</a> for <a class=\"struct\" href=\"topohedral_optimize/struct.LineSearchOptions.html\" title=\"struct topohedral_optimize::LineSearchOptions\">Options</a>",0],["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.97.1/core/default/trait.Default.html\" title=\"trait core::default::Default\">Default</a> for <a class=\"struct\" href=\"topohedral_optimize/struct.NocedalOptions.html\" title=\"struct topohedral_optimize::NocedalOptions\">Options</a>",0],["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.97.1/core/default/trait.Default.html\" title=\"trait core::default::Default\">Default</a> for <a class=\"struct\" href=\"topohedral_optimize/struct.ThuenteOptions.html\" title=\"struct topohedral_optimize::ThuenteOptions\">Options</a>",0]]]]);
+    if (window.register_implementors) {
+        window.register_implementors(implementors);
+    } else {
+        window.pending_implementors = implementors;
+    }
+})()
+//{"start":59,"fragment_lengths":[1518]}
