@@ -14,5 +14,5 @@ vectors. Functions provide both their value and derivative through the crate’s
 `DifferentiableFn` trait.
 
 Use the [Getting Started](getting-started.md) page for installation and a minimal
-example, then see the [User Guide](user-guide.md) for choosing an algorithm and
+example, then see the [User Guide](user-guide/index.md) for choosing an algorithm and
 configuring stopping criteria.
