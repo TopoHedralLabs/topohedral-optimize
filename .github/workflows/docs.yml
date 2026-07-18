@@ -55,4 +55,4 @@ jobs:
           cd /tmp/gh-pages
           git add .
           git commit -m "Add API docs for ${{ github.ref_name }}"
-          git push origin gh-pages%
+          git push origin gh-pages
