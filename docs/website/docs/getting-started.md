@@ -34,7 +34,7 @@ impl DifferentiableFn for Rosenbrock {
     type Output = f64;
     type Derivative = DVector<f64>;
 
-    fn dimension(&self) -> usize { 2 }
+    fn dimension_domain(&self) -> usize { 2 }
 
     fn eval(&mut self, x: &Self::Input) -> f64 {
         let a = 1.0 - x[0];
