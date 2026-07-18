@@ -1,6 +1,6 @@
-//! Short Description of module
+//! Factory for constrained optimizer implementations.
 //!
-//! Longer description of module
+//! It assembles the selected outer method and its optional constraint functions.
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
@@ -8,7 +8,7 @@ use crate::common::Minimizer;
 use crate::{
     constrained::{
         augmented_lagrangian::AugmentedLagrangian, common::Error, AugmentedLagrangianOptions,
-        ConstriainedOptions,
+        ConstrainedOptions,
     },
     constraints::BoundsConstraints,
     RealFn, RealVectorFn, Vector, VectorReturns,
@@ -23,19 +23,23 @@ use topohedral_tracing::trace_fn;
 
 //{{{ enum: Method
 #[derive(Clone)]
+/// Selects a constrained optimization algorithm and its options.
 pub enum Method {
+    /// Augmented-Lagrangian method.
     AugmentedLagrangian(AugmentedLagrangianOptions),
 }
 //}}}
 //{{{ impl Method
 impl Method {
-    pub fn con_opts(&self) -> &ConstriainedOptions {
+    /// Returns the shared constrained options.
+    pub fn con_opts(&self) -> &ConstrainedOptions {
         match self {
             Method::AugmentedLagrangian(opts) => &opts.constrained_opts,
         }
     }
 
-    pub fn con_opts_mut(&mut self) -> &mut ConstriainedOptions {
+    /// Returns mutable access to the shared constrained options.
+    pub fn con_opts_mut(&mut self) -> &mut ConstrainedOptions {
         match self {
             Method::AugmentedLagrangian(opts) => &mut opts.constrained_opts,
         }
@@ -45,6 +49,7 @@ impl Method {
 
 //{{{ fun: create
 #[trace_fn]
+/// Constructs the selected constrained optimizer.
 pub fn create<'a, F1: RealFn + 'a, F2: RealVectorFn + 'a, F3: RealVectorFn + 'a>(
     fcn: F1,
     bounds: Option<BoundsConstraints>,

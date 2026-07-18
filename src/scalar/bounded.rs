@@ -21,6 +21,7 @@ const DEFUALT_MAX_ITER: usize = 100;
 
 //{{{ struct: Options
 #[derive(Copy, Clone)]
+/// Options for bounded scalar minimization.
 pub struct Options {
     /// Bounds
     pub bounds: (f64, f64),
@@ -31,6 +32,7 @@ pub struct Options {
 }
 //}}}
 impl Options {
+    /// Creates options for the interval `[lower, upper]`.
     pub fn new(
         lower: f64,
         upper: f64,

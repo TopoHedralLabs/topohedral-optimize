@@ -18,8 +18,11 @@ const XTRAPU: f64 = 4.0;
 
 //{{{ struct: Options
 #[derive(Default, Copy, Clone)]
+/// Options for the More-Thuente line search.
 pub struct Options {
+    /// Shared line-search conditions and step limits.
     pub ls_opts: com::Options,
+    /// Maximum number of iterations.
     pub maxiter: usize,
 }
 //}}}

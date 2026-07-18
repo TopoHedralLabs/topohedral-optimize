@@ -1,10 +1,16 @@
-//! Toppohedral-optimize is an optimisation library written entirely in rust. Part of the topohedral
+//! Toppohedral-optimize is an optimization library for scalar and multidimensional problems.
 //! collection of libraries.
 //!
-//! The library supports:
+//! The library supports line searches and unconstrained, bound-constrained, constrained, and
+//! scalar minimization methods.
 //! - Approximate line-search algorithms, configured with [`LineSearchMethod`]:
 //!     - More-Thuente
 //!     - Nocedal
+//! - multidimensional, bound-constrained optimisation, configured with [`BoundConstrainedMethod`],
+//!   and has the following algorithms:
+//!     - Active Set Algorithm (ASA), which pairs an unconstrained optimizer with logic find
+//!       unconstrained subspaces.
+//!     - BFGS-B Method. The bounded variant of the BFGS-B method.
 //! - multidimensional, unconstrained optimisation, configured with [`UnconstrainedMethod`], and has
 //!   the following algorithms:
 //!     - Conjugate Gradient with a selection of direction implementations
@@ -46,7 +52,7 @@ pub use common::{
 //{{{ pub use: constrained
 pub use constrained::{
     minimize as constrained_minimize, AugmentedLagrangianInnerMethod, AugmentedLagrangianOptions,
-    ConstrainedError, ConstrainedMethod, ConstriainedOptions,
+    ConstrainedError, ConstrainedMethod, ConstrainedOptions,
 };
 //}}}
 //{{{ pub use constraints

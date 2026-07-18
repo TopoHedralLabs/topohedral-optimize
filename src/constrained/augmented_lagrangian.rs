@@ -1,6 +1,6 @@
-//! Short Description of module
+//! Augmented-Lagrangian method for equality and inequality constraints.
 //!
-//! Longer description of module
+//! Penalties and multipliers are updated by an outer loop around an inner optimizer.
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
@@ -8,7 +8,7 @@ use crate::common::Minimizer;
 use crate::{
     bound_constrained::{minimize_impl as bcon_minimize, BoundConstrainedMethod},
     common::{self, ConvergedReason, IterData, VectorReturns},
-    constrained::{ConstrainedError, ConstriainedOptions},
+    constrained::{ConstrainedError, ConstrainedOptions},
     constraints::BoundsConstraints,
     unconstrained::{minimize_impl as uncon_minimize, UnconstrainedMethod},
     DifferentiableFn, Matrix, RealFn, RealVectorFn, Vector,
@@ -41,26 +41,35 @@ const OMEGA_INIT_CEIL: f64 = 1e-2;
 //{{{ enum: LagrangianType
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum LagrangianType {
+    /// Augmented Lagrangian with quadratic penalty terms.
     AugmentedLagrangian,
+    /// Classical Lagrangian form.
     Lagrangian,
 }
 //}}}
 
 //{{{ struct Options
 #[derive(Clone)]
+/// Options for augmented-Lagrangian constrained optimization.
 pub struct Options {
-    pub constrained_opts: ConstriainedOptions,
+    /// Common constrained stopping options.
+    pub constrained_opts: ConstrainedOptions,
+    /// Algorithm used for inner minimization.
     pub inner_method: InnerMethod,
+    /// Initial constraint penalty.
     pub initial_penalty: f64,
+    /// Required improvement before increasing a penalty.
     pub constraint_improvement_factor: f64,
+    /// Multiplicative penalty growth factor.
     pub penalty_growth_factor: f64,
 }
 //}}}
 //{{{ impl: Options
 impl Options {
+    /// Creates options with default penalty parameters.
     #[trace_fn]
     pub fn new(
-        constrained_opts: ConstriainedOptions,
+        constrained_opts: ConstrainedOptions,
         inner_method: InnerMethod,
     ) -> Self {
         Self {
@@ -237,10 +246,15 @@ impl<F: RealVectorFn> crate::DifferentiableFn for EqPenalty<F> {
     type Input = Vector;
     type Output = f64;
     type Derivative = Vector;
-    //{{{ fn: dimension
+    //{{{ fn: dimension_domain
     #[trace_fn]
-    fn dimension(&self) -> usize {
+    fn dimension_domain(&self) -> usize {
         self.data.function.dimension_domain()
+    }
+
+    #[trace_fn]
+    fn dimension_range(&self) -> usize {
+        1
     }
     //}}}
     //{{{ fn: eval
@@ -354,10 +368,15 @@ impl<F: RealVectorFn> crate::DifferentiableFn for IeqPenalty<F> {
     type Input = Vector;
     type Output = f64;
     type Derivative = Vector;
-    //{{{ fn: dimension
+    //{{{ fn: dimension_domain
     #[trace_fn]
-    fn dimension(&self) -> usize {
+    fn dimension_domain(&self) -> usize {
         self.data.function.dimension_domain()
+    }
+
+    #[trace_fn]
+    fn dimension_range(&self) -> usize {
+        1
     }
     //}}}
     //{{{ fn: eval
@@ -466,7 +485,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangianFcn<F1, 
         let ieq_penalty = ieq_constraints
             .map(|ieq_con| IeqPenalty::new(ieq_con, initial_penalty, lagrangian_type));
 
-        let n = fcn.dimension();
+        let n = fcn.dimension_domain();
         let mut cached_values = HashMap::<LagrangianType, CachedValues>::new();
         cached_values.insert(LagrangianType::AugmentedLagrangian, CachedValues::new(n));
         cached_values.insert(LagrangianType::Lagrangian, CachedValues::new(n));
@@ -581,10 +600,15 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> crate::DifferentiableFn
     type Input = Vector;
     type Output = f64;
     type Derivative = Vector;
-    //{{{ fn: dimension
+    //{{{ fn: dimension_domain
     #[trace_fn]
-    fn dimension(&self) -> usize {
-        self.fcn.dimension()
+    fn dimension_domain(&self) -> usize {
+        self.fcn.dimension_domain()
+    }
+
+    #[trace_fn]
+    fn dimension_range(&self) -> usize {
+        1
     }
     //}}}
     //{{{ fn: eval
@@ -642,7 +666,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> crate::DifferentiableFn
         &mut self,
         x: &Vector,
     ) -> Vector {
-        let n = self.dimension();
+        let n = self.dimension_domain();
 
         let fcn_grad = self.fcn.derivative(x);
 
@@ -946,9 +970,12 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
 }
 //}}}
 //{{{ enum: InnerMethod
+/// Selects the optimizer used for an augmented-Lagrangian inner problem.
 #[derive(Clone)]
 pub enum InnerMethod {
+    /// Use an unconstrained inner optimizer.
     Unconstrained(UnconstrainedMethod),
+    /// Use a bound-constrained inner optimizer.
     BoundConstrained(BoundConstrainedMethod),
 }
 //}}}

@@ -1,6 +1,6 @@
-//! Short Description of module
+//! Line-search algorithms for choosing optimization step lengths.
 //!
-//! Longer description of module
+//! Both multidimensional and one-dimensional convenience APIs are provided.
 //--------------------------------------------------------------------------------------------------
 
 use crate::RealFn1;
@@ -43,6 +43,7 @@ pub use utils::initial_step;
 //}}}
 //{{{ pub fn: search
 #[trace_fn]
+/// Searches along a vector direction from the current iterate.
 pub fn search<F: RealFn + ?Sized>(
     fcn: &mut F,
     iter_data: &IterData,
@@ -81,6 +82,7 @@ pub fn search<F: RealFn + ?Sized>(
 //}}}
 //{{{ pub fn: search1d
 #[trace_fn]
+/// Searches for a step using a scalar line-search function.
 pub fn search1d<F: RealFn1 + ?Sized>(
     fcn: &mut F,
     alpha_init: f64,

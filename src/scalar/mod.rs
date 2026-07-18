@@ -1,6 +1,6 @@
-//! Short Description of module
+//! One-dimensional scalar minimization algorithms.
 //!
-//! Longer description of module
+//! Supports bounded minimization and bracketed unbounded searches.
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
@@ -39,6 +39,7 @@ pub use factory::Method as ScalarMethod;
 //}}}
 
 #[trace_fn]
+/// Minimizes a differentiable scalar function using the selected method.
 pub fn minimize<F: RealFn1 + ?Sized>(
     fcn: &mut F,
     method: ScalarMethod,

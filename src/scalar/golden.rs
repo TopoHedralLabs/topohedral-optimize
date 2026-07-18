@@ -26,6 +26,7 @@ const DEFUALT_MAX_ITER: usize = 5000;
 
 //{{{ struct: Options
 #[derive(Copy, Clone)]
+/// Options for golden-section scalar minimization.
 pub struct Options {
     /// Initial bracket
     pub bracket: Bracket,
@@ -36,6 +37,7 @@ pub struct Options {
 }
 //}}}
 impl Options {
+    /// Creates options using the supplied initial bracket.
     pub fn new(bracket: Bracket) -> Self {
         Self {
             bracket,

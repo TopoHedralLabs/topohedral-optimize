@@ -1,6 +1,6 @@
-//! Short Description of module
+//! Algorithms for minimizing functions subject to simple variable bounds.
 //!
-//! Longer description of module
+//! The module exposes active-set and L-BFGS-B style methods through one entry point.
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
@@ -35,6 +35,7 @@ pub use factory::Method as BoundConstrainedMethod;
 //}}}
 
 #[trace_fn]
+/// Minimizes a differentiable function subject to bound constraints.
 pub fn minimize<F: RealFn + ?Sized>(
     fcn: &mut F,
     bounds: BoundsConstraints,

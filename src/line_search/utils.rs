@@ -1,6 +1,6 @@
-//! Short Description of module
+//! Interpolation and condition checks used by line searches.
 //!
-//! Longer description of module
+//! Helpers cover quadratic/cubic trial steps and Wolfe-family conditions.
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports

@@ -1,6 +1,6 @@
-//! Short Description of module
+//! Stores a quadratic model and updates its Hessian approximations.
 //!
-//! Longer description of module
+//! The model supports direct and inverse quasi-Newton updates.
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
@@ -14,23 +14,35 @@ use topohedral_tracing::*;
 //}}}
 //--------------------------------------------------------------------------------------------------
 
+/// Quadratic model maintained by quasi-Newton optimizers.
 pub struct QuadraticModel {
+    /// Current iterate.
     pub xk: Vector,
+    /// Function value at the current iterate.
     pub fk: f64,
+    /// Gradient at the current iterate.
     pub grad_fk: Vector,
+    /// Hessian approximation.
     pub hess_k: Matrix,
+    /// Inverse Hessian approximation.
     pub inv_hess_k: Matrix,
+    /// Whether the first curvature-based scaling has been applied.
     pub had_first_update: bool,
 }
 
 #[derive(PartialEq, Eq, Copy, Clone)]
+/// Selects which Hessian approximation an update changes.
 pub enum UpdateType {
+    /// Update the direct Hessian.
     Direct,
+    /// Update the inverse Hessian.
     Inverse,
+    /// Update both approximations.
     Both,
 }
 
 impl QuadraticModel {
+    /// Creates an identity-initialized model of dimension `n`.
     #[trace_fn]
     pub fn new(n: usize) -> Self {
         QuadraticModel {
@@ -43,6 +55,7 @@ impl QuadraticModel {
         }
     }
 
+    /// Resets both Hessian approximations to the identity.
     #[trace_fn]
     pub fn reset(&mut self) {
         let n = self.xk.len();
@@ -55,6 +68,7 @@ impl QuadraticModel {
         self.had_first_update = false;
     }
 
+    /// Stores the current iterate and its function data.
     #[trace_fn]
     pub fn update_iterate(
         &mut self,
@@ -67,6 +81,7 @@ impl QuadraticModel {
         self.grad_fk.copy_from(grad_fk);
     }
 
+    /// Applies a curvature-checked quasi-Newton update.
     #[trace_fn]
     pub fn try_update(
         &mut self,

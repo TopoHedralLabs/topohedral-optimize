@@ -1,0 +1,45 @@
+site_name: TopoHedral-Optimize Documentation
+site_url: https://topohedrallabs.github.io/topohedral-optimize/
+theme:
+  name: material
+  features:
+    - navigation.indexes
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.arithmatex:
+      generic: true
+
+extra_javascript:
+  - javascripts/katex.js
+  - https://unpkg.com/katex@0/dist/katex.min.js
+  - https://unpkg.com/katex@0/dist/contrib/auto-render.min.js
+
+extra_css:
+  - https://unpkg.com/katex@0/dist/katex.min.css
+
+extra:
+  version:
+    provider: mike
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - User Guide:
+      - user-guide/index.md
+      - Examples:
+          - Quartic Functions: user-guide/examples/quartic-functions.md
+          - Inequality Constraints: user-guide/examples/inequality-constraints.md
+          - Parabola: user-guide/examples/scalar-parabola.md
+          - Rosenbrock: user-guide/examples/unconstrained-rosenbrock.md
+          - Bound-Constrained Box: user-guide/examples/bound-constrained-box.md
+          - Generally-Constrained Hypersphere: user-guide/examples/generally-constrained-hypersphere.md
+          - One-Dimensional Line Search: user-guide/examples/line-search-quadratic.md
+  - API Docs: api/
+  - Developers:
+      - Overview: developers/index.md
+      - Building Docs: developers/building-docs.md

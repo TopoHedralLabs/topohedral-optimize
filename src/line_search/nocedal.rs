@@ -17,9 +17,13 @@ use topohedral_tracing::*;
 
 //{{{ struct: Options
 #[derive(Copy, Clone, Default, Debug)]
+/// Options for the Nocedal line search.
 pub struct Options {
+    /// Shared line-search conditions and step limits.
     pub ls_opts: com::Options,
+    /// Maximum number of outer iterations.
     pub maxiter: usize,
+    /// Maximum number of zoom iterations.
     pub zoom_maxiter: usize,
 }
 //}}}
@@ -381,6 +385,15 @@ mod tests {
         type Input = f64;
         type Output = f64;
         type Derivative = f64;
+        #[trace_fn]
+        fn dimension_domain(&self) -> usize {
+            1
+        }
+
+        #[trace_fn]
+        fn dimension_range(&self) -> usize {
+            1
+        }
         #[trace_fn]
         fn eval(
             &mut self,

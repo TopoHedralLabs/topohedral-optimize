@@ -1,6 +1,6 @@
-//! Short Description of module
+//! Shared function traits, optimizer results, and iteration bookkeeping.
 //!
-//! Longer description of module
+//! These types form the common interface used by all optimization families.
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
@@ -17,37 +17,38 @@ use topohedral_tracing::trace_fn;
 //--------------------------------------------------------------------------------------------------
 
 //{{{ type: core aliases
+/// Column vector of `f64` values used by the optimization routines.
 pub type Vector = DVector<f64>;
+/// Dense matrix of `f64` values used by the optimization routines.
 pub type Matrix = DMatrix<f64>;
 //}}}
 //{{{ trait: DifferentiableFn
 /// A differentiable function with associated input, output, and derivative types.
 pub trait DifferentiableFn {
+    /// Function input type.
     type Input;
+    /// Function output type.
     type Output;
+    /// Derivative type.
     type Derivative;
 
+    /// Evaluates the function at `x`.
     fn eval(
         &mut self,
         x: &Self::Input,
     ) -> Self::Output;
 
+    /// Evaluates the derivative at `x`.
     fn derivative(
         &mut self,
         x: &Self::Input,
     ) -> Self::Derivative;
 
-    fn dimension(&self) -> usize {
-        1
-    }
+    /// Returns the dimension of the input space.
+    fn dimension_domain(&self) -> usize;
 
-    fn dimension_domain(&self) -> usize {
-        self.dimension()
-    }
-
-    fn dimension_range(&self) -> usize {
-        1
-    }
+    /// Returns the dimension of the output space.
+    fn dimension_range(&self) -> usize;
 }
 //}}}
 //{{{ impl: DifferentiableFn for &mut F
@@ -68,10 +69,6 @@ impl<F: DifferentiableFn + ?Sized> DifferentiableFn for &mut F {
         x: &Self::Input,
     ) -> Self::Derivative {
         (**self).derivative(x)
-    }
-
-    fn dimension(&self) -> usize {
-        (**self).dimension()
     }
 
     fn dimension_domain(&self) -> usize {
@@ -102,33 +99,49 @@ impl<F> RealFn for F where
 }
 //}}}
 //{{{ enum: ConvergedReason
+/// Criterion that caused an optimization run to converge.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum ConvergedReason {
+    /// Relative gradient tolerance was met.
     Rtol,
+    /// Absolute gradient tolerance was met.
     Atol,
 }
 //}}}
 //{{{ struct: Options
+/// Common stopping options for vector optimization methods.
 #[derive(Copy, Clone)]
 pub struct BaseOptions {
+    /// Relative gradient tolerance.
     pub grad_rtol: f64,
+    /// Absolute gradient tolerance.
     pub grad_atol: f64,
+    /// Maximum number of iterations.
     pub max_iter: u64,
 }
 //}}}
 //{{{ struct Returns
+/// Result and convergence information returned by an optimizer.
 #[derive(Clone, Debug)]
 pub struct Returns<T> {
+    /// Minimizing point.
     pub xmin: T,
+    /// Function value at the minimizing point.
     pub fmin: f64,
+    /// Convergence criterion that was met.
     pub reason: ConvergedReason,
+    /// Number of optimizer iterations.
     pub num_iterations: usize,
+    /// Number of function evaluations.
     pub num_fun_evals: usize,
+    /// Number of derivative evaluations.
     pub num_grad_evals: usize,
 }
 //}}}
 //{{{ type: Returns aliases
+/// Scalar optimization result.
 pub type ScalarReturns = Returns<f64>;
+/// Vector optimization result.
 pub type VectorReturns = Returns<Vector>;
 //}}}
 //{{{ trait: Minimizer
@@ -140,16 +153,22 @@ pub(crate) trait Minimizer {
 }
 //}}}
 //{{{ struct: IterData
+/// Function and gradient data for one optimization iterate.
 #[derive(Debug, Clone)]
 pub struct IterData {
+    /// Current point.
     pub x: Vector,
+    /// Function value at the current point.
     pub fx: f64,
+    /// Current gradient.
     pub grad_fx: Vector,
+    /// Euclidean norm of the current gradient.
     pub norm_grad_fx: f64,
 }
 //}}}
 //{{{ impl: IterData
 impl IterData {
+    /// Evaluates a function and derivative at `x`.
     #[trace_fn]
     pub fn new<F: RealFn + ?Sized>(
         fcn: &mut F,
@@ -166,6 +185,7 @@ impl IterData {
         }
     }
 
+    /// Copies another iterate's values into this record.
     #[trace_fn]
     pub fn copy_from(
         &mut self,
@@ -224,8 +244,12 @@ impl<F: RealFn + ?Sized> DifferentiableFn for Evaluator<'_, F> {
     }
 
     #[trace_fn]
-    fn dimension(&self) -> usize {
-        self.fcn.dimension()
+    fn dimension_domain(&self) -> usize {
+        self.fcn.dimension_domain()
+    }
+
+    fn dimension_range(&self) -> usize {
+        self.fcn.dimension_range()
     }
 }
 //}}}

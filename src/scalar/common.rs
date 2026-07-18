@@ -1,6 +1,6 @@
-//! Short Description of module
+//! Shared bracketing types and errors for scalar minimization.
 //!
-//! Longer description of module
+//! A valid bracket identifies a middle point lower than both endpoints.
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
@@ -14,26 +14,34 @@ use topohedral_tracing::{trace, trace_fn};
 //}}}
 //--------------------------------------------------------------------------------------------------
 
+/// Errors reported by scalar minimization and bracketing.
 #[derive(Error, Debug)]
 pub enum Error {
+    /// The bracketing iteration limit was reached.
     #[error("Maximum iterations of {0} reached")]
     MaxIterations(usize),
+    /// Bracketing terminated without a valid triple.
     #[error(
         "The algorithm terminated without finding a valid bracket, consider trying different \
          initial points"
     )]
     InvalidBracket,
+    /// A bound was not finite.
     #[error("Optimization bounds must be finite scalars, got lower = {0}, upper = {1}")]
     NonFiniteBounds(f64, f64),
+    /// The lower bound exceeded the upper bound.
     #[error("The lower bound {0} exceeds the upper bound {1}")]
     InvalidBounds(f64, f64),
+    /// A function evaluation returned NaN.
     #[error("Function evaluation returned NaN")]
     NaN,
+    /// Bracket points were not ordered correctly.
     #[error(
         "Bracketing values (xa, xb, xc) = ({0}, {1}, {2}) do not fulfill this requirement: \
          (xa < xb) and (xb < xc)"
     )]
     InvalidBracketOrder(f64, f64, f64),
+    /// The middle bracket value was not lower than both endpoints.
     #[error(
         "Bracketing values (xa, xb, xc) do not fulfill this requirement: (f(xb) < f(xa)) and \
          (f(xb) < f(xc))"
@@ -41,9 +49,12 @@ pub enum Error {
     InvalidBracketValues,
 }
 
+/// Options controlling automatic bracket growth.
 #[derive(Copy, Clone)]
 pub struct BracketOptions {
+    /// Maximum growth factor for a bracket step.
     pub grow_limit: f64,
+    /// Maximum number of growth steps.
     pub max_iter: usize,
 }
 
@@ -65,12 +76,19 @@ impl Default for BracketOptions {
 /// local minimum of the function.
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct BracketResult {
+    /// First bracket point.
     pub xa: f64,
+    /// Middle bracket point.
     pub xb: f64,
+    /// Last bracket point.
     pub xc: f64,
+    /// Function value at `xa`.
     pub fa: f64,
+    /// Function value at `xb`.
     pub fb: f64,
+    /// Function value at `xc`.
     pub fc: f64,
+    /// Number of function evaluations.
     pub num_fun_evals: usize,
 }
 //}}}
@@ -297,6 +315,13 @@ mod tests {
         type Input = f64;
         type Output = f64;
         type Derivative = f64;
+        fn dimension_domain(&self) -> usize {
+            1
+        }
+
+        fn dimension_range(&self) -> usize {
+            1
+        }
         fn eval(
             &mut self,
             x: &f64,

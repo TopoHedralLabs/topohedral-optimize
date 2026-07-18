@@ -1,6 +1,6 @@
-//! Short Description of module
+//! Active-set algorithm for smooth bound-constrained minimization.
 //!
-//! Longer description of module
+//! The method alternates between identifying active bounds and solving the free face.
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
@@ -38,7 +38,9 @@ const DEFAULT_ALPHA_MAX: f64 = 1e20;
 
 //{{{ struct: Options
 #[derive(Clone)]
+/// Options for the active-set bound-constrained algorithm.
 pub struct Options {
+    /// Common bound-constrained stopping options.
     pub bound_opts: BoundConstrainedOptions,
     /// Settings for internal minimization
     pub unconstrained_method: UnconstrainedMethod,
@@ -64,6 +66,7 @@ pub struct Options {
 //}}}
 //{{{ impl Optoins
 impl Options {
+    /// Creates options with the algorithm's default tuning parameters.
     pub fn new(
         bound_opts: BoundConstrainedOptions,
         unconstrained_method: UnconstrainedMethod,
@@ -114,13 +117,18 @@ impl<F: RealFn> crate::DifferentiableFn for RestrictedFunction<F> {
     type Input = Vector;
     type Output = f64;
     type Derivative = Vector;
-    //{{{ fn: dimension
+    //{{{ fn: dimension_domain
     #[trace_fn]
-    fn dimension(&self) -> usize {
+    fn dimension_domain(&self) -> usize {
         self.bound_statuses
             .iter()
             .filter(|status| **status == BoundStatus::Free)
             .count()
+    }
+
+    #[trace_fn]
+    fn dimension_range(&self) -> usize {
+        1
     }
     //}}}
     //{{{ fn: eval
