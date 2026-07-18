@@ -52,7 +52,7 @@ pub use common::{
 //{{{ pub use: constrained
 pub use constrained::{
     minimize as constrained_minimize, AugmentedLagrangianInnerMethod, AugmentedLagrangianOptions,
-    ConstrainedError, ConstrainedMethod, ConstriainedOptions,
+    ConstrainedError, ConstrainedMethod, ConstrainedOptions,
 };
 //}}}
 //{{{ pub use constraints

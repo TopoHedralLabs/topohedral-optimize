@@ -8,7 +8,7 @@ use crate::common::Minimizer;
 use crate::{
     constrained::{
         augmented_lagrangian::AugmentedLagrangian, common::Error, AugmentedLagrangianOptions,
-        ConstriainedOptions,
+        ConstrainedOptions,
     },
     constraints::BoundsConstraints,
     RealFn, RealVectorFn, Vector, VectorReturns,
@@ -32,14 +32,14 @@ pub enum Method {
 //{{{ impl Method
 impl Method {
     /// Returns the shared constrained options.
-    pub fn con_opts(&self) -> &ConstriainedOptions {
+    pub fn con_opts(&self) -> &ConstrainedOptions {
         match self {
             Method::AugmentedLagrangian(opts) => &opts.constrained_opts,
         }
     }
 
     /// Returns mutable access to the shared constrained options.
-    pub fn con_opts_mut(&mut self) -> &mut ConstriainedOptions {
+    pub fn con_opts_mut(&mut self) -> &mut ConstrainedOptions {
         match self {
             Method::AugmentedLagrangian(opts) => &mut opts.constrained_opts,
         }

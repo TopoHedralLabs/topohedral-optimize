@@ -4,7 +4,7 @@ use topohedral_optimize::{
     constrained_minimize, AugmentedLagrangianInnerMethod, AugmentedLagrangianOptions, BaseOptions,
     BfgsbOptions, BoundConstrainedMethod, BoundConstrainedOptions, BoundsConstraints,
     ConjugateGradientDirection as Direction, ConjugateGradientOptions, ConstrainedMethod,
-    ConstriainedOptions, LineSearchMethod, LineSearchOptions, NocedalOptions, QuasiNewtonOptions,
+    ConstrainedOptions, LineSearchMethod, LineSearchOptions, NocedalOptions, QuasiNewtonOptions,
     QuasiNewtonUpdateMethod as UpdateMethod, RealFn, RealVectorFn, ThuenteOptions,
     UnconstrainedMethod, UnconstrainedOptions as UnonstrainedOptions, Vector, VectorReturns,
 };
@@ -138,7 +138,7 @@ fn assert_counts(
 //{{{ fun: uncon_auglag_method
 fn uncon_auglag_method(unconstrained_method: UnconstrainedMethod) -> ConstrainedMethod {
     ConstrainedMethod::AugmentedLagrangian(AugmentedLagrangianOptions::new(
-        ConstriainedOptions {
+        ConstrainedOptions {
             base_opts: UnonstrainedOptions {
                 grad_rtol: 1e-6,
                 grad_atol: 1e-6,
@@ -153,7 +153,7 @@ fn uncon_auglag_method(unconstrained_method: UnconstrainedMethod) -> Constrained
 //{{{ fun: bcon_auglag_method
 fn bcon_auglag_method(bcon_method: BoundConstrainedMethod) -> ConstrainedMethod {
     ConstrainedMethod::AugmentedLagrangian(AugmentedLagrangianOptions::new(
-        ConstriainedOptions {
+        ConstrainedOptions {
             base_opts: UnonstrainedOptions {
                 grad_rtol: 1e-6,
                 grad_atol: 1e-6,
@@ -630,7 +630,7 @@ fn test_quadratic_tight_grad_atol_below_old_hardcoded_floor_converges() {
     ieq_constraints.add_bounds(0, Some(20.0), None);
 
     let opts = ConstrainedMethod::AugmentedLagrangian(AugmentedLagrangianOptions::new(
-        ConstriainedOptions {
+        ConstrainedOptions {
             base_opts: UnonstrainedOptions {
                 grad_rtol: 0.0,
                 grad_atol: 1e-8,

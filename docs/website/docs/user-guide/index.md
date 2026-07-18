@@ -18,11 +18,11 @@ constraints fall into this category.
 - The first thing to notice is that each area of functionality has a single entry point:
 
     - `scalar_minimize(fcn, method)`: Minimize a scalar-scalar function.
-    - `unconstrained_minimize(fcn, method)`: Mimimize an unconstrained vector-scalar function.
+    - `unconstrained_minimize(fcn, x0, method)`: Minimize an unconstrained vector-scalar function.
     - `bound_constrained_minimize(fcn, bounds, x0, method)`: Minimize a bound-constrained
        vector-scalar function.
-    - `constrained_minimze(fcn, bounds, ieq_con, eq_con, method)`: Minimize a generally-constrained
-       vector-scalar function.
+    - `constrained_minimize(fcn, bounds, eq_constraints, ieq_constraints, x0, method)`: Minimize
+       a generally-constrained vector-scalar function.
 
     with the exception of the line search functionality which has two entry-points:
 
@@ -33,9 +33,9 @@ constraints fall into this category.
 
 - Each of these minimize functions takes the function you wish to minimize and a set of
   parameters specific to the area. For example, the scalar optimizers take a function and
-  a bracket or an interval. The bounded optimizers all take a `BoundConstraints` struct.
-  The generally-constrained optimizers will take a `BoundConstraints`, an object implementing
-  equality constraints and an object implementing
+  a bracket or an interval. The bounded optimizers all take a `BoundsConstraints` struct.
+  The generally-constrained optimizers accept optional bounds and optional vector-valued
+  equality and inequality constraint functions.
 - Every category of solver: so scalar minimizers, unconstrained minimizers, bound constrained minimizers
   and generally-constrained miminizers, has its own method enum and each value of the enum wraps
   around an options struct specific to that method.
@@ -44,9 +44,9 @@ constraints fall into this category.
         - `ScalarMethod::Bounded(BoundedOptions)`
         - `ScalarMethod::Brent(BrentOptions)`
         - `ScalarMethod::Golden(GoldenOptions)`
-    - `UnconstraintedMethod`
-        - `UnconstraintedMethod::ConjugateGradient(ConjugateGradientOptions)`
-        - `UnconstraintedMethod::QuasiNewton(QuasiNewtonOptions)`
+    - `UnconstrainedMethod`
+        - `UnconstrainedMethod::ConjugateGradient(ConjugateGradientOptions)`
+        - `UnconstrainedMethod::QuasiNewton(QuasiNewtonOptions)`
     - `BoundConstrainedMethod`
         - `BoundConstrainedMethod::Asa(AsaOptions)`
         - `BoundConstrainedMethod::Bfgsb(BfgsbOptions)`
@@ -58,7 +58,7 @@ constraints fall into this category.
   solver such as `Asa` will have its own options struct `AsaOptions` which will contain the
   settings specific to itself but it will also contain an instance of `BoundConstrainedOptions`
   which will contain settings common to all the bound constrained minimizers. Finally,
-  `BoundConstrainedOptions` will itself containt an instance of `BaseOpts`, which contains
+  `BoundConstrainedOptions` will itself contain an instance of `BaseOptions`, which contains
   settings which are common to all the descent-based minimizers in the crate.
 
 ## Specifying a Function
@@ -127,66 +127,10 @@ For the `Bounded` method the user specifies an interval where to search. As oppo
 specify, `Bounded` is guaranteed to give you a result in the interval you specify, even if the
 minimum occurs at either of the extrema of the interval.
 
-### Example 1: Parabola
+See the complete [parabola example](examples/scalar-parabola.md), which demonstrates Brent
+minimization with automatic and explicit brackets, as well as bounded minimization.
 
-For the purposes of this
-example, let us define a little helper to wrap around a rust lambda:
-
-```rust
-struct ScalarFunction<G: Fn(f64) -> f64> {
-    f: G,
-}
-impl<G: Fn(f64) -> f64> ScalarFunction<G> {
-    fn new(f: G) -> Self {
-        Self { f }
-    }
-}
-```
-
-Let's begin with a simple problem: to find the minimum of a parabola. Using `Brent` one can do one
-of the following:
-
-```rust
-let mut f = ScalarFunction::new(|f64|(x - 1.0).powi(2));
-
-// method 1: let us compute the bracket starting from  interval [0, 1].
-let res1 = scalar_minimize(
-                    &mut f,
-                    ScalarMethod::Brent(
-                        BrentOptions::new(Bracket::AUTO)
-                    )
-                ).unwrap();
-
-// method 2: let us compute the bracket starting from interval [0, 5].
-let res2 = scalar_minimize(
-                    &mut f,
-                    ScalarMethod::Brent(
-                        BrentOptions::new(Bracket::Points((0.0, 0.5)))
-                    )
-                ).unwrap();
-
-// method 3: User gives us a bracket where they know the minimum exists
-let res3 = scalar_minimize(
-                    &mut f,
-                    ScalarMethod::Brent(
-                        BrentOptions::new(Bracket::Triple((0.0, 0.5, 1.0)))
-                    )
-                ).unwrap();
-```
-Methods 1 and 2 implicitly call `bracket`, method 3 does not. Minimizing using `Bounded` would
-look like:
-
-```rust
-let res3 = scalar_minimize(
-                        &mut f,
-                        ScalarMethod::Bounded(
-                            BoundedOptions::new(0.0, 1.0)
-                        )
-                    ).unwrap();
-```
-
-
-## Unconstrained minimization
+## Unconstrained Minimization
 
 Unconstrained mimimimzation solve solves the following problem for
 $f(\mathbf{x}): \mathbb{R}^{n} \rightarrow \mathbb{R}$:
@@ -210,3 +154,215 @@ options. Current options are:
 
 See the complete [Rosenbrock example](examples/unconstrained-rosenbrock.md), which demonstrates both
 methods.
+
+## Bound-Constrained Minimization
+
+Bound-constrained minimization solves
+
+$$
+\mathbf{x}_{\text{min}}
+=
+\argmin_{\mathbf{x} \in \mathbb{R}^{n}} f(\mathbf{x})
+\quad \text{subject to} \quad
+l_i \leq x_i \leq u_i.
+$$
+
+Either side of a variable's interval may be omitted. Variables for which no bounds are added
+remain free. The entry point is:
+
+```rust
+fn bound_constrained_minimize<F: RealFn + ?Sized>(
+    fcn: &mut F,
+    bounds: BoundsConstraints,
+    x0: Vector,
+    method: BoundConstrainedMethod,
+) -> Result<VectorReturns, BoundConstrainedError>
+```
+
+### Specifying Bounds
+
+Create `BoundsConstraints` with the dimension of the objective's domain, then add the bounds for
+each constrained variable:
+
+```rust
+let mut bounds = BoundsConstraints::new(n);
+
+// 0 <= x[0] <= 1
+bounds.add_bounds(0, Some(0.0), Some(1.0));
+
+// x[2] <= 5; x[2] has no lower bound
+bounds.add_bounds(2, None, Some(5.0));
+```
+
+The variable index must be smaller than `n`, and bounds for a given index must be added in a
+single call. Both bound-constrained algorithms project `x0` into the feasible box before starting,
+so the first objective evaluation is made at a feasible point.
+
+### Choosing a Method
+
+`BoundConstrainedMethod` has two variants:
+
+- `BoundConstrainedMethod::Asa(AsaOptions)` uses an active-set algorithm. It identifies variables
+  at their bounds and invokes a configured `UnconstrainedMethod` on the remaining free variables.
+  Construct its options with `AsaOptions::new(bound_opts, unconstrained_method)`; the remaining
+  ASA-specific fields are initialized to their algorithm defaults.
+- `BoundConstrainedMethod::Bfgsb(BfgsbOptions)` uses BFGS-B with a configurable
+  `LineSearchMethod`. Construct `BfgsbOptions` from its `bound_opts` and `ls_method` fields.
+
+Both methods use `BoundConstrainedOptions`, which contains:
+
+- `base_opts: BaseOptions` for `grad_rtol`, `grad_atol`, and `max_iter`;
+- `constraint_tol`, the shared bound-constrained tolerance. BFGS-B also uses this value as its
+  relative function-reduction tolerance.
+
+The return value is `VectorReturns`. Its `xmin` is feasible with respect to the supplied bounds,
+and it also reports `fmin`, the convergence reason, iteration count, and function and gradient
+evaluation counts.
+
+## Generally-Constrained Minimization
+
+Generally-constrained minimization supports bounds, vector-valued equality constraints, and
+vector-valued inequality constraints:
+
+$$
+\begin{aligned}
+\mathbf{x}_{\text{min}}
+&= \argmin_{\mathbf{x} \in \mathbb{R}^{n}} f(\mathbf{x}) \\
+\text{subject to} \quad
+\mathbf{h}(\mathbf{x}) &= \mathbf{0}, \\
+\mathbf{g}(\mathbf{x}) &\leq \mathbf{0}, \\
+l_i \leq x_i &\leq u_i.
+\end{aligned}
+$$
+
+The entry point is:
+
+```rust
+fn constrained_minimize<F: RealFn + ?Sized>(
+    fcn: &mut F,
+    bounds: Option<BoundsConstraints>,
+    eq_constraints: Option<&mut dyn RealVectorFn>,
+    ieq_constraints: Option<&mut dyn RealVectorFn>,
+    x0: Vector,
+    method: ConstrainedMethod,
+) -> Result<VectorReturns, ConstrainedError>
+```
+
+Pass `None` for any category of constraint that is not present. Equality and inequality
+constraints implement `RealVectorFn`, returning all constraint values in one `Vector`. Their
+derivative is an $n \times m$ `Matrix`, where column $j$ is the gradient of constraint $j$, as
+described in [Specifying a Function](#specifying-a-function). An inequality is feasible when its
+returned value is non-positive.
+
+The currently available method is
+`ConstrainedMethod::AugmentedLagrangian(AugmentedLagrangianOptions)`. It updates penalties and
+Lagrange multipliers in an outer loop and solves each resulting subproblem with one of:
+
+- `AugmentedLagrangianInnerMethod::Unconstrained(UnconstrainedMethod)` when there are no native
+  variable bounds;
+- `AugmentedLagrangianInnerMethod::BoundConstrained(BoundConstrainedMethod)` when `bounds` is
+  `Some(...)`.
+
+To enforce native bounds, pair `Some(bounds)` with the bound-constrained inner method. Conversely,
+the bound-constrained inner method requires bounds to be present.
+
+Construct the method as follows:
+
+```rust
+let method = ConstrainedMethod::AugmentedLagrangian(
+    AugmentedLagrangianOptions::new(
+        ConstrainedOptions {
+            base_opts: BaseOptions {
+                grad_rtol: 1e-6,
+                grad_atol: 1e-8,
+                max_iter: 1_000,
+            },
+            constraint_tol: 1e-8,
+        },
+        AugmentedLagrangianInnerMethod::Unconstrained(unconstrained_method),
+    ),
+);
+
+let result = constrained_minimize(
+    &mut objective,
+    None,
+    Some(&mut equalities),
+    Some(&mut inequalities),
+    x0,
+    method,
+)?;
+```
+
+`constraint_tol` controls primal feasibility, while the gradient tolerances in `base_opts`
+control stationarity. `AugmentedLagrangianOptions::new` supplies defaults for `initial_penalty`,
+`constraint_improvement_factor`, and `penalty_growth_factor`; these public fields may be adjusted
+after construction.
+
+## Line-Search Methods
+
+A line search chooses a step length $\alpha$ along a direction $\mathbf{d}$ by applying a scalar
+search method to
+
+$$
+\phi(\alpha) = f(\mathbf{x} + \alpha \mathbf{d}),
+\qquad
+\phi'(\alpha) = \nabla f(\mathbf{x} + \alpha \mathbf{d})^{T}\mathbf{d}.
+$$
+
+The initial direction should be a descent direction, so
+$\phi'(0) = \nabla f(\mathbf{x})^{T}\mathbf{d} < 0$. Both available methods seek a step satisfying
+the strong Wolfe conditions:
+
+$$
+\begin{aligned}
+\phi(\alpha)
+&\leq \phi(0) + c_1 \alpha \phi'(0), \\
+|\phi'(\alpha)|
+&\leq c_2 |\phi'(0)|.
+\end{aligned}
+$$
+
+### Searching Along a Vector Direction
+
+Use `lsearch` when the objective implements `RealFn`:
+
+```rust
+fn lsearch<F: RealFn + ?Sized>(
+    fcn: &mut F,
+    iter_data: &IterData,
+    dir: &Vector,
+    alpha_init: f64,
+    method: LineSearchMethod,
+) -> Result<IterData, LineSearchError>
+```
+
+`iter_data` contains the current point, function value, gradient, and gradient norm. It can be
+created with `IterData::new(&mut fcn, &x)`. On success, `lsearch` returns a new `IterData` at
+$\mathbf{x} + \alpha\mathbf{d}$, including the function value and freshly evaluated gradient.
+
+### Searching a Scalar Function
+
+Use `lsearch1d` when the line-search function $\phi$ already implements `RealFn1`:
+
+```rust
+let result = lsearch1d(&mut phi, alpha_init, method)?;
+let alpha = result.alpha;
+let phi_alpha = result.phi_alpha;
+```
+
+`lsearch1d` treats zero as the starting point: it evaluates `phi(0)` and `phi'(0)`, then searches
+from `alpha_init`. It returns the accepted step and the function value at that step.
+
+### Configuring a Line Search
+
+`LineSearchMethod` has two variants:
+
+- `LineSearchMethod::Thuente(ThuenteOptions)` selects the More-Thuente method and has a `maxiter`
+  limit.
+- `LineSearchMethod::Nocedal(NocedalOptions)` selects a bracket-and-zoom method and has both
+  `maxiter` and `zoom_maxiter` limits.
+
+Both option structs contain `ls_opts: LineSearchOptions`. Its fields are the Wolfe constants `c1`
+and `c2`, and the permitted step interval `step_min` to `step_max`. `LineSearchOptions::default()`
+uses `c1 = 1e-4`, `c2 = 0.9`, `step_min = 0`, and `step_max = 50`. Set the method-specific
+iteration limits explicitly when constructing `ThuenteOptions` or `NocedalOptions`.

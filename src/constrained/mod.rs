@@ -22,7 +22,7 @@ mod factory;
 //}}}
 
 //{{{ pub use: common exports
-pub use common::{Error as ConstrainedError, Options as ConstriainedOptions};
+pub use common::{Error as ConstrainedError, Options as ConstrainedOptions};
 //}}}
 //{{{ pub use: augmented_lagrangian exports
 pub use augmented_lagrangian::{

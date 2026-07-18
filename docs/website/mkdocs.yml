@@ -34,6 +34,7 @@ nav:
       - Examples:
           - Quartic Functions: user-guide/examples/quartic-functions.md
           - Inequality Constraints: user-guide/examples/inequality-constraints.md
+          - Parabola: user-guide/examples/scalar-parabola.md
           - Rosenbrock: user-guide/examples/unconstrained-rosenbrock.md
   - API Docs: api/
   - Developers:

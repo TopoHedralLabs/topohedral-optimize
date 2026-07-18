@@ -8,7 +8,7 @@ use crate::common::Minimizer;
 use crate::{
     bound_constrained::{minimize_impl as bcon_minimize, BoundConstrainedMethod},
     common::{self, ConvergedReason, IterData, VectorReturns},
-    constrained::{ConstrainedError, ConstriainedOptions},
+    constrained::{ConstrainedError, ConstrainedOptions},
     constraints::BoundsConstraints,
     unconstrained::{minimize_impl as uncon_minimize, UnconstrainedMethod},
     DifferentiableFn, Matrix, RealFn, RealVectorFn, Vector,
@@ -53,7 +53,7 @@ pub enum LagrangianType {
 /// Options for augmented-Lagrangian constrained optimization.
 pub struct Options {
     /// Common constrained stopping options.
-    pub constrained_opts: ConstriainedOptions,
+    pub constrained_opts: ConstrainedOptions,
     /// Algorithm used for inner minimization.
     pub inner_method: InnerMethod,
     /// Initial constraint penalty.
@@ -69,7 +69,7 @@ impl Options {
     /// Creates options with default penalty parameters.
     #[trace_fn]
     pub fn new(
-        constrained_opts: ConstriainedOptions,
+        constrained_opts: ConstrainedOptions,
         inner_method: InnerMethod,
     ) -> Self {
         Self {
