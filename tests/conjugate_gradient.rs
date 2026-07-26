@@ -2,8 +2,8 @@
 use topohedral_optimize::{
     unconstrained_minimize as minimize, ConjugateGradientDirection as Direction,
     ConjugateGradientOptions, ConvergedReason as UnconstrainedConvergedReason, LineSearchMethod,
-    LineSearchOptions, NocedalOptions, ThuenteOptions, UnconstrainedMethod,
-    UnconstrainedOptions as UnonstrainedOptions, Vector, VectorReturns as UnconstrainedReturns,
+    LineSearchOptions, NocedalOptions, ThuenteOptions, UnconstrainedMethod, UnconstrainedOptions,
+    Vector, VectorReturns as UnconstrainedReturns,
 };
 //}}}
 //{{{ std imports
@@ -187,127 +187,67 @@ fn assert_returns(
 }
 //}}}
 //{{{ const: THUENTE_STEEPEST
-const THUENTE_STEEPEST: ConjugateGradientOptions = ConjugateGradientOptions {
-    uncon_opts: UnonstrainedOptions {
-        grad_rtol: 1e-6,
-        grad_atol: 1e-8,
-        max_iter: 100,
-    },
-    ls_method: LineSearchMethod::Thuente(ThuenteOptions {
-        ls_opts: LineSearchOptions {
-            c1: 1.0e-4,
-            c2: 0.4,
-            step_min: 1e-8,
-            step_max: 1e5,
-        },
-        maxiter: 10,
-    }),
-    direction: Direction::Steepest,
-    restart: 10,
-};
+const THUENTE_STEEPEST: ConjugateGradientOptions = ConjugateGradientOptions::new(
+    UnconstrainedOptions::new(1e-6, 1e-8, 100),
+    LineSearchMethod::Thuente(ThuenteOptions::new(
+        LineSearchOptions::new(1.0e-4, 0.4, 1e-8, 1e5),
+        10,
+    )),
+    Direction::Steepest,
+);
 //}}}
 //{{{ const: THUENTE_FR
-const THUENTE_FR: ConjugateGradientOptions = ConjugateGradientOptions {
-    uncon_opts: UnonstrainedOptions {
-        grad_rtol: 1e-6,
-        grad_atol: 1e-8,
-        max_iter: 100,
-    },
-    ls_method: LineSearchMethod::Thuente(ThuenteOptions {
-        ls_opts: LineSearchOptions {
-            c1: 1.0e-4,
-            c2: 0.4,
-            step_min: 1e-8,
-            step_max: 1e5,
-        },
-        maxiter: 10,
-    }),
-    direction: Direction::FletcherReeves,
-    restart: 10,
-};
+const THUENTE_FR: ConjugateGradientOptions = ConjugateGradientOptions::new(
+    UnconstrainedOptions::new(1e-6, 1e-8, 100),
+    LineSearchMethod::Thuente(ThuenteOptions::new(
+        LineSearchOptions::new(1.0e-4, 0.4, 1e-8, 1e5),
+        10,
+    )),
+    Direction::FletcherReeves,
+);
 //}}}
 //{{{ const: THUENTE_PR
-const THUENTE_PR: ConjugateGradientOptions = ConjugateGradientOptions {
-    uncon_opts: UnonstrainedOptions {
-        grad_rtol: 1e-6,
-        grad_atol: 1e-8,
-        max_iter: 100,
-    },
-    ls_method: LineSearchMethod::Thuente(ThuenteOptions {
-        ls_opts: LineSearchOptions {
-            c1: 1.0e-4,
-            c2: 0.4,
-            step_min: 1e-8,
-            step_max: 1e5,
-        },
-        maxiter: 10,
-    }),
-    direction: Direction::PolakRibiere,
-    restart: 10,
-};
+const THUENTE_PR: ConjugateGradientOptions = ConjugateGradientOptions::new(
+    UnconstrainedOptions::new(1e-6, 1e-8, 100),
+    LineSearchMethod::Thuente(ThuenteOptions::new(
+        LineSearchOptions::new(1.0e-4, 0.4, 1e-8, 1e5),
+        10,
+    )),
+    Direction::PolakRibiere,
+);
 //}}}
 //{{{ const: NOCEDAL_STEEPEST
-const NOCEDAL_STEEPEST: ConjugateGradientOptions = ConjugateGradientOptions {
-    uncon_opts: UnonstrainedOptions {
-        grad_rtol: 1e-6,
-        grad_atol: 1e-8,
-        max_iter: 100,
-    },
-    ls_method: LineSearchMethod::Nocedal(NocedalOptions {
-        ls_opts: LineSearchOptions {
-            c1: 1.0e-4,
-            c2: 0.4,
-            step_min: 1e-8,
-            step_max: 1e5,
-        },
-        maxiter: 10,
-        zoom_maxiter: 10,
-    }),
-    direction: Direction::Steepest,
-    restart: 10,
-};
+const NOCEDAL_STEEPEST: ConjugateGradientOptions = ConjugateGradientOptions::new(
+    UnconstrainedOptions::new(1e-6, 1e-8, 100),
+    LineSearchMethod::Nocedal(NocedalOptions::new(
+        LineSearchOptions::new(1.0e-4, 0.4, 1e-8, 1e5),
+        10,
+        10,
+    )),
+    Direction::Steepest,
+);
 //}}}
 //{{{ const: NOCEDAL_FR
-const NOCEDAL_FR: ConjugateGradientOptions = ConjugateGradientOptions {
-    uncon_opts: UnonstrainedOptions {
-        grad_rtol: 1e-6,
-        grad_atol: 1e-8,
-        max_iter: 100,
-    },
-    ls_method: LineSearchMethod::Nocedal(NocedalOptions {
-        ls_opts: LineSearchOptions {
-            c1: 1.0e-4,
-            c2: 0.4,
-            step_min: 1e-8,
-            step_max: 1e5,
-        },
-        maxiter: 10,
-        zoom_maxiter: 10,
-    }),
-    direction: Direction::FletcherReeves,
-    restart: 10,
-};
+const NOCEDAL_FR: ConjugateGradientOptions = ConjugateGradientOptions::new(
+    UnconstrainedOptions::new(1e-6, 1e-8, 100),
+    LineSearchMethod::Nocedal(NocedalOptions::new(
+        LineSearchOptions::new(1.0e-4, 0.4, 1e-8, 1e5),
+        10,
+        10,
+    )),
+    Direction::FletcherReeves,
+);
 //}}}
 //{{{ const: NOCEDAL_PR
-const NOCEDAL_PR: ConjugateGradientOptions = ConjugateGradientOptions {
-    uncon_opts: UnonstrainedOptions {
-        grad_rtol: 1e-6,
-        grad_atol: 1e-8,
-        max_iter: 100,
-    },
-    ls_method: LineSearchMethod::Nocedal(NocedalOptions {
-        ls_opts: LineSearchOptions {
-            c1: 1.0e-4,
-            c2: 0.4,
-            step_min: 1e-8,
-            step_max: 1e5,
-        },
-        maxiter: 10,
-        zoom_maxiter: 10,
-    }),
-    direction: Direction::PolakRibiere,
-    restart: 10,
-};
+const NOCEDAL_PR: ConjugateGradientOptions = ConjugateGradientOptions::new(
+    UnconstrainedOptions::new(1e-6, 1e-8, 100),
+    LineSearchMethod::Nocedal(NocedalOptions::new(
+        LineSearchOptions::new(1.0e-4, 0.4, 1e-8, 1e5),
+        10,
+        10,
+    )),
+    Direction::PolakRibiere,
+);
 //}}}
 //{{{ test: quadratic
 #[rstest]
@@ -503,8 +443,10 @@ fn test_quartic(
     let mut quart = Quartic {
         xmin: colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
     };
-    opts.uncon_opts.grad_rtol = 1e-12;
-    opts.uncon_opts.grad_atol = 1e-12;
+    let unconstrained = (*opts.unconstrained())
+        .with_grad_rtol(1e-12)
+        .with_grad_atol(1e-12);
+    opts = opts.with_unconstrained(unconstrained);
 
     let ret = minimize(&mut quart, x0, UnconstrainedMethod::ConjugateGradient(opts)).unwrap();
     println!("{ret:?}");
@@ -576,9 +518,11 @@ fn test_rosenbrock(
 ) {
     let mut rosenbrock = Rosenbrock::new();
 
-    opts.uncon_opts.grad_rtol = 1e-6;
-    opts.uncon_opts.grad_atol = 1e-10;
-    opts.uncon_opts.max_iter = 10000;
+    let unconstrained = (*opts.unconstrained())
+        .with_grad_rtol(1e-6)
+        .with_grad_atol(1e-10)
+        .with_max_iter(10000);
+    opts = opts.with_unconstrained(unconstrained);
     let ret = minimize(
         &mut rosenbrock,
         x0,

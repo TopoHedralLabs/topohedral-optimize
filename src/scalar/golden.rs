@@ -10,8 +10,8 @@ use super::common::{
     resolve_bracket, Bracket, BracketOptions, BracketResult, Error as ScalarError,
 };
 use crate::{
-    common::{Minimizer, ScalarReturns},
-    ConvergedReason, RealFn1,
+    common::{validate_nonzero, validate_positive_finite, Minimizer, ScalarReturns},
+    ConvergedReason, RealFn1, ValidationError,
 };
 //}}}
 //{{{ std imports
@@ -21,19 +21,20 @@ use topohedral_tracing::{trace, trace_fn};
 //}}}
 //--------------------------------------------------------------------------------------------------
 
-const DEFUALT_XTOL: f64 = 1e-5;
-const DEFUALT_MAX_ITER: usize = 5000;
+const DEFAULT_XTOL: f64 = 1e-5;
+const DEFAULT_MAX_ITER: usize = 5000;
 
 //{{{ struct: Options
-#[derive(Copy, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
+#[derive(Copy, Clone, Debug, PartialEq)]
 /// Options for golden-section scalar minimization.
 pub struct Options {
     /// Initial bracket
-    pub bracket: Bracket,
+    pub(crate) bracket: Bracket,
     /// Relative tolerance on `x` used as the termination criterion.
-    pub xtol: f64,
+    pub(crate) xtol: f64,
     /// Maximum number of iterations.
-    pub max_iter: usize,
+    pub(crate) max_iter: usize,
 }
 //}}}
 impl Options {
@@ -41,9 +42,53 @@ impl Options {
     pub fn new(bracket: Bracket) -> Self {
         Self {
             bracket,
-            xtol: DEFUALT_XTOL,
-            max_iter: DEFUALT_MAX_ITER,
+            xtol: DEFAULT_XTOL,
+            max_iter: DEFAULT_MAX_ITER,
         }
+    }
+
+    /// Returns the initial bracket specification.
+    pub const fn bracket(&self) -> Bracket {
+        self.bracket
+    }
+
+    /// Returns the relative tolerance on the minimizer.
+    pub const fn x_tolerance(&self) -> f64 {
+        self.xtol
+    }
+
+    /// Returns the iteration limit.
+    pub const fn max_iter(&self) -> usize {
+        self.max_iter
+    }
+
+    /// Returns options with a different relative tolerance.
+    pub const fn with_x_tolerance(
+        mut self,
+        tolerance: f64,
+    ) -> Self {
+        self.xtol = tolerance;
+        self
+    }
+
+    /// Returns options with a different iteration limit.
+    pub const fn with_max_iter(
+        mut self,
+        max_iter: usize,
+    ) -> Self {
+        self.max_iter = max_iter;
+        self
+    }
+
+    /// Validates this configuration.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ValidationError`] if the tolerance is non-positive or
+    /// non-finite, or if the iteration limit is zero.
+    pub fn validate(&self) -> Result<(), ValidationError> {
+        validate_positive_finite("x_tolerance", self.xtol)?;
+        validate_nonzero("max_iter", self.max_iter as u64)
     }
 }
 //{{{ struct: Golden

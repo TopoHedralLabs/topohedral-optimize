@@ -6,11 +6,12 @@
 //{{{ crate imports
 
 use crate::common::{Evaluator, RealFn, Vector};
-use crate::VectorReturns;
+use crate::{ValidationError, VectorReturns};
 //}}}
 //{{{ std imports
 //}}}
 //{{{ dep imports
+use topohedral_linalg::VectorOps;
 use topohedral_tracing::*;
 //}}}
 //--------------------------------------------------------------------------------------------------
@@ -36,6 +37,12 @@ pub use factory::Method as UnconstrainedMethod;
 //{{{ fn: minimize
 #[trace_fn]
 /// Minimizes a differentiable function without explicit constraints.
+///
+/// # Errors
+///
+/// Returns [`UnconstrainedError`] if the method configuration or initial-point
+/// dimension is invalid, a line search fails, or the iteration limit is
+/// reached.
 pub fn minimize<F: RealFn + ?Sized>(
     fcn: &mut F,
     x0: Vector,
@@ -53,6 +60,16 @@ pub(crate) fn minimize_impl<F: RealFn + ?Sized>(
     x0: Vector,
     method: UnconstrainedMethod,
 ) -> Result<VectorReturns, UnconstrainedError> {
+    method.validate()?;
+    let expected = fcn.dimension_domain();
+    if x0.len() != expected {
+        return Err(ValidationError::DimensionMismatch {
+            parameter: "x0",
+            expected,
+            actual: x0.len(),
+        }
+        .into());
+    }
     let mut minimizer = factory::create(fcn, x0, method);
     minimizer.minimize()
 }

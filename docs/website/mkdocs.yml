@@ -11,6 +11,10 @@ markdown_extensions:
   - pymdownx.superfences
   - pymdownx.highlight:
       anchor_linenums: true
+  - pymdownx.snippets:
+      base_path:
+        - ../..
+      check_paths: true
   - pymdownx.arithmatex:
       generic: true
 
@@ -39,7 +43,7 @@ nav:
           - Bound-Constrained Box: user-guide/examples/bound-constrained-box.md
           - Generally-Constrained Hypersphere: user-guide/examples/generally-constrained-hypersphere.md
           - One-Dimensional Line Search: user-guide/examples/line-search-quadratic.md
-  - API Docs: api/
+  - API Docs: api/index.md
   - Developers:
       - Overview: developers/index.md
       - Building Docs: developers/building-docs.md

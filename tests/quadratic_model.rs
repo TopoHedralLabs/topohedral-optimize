@@ -33,11 +33,15 @@ fn quadratic_grad(
 }
 
 fn implied_linear_term(model: &QuadraticModel) -> Vector {
-    model.grad_fk.clone() - model.hess_k.matmul(&model.xk)
+    model.gradient().clone() - model.hessian().matmul(model.iterate())
 }
 
 fn implied_constant_term(model: &QuadraticModel) -> f64 {
-    model.fk - model.grad_fk.dot(&model.xk) + 0.5 * model.xk.dot(&model.hess_k.matmul(&model.xk))
+    model.function_value() - model.gradient().dot(model.iterate())
+        + 0.5
+            * model
+                .iterate()
+                .dot(&model.hessian().matmul(model.iterate()))
 }
 
 fn assert_vector_close(
@@ -81,11 +85,11 @@ fn coordinate_updates_recover_quadratic_coefficients() {
     let xk = colvec(&[0.25, -1.0, 2.0]);
 
     let mut model = QuadraticModel::new(3);
-    model.xk.copy_from(&xk);
-    model.fk = quadratic_value(&hess, &linear, constant, &xk);
-    model
-        .grad_fk
-        .copy_from(&quadratic_grad(&hess, &linear, &xk));
+    model.update_iterate(
+        &xk,
+        quadratic_value(&hess, &linear, constant, &xk),
+        &quadratic_grad(&hess, &linear, &xk),
+    );
 
     for i in 0..3 {
         let delta_x = basis(3, i);
@@ -95,16 +99,19 @@ fn coordinate_updates_recover_quadratic_coefficients() {
         assert!(model.try_update(&delta_x, &delta_grad, UpdateType::Both));
     }
 
-    assert_matrix_close(&model.hess_k, &hess, 1e-12);
+    assert_matrix_close(model.hessian(), &hess, 1e-12);
     assert_vector_close(&implied_linear_term(&model), &linear, 1e-12);
     assert_relative_eq!(implied_constant_term(&model), constant, epsilon = 1e-12);
 
     let x = colvec(&[-0.5, 1.5, 0.75]);
-    let model_value = model.fk
-        + model.grad_fk.dot(&(x.clone() - model.xk.clone()))
+    let model_value = model.function_value()
+        + model.gradient().dot(&(x.clone() - model.iterate().clone()))
         + 0.5
-            * (x.clone() - model.xk.clone())
-                .dot(&model.hess_k.matmul(&(x.clone() - model.xk.clone())));
+            * (x.clone() - model.iterate().clone()).dot(
+                &model
+                    .hessian()
+                    .matmul(&(x.clone() - model.iterate().clone())),
+            );
     assert_relative_eq!(
         model_value,
         quadratic_value(&hess, &linear, constant, &x),
@@ -137,6 +144,14 @@ fn hessian_and_inverse_hessian_stay_inverse() {
     }
 
     let identity = Matrix::identity(3, 3);
-    assert_matrix_close(&model.hess_k.matmul(&model.inv_hess_k), &identity, 1e-10);
-    assert_matrix_close(&model.inv_hess_k.matmul(&model.hess_k), &identity, 1e-10);
+    assert_matrix_close(
+        &model.hessian().matmul(model.inverse_hessian()),
+        &identity,
+        1e-10,
+    );
+    assert_matrix_close(
+        &model.inverse_hessian().matmul(model.hessian()),
+        &identity,
+        1e-10,
+    );
 }

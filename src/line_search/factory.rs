@@ -7,7 +7,7 @@
 use super::common::*;
 use super::nocedal;
 use super::thuente;
-use crate::RealFn1;
+use crate::{RealFn1, ValidationError};
 //}}}
 //{{{ std imports
 //}}}
@@ -18,7 +18,9 @@ use topohedral_tracing::*;
 
 //{{{ enum: Method
 /// Selects a line-search algorithm.
-#[derive(Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
+#[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub enum Method {
     /// More-Thuente line search.
     Thuente(thuente::Options),
@@ -26,6 +28,19 @@ pub enum Method {
     Nocedal(nocedal::Options),
 }
 //}}}
+impl Method {
+    /// Validates the selected algorithm's options.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ValidationError`] if any option is invalid.
+    pub fn validate(&self) -> Result<(), ValidationError> {
+        match self {
+            Self::Thuente(options) => options.validate(),
+            Self::Nocedal(options) => options.validate(),
+        }
+    }
+}
 //{{{ fun: create
 #[trace_fn]
 pub fn create<'a, F: RealFn1 + 'a>(

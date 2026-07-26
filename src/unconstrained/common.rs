@@ -5,6 +5,7 @@
 
 //{{{ crate imports
 use crate::line_search::LineSearchError;
+use crate::ValidationError;
 //}}}
 //{{{ dep imports
 use thiserror::Error;
@@ -20,12 +21,16 @@ pub type Options = crate::common::BaseOptions;
 //{{{ enum: Error
 #[derive(Error, Debug)]
 /// Errors reported by unconstrained optimization.
+#[non_exhaustive]
 pub enum Error {
     /// A line search failed.
-    #[error("Linear search failed with error {0}")]
+    #[error("line search failed: {0}")]
     LineSearch(#[from] LineSearchError),
-    #[error("Maximum iterations of {0} reached")]
+    #[error("maximum number of iterations ({0}) reached")]
     /// The iteration limit was reached.
     MaxIterations(usize),
+    /// An argument or optimizer option was invalid.
+    #[error(transparent)]
+    Validation(#[from] ValidationError),
 }
 //}}}

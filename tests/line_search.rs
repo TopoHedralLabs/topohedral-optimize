@@ -1,6 +1,6 @@
 //{{{ crate imports
 use topohedral_optimize::{
-    lsearch1d as search1d, LineSearchMethod, LineSearchOptions, NocedalOptions, ThuenteOptions,
+    line_search_1d, LineSearchMethod, LineSearchOptions, NocedalOptions, ThuenteOptions,
 };
 //}}}
 //{{{ std imports
@@ -128,16 +128,13 @@ fn test_thuente_rational() {
     let mut fcn1 = RationalQuad1D { beta: 2.0 };
 
     for (alpha, exp_vals) in alpha_set.iter().zip(expected_vals.iter()) {
-        let out = search1d(
+        let out = line_search_1d(
             &mut fcn1,
             *alpha,
-            LineSearchMethod::Thuente(ThuenteOptions {
-                ls_opts: LineSearchOptions {
-                    step_max: 500.0,
-                    ..Default::default()
-                },
-                maxiter: 100,
-            }),
+            LineSearchMethod::Thuente(ThuenteOptions::new(
+                LineSearchOptions::default().with_step_max(500.0),
+                100,
+            )),
         )
         .unwrap();
         assert_relative_eq!(out.alpha, exp_vals.0, epsilon = 1e-6);
@@ -159,16 +156,13 @@ fn test_thuente_quadratic() {
     ];
 
     for (alpha, exp_vals) in alpha_set.iter().zip(expected_vals.iter()) {
-        let out = search1d(
+        let out = line_search_1d(
             &mut fcn1,
             *alpha,
-            LineSearchMethod::Thuente(ThuenteOptions {
-                ls_opts: LineSearchOptions {
-                    step_max: 500.0,
-                    ..Default::default()
-                },
-                maxiter: 100,
-            }),
+            LineSearchMethod::Thuente(ThuenteOptions::new(
+                LineSearchOptions::default().with_step_max(500.0),
+                100,
+            )),
         )
         .unwrap();
         assert_relative_eq!(out.alpha, exp_vals.0, epsilon = 1e-6);
@@ -188,17 +182,14 @@ fn test_nocedal_rational() {
     let mut fcn1 = RationalQuad1D { beta: 2.0 };
 
     for (alpha, exp_vals) in alpha_set.iter().zip(expected_vals.iter()) {
-        let out = search1d(
+        let out = line_search_1d(
             &mut fcn1,
             *alpha,
-            LineSearchMethod::Nocedal(NocedalOptions {
-                ls_opts: LineSearchOptions {
-                    step_max: 500.0,
-                    ..Default::default()
-                },
-                maxiter: 100,
-                zoom_maxiter: 100,
-            }),
+            LineSearchMethod::Nocedal(NocedalOptions::new(
+                LineSearchOptions::default().with_step_max(500.0),
+                100,
+                100,
+            )),
         )
         .unwrap();
         assert_relative_eq!(out.alpha, exp_vals.0, epsilon = 1e-3);
@@ -220,17 +211,14 @@ fn test_nocedal_quadratic() {
     ];
 
     for (alpha, exp_vals) in alpha_set.iter().zip(expected_vals.iter()) {
-        let out = search1d(
+        let out = line_search_1d(
             &mut fcn1,
             *alpha,
-            LineSearchMethod::Nocedal(NocedalOptions {
-                ls_opts: LineSearchOptions {
-                    step_max: 500.0,
-                    ..Default::default()
-                },
-                maxiter: 100,
-                zoom_maxiter: 100,
-            }),
+            LineSearchMethod::Nocedal(NocedalOptions::new(
+                LineSearchOptions::default().with_step_max(500.0),
+                100,
+                100,
+            )),
         )
         .unwrap();
         assert_relative_eq!(out.alpha, exp_vals.0, epsilon = 1e-5);
@@ -246,17 +234,14 @@ fn test_nocedal_cubic() {
         root3: 1.0,
     };
 
-    let out = search1d(
+    let out = line_search_1d(
         &mut c1,
         1.0,
-        LineSearchMethod::Nocedal(NocedalOptions {
-            ls_opts: LineSearchOptions {
-                step_max: 500.0,
-                ..Default::default()
-            },
-            maxiter: 100,
-            zoom_maxiter: 100,
-        }),
+        LineSearchMethod::Nocedal(NocedalOptions::new(
+            LineSearchOptions::default().with_step_max(500.0),
+            100,
+            100,
+        )),
     )
     .unwrap();
     assert_relative_eq!(out.alpha, 5.0e-1, epsilon = 1e-6);

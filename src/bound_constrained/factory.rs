@@ -9,8 +9,8 @@ use super::bfgsb::{Bfgsb, Options as BfgsbOptions};
 use super::common::Error;
 use crate::bound_constrained::BoundConstrainedOptions;
 use crate::common::Minimizer;
-use crate::constraints::BoundsConstraints;
-use crate::{RealFn, Vector, VectorReturns};
+use crate::constraints::BoundConstraints;
+use crate::{RealFn, ValidationError, Vector, VectorReturns};
 //}}}
 //{{{ std imports
 //}}}
@@ -19,12 +19,14 @@ use topohedral_tracing::trace_fn;
 //}}}
 //--------------------------------------------------------------------------------------------------
 
-#[derive(Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
+#[derive(Clone, Debug, PartialEq)]
 /// Selects a bound-constrained optimization algorithm.
+#[non_exhaustive]
 pub enum Method {
     /// Active-set algorithm.
     Asa(AsaOptions),
-    /// L-BFGS-B algorithm.
+    /// BFGS-B algorithm.
     Bfgsb(BfgsbOptions),
 }
 
@@ -44,13 +46,25 @@ impl Method {
             Method::Bfgsb(bfgsb_opts) => &mut bfgsb_opts.bound_opts,
         }
     }
+
+    /// Validates the selected optimizer's complete configuration.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ValidationError`] if any nested option is invalid.
+    pub fn validate(&self) -> Result<(), ValidationError> {
+        match self {
+            Self::Asa(options) => options.validate(),
+            Self::Bfgsb(options) => options.validate(),
+        }
+    }
 }
 
 #[trace_fn]
 /// Constructs the selected bound-constrained optimizer.
 pub fn create<'a, F: RealFn + ?Sized + 'a>(
     fcn: &'a mut F,
-    bounds: BoundsConstraints,
+    bounds: BoundConstraints,
     x0: Vector,
     method: Method,
 ) -> Box<dyn Minimizer<Error = Error, Returns = VectorReturns> + 'a> {

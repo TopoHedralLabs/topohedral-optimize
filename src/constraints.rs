@@ -4,10 +4,10 @@
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
-use crate::{DifferentiableFn, Matrix, Vector};
+use crate::{DifferentiableFn, Matrix, ValidationError, Vector};
 //}}}
 //{{{ std imports
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 //}}}
 //{{{ dep imports
 use topohedral_linalg::{VecType, VectorOps};
@@ -16,7 +16,8 @@ use topohedral_tracing::*;
 //--------------------------------------------------------------------------------------------------
 
 //{{{ struct: CauchyPathPoint
-#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
+#[derive(Debug, Clone, PartialEq)]
 /// One breakpoint along a projected Cauchy path.
 pub struct CauchyPathPoint {
     /// Step length at which the breakpoint occurs.
@@ -28,7 +29,8 @@ pub struct CauchyPathPoint {
 }
 //}}}
 //{{{ struct: NoConstraints
-#[derive(Debug, Clone, Copy)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 /// Empty vector-valued constraint function.
 pub struct NoConstraints;
 //}}}
@@ -64,17 +66,20 @@ impl crate::DifferentiableFn for NoConstraints {
     }
 }
 //}}}
-//{{{ struct: BoundsConstraints
-#[derive(Debug, Clone)]
+//{{{ struct: BoundConstraints
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
+#[derive(Debug, Clone, PartialEq)]
 /// Sparse lower and upper bounds for a vector of variables.
-pub struct BoundsConstraints {
+pub struct BoundConstraints {
     num_variables: usize,
-    bounds: HashMap<usize, (Option<f64>, Option<f64>)>,
+    bounds: BTreeMap<usize, (Option<f64>, Option<f64>)>,
 }
 //}}}
 //{{{ enum: BoundStatus
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 /// Side of a bound that is active.
+#[non_exhaustive]
 pub enum BoundSide {
     /// Lower bound.
     Lower,
@@ -83,8 +88,10 @@ pub enum BoundSide {
 }
 //}}}
 //{{{ enum: BoundStatus
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
 #[derive(Debug, Clone, Copy, PartialEq)]
 /// Position of a variable relative to its bounds.
+#[non_exhaustive]
 pub enum BoundStatus {
     /// Variable is not at a bound.
     Free,
@@ -117,19 +124,20 @@ impl BoundStatus {
 }
 //}}}
 //{{{ struct: BoundSignature
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 /// Hashable signature of the active bounds.
 pub struct BoundSignature(Box<[(usize, BoundSide)]>);
 //}}}
-//{{{ impl: BoundsConstraints
-impl BoundsConstraints {
+//{{{ impl: BoundConstraints
+impl BoundConstraints {
     //{{{ fn: new
     /// Creates an empty bound set for `num_variables` variables.
     #[trace_fn]
     pub fn new(num_variables: usize) -> Self {
         Self {
             num_variables,
-            bounds: HashMap::<usize, (Option<f64>, Option<f64>)>::new(),
+            bounds: BTreeMap::<usize, (Option<f64>, Option<f64>)>::new(),
         }
     }
     //}}}
@@ -140,23 +148,74 @@ impl BoundsConstraints {
     }
     //{{{ fn: add_bounds
     /// Adds lower and/or upper bounds for one variable.
+    ///
+    /// Bound entries are iterated in ascending variable-index order. For a
+    /// variable with both bounds, the lower-bound constraint comes first.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ValidationError`] if the index is out of range, the variable
+    /// already has bounds, neither bound is supplied, either bound is
+    /// non-finite, or the lower bound exceeds the upper bound.
     #[trace_fn]
     pub fn add_bounds(
         &mut self,
         variable_index: usize,
         lower_bound: Option<f64>,
         upper_bound: Option<f64>,
-    ) {
-        assert!(variable_index < self.dimension_domain());
-        assert!(!self.bounds.contains_key(&variable_index));
+    ) -> Result<(), ValidationError> {
+        if variable_index >= self.dimension_domain() {
+            return Err(ValidationError::BoundIndexOutOfRange {
+                index: variable_index,
+                num_variables: self.dimension_domain(),
+            });
+        }
+        if self.bounds.contains_key(&variable_index) {
+            return Err(ValidationError::DuplicateBound {
+                index: variable_index,
+            });
+        }
+        if lower_bound.is_none() && upper_bound.is_none() {
+            return Err(ValidationError::EmptyBound {
+                index: variable_index,
+            });
+        }
+        if let Some(lower) = lower_bound {
+            if !lower.is_finite() {
+                return Err(ValidationError::InvalidFloat {
+                    parameter: "lower_bound",
+                    value: lower,
+                    requirement: "must be finite",
+                });
+            }
+        }
+        if let Some(upper) = upper_bound {
+            if !upper.is_finite() {
+                return Err(ValidationError::InvalidFloat {
+                    parameter: "upper_bound",
+                    value: upper,
+                    requirement: "must be finite",
+                });
+            }
+        }
+        if let (Some(lower), Some(upper)) = (lower_bound, upper_bound) {
+            if lower > upper {
+                return Err(ValidationError::InvalidBounds {
+                    index: variable_index,
+                    lower,
+                    upper,
+                });
+            }
+        }
         self.bounds
             .insert(variable_index, (lower_bound, upper_bound));
+        Ok(())
     }
     //}}}
     //{{{ fn: get_lower
     /// Returns the lower bound for `idx`, if present.
     #[trace_fn]
-    pub fn get_lower(
+    pub fn lower_bound(
         &self,
         idx: usize,
     ) -> Option<f64> {
@@ -166,11 +225,20 @@ impl BoundsConstraints {
         }
         None
     }
+
+    /// Deprecated name for [`Self::lower_bound`].
+    #[deprecated(since = "0.0.0", note = "renamed to `lower_bound`")]
+    pub fn get_lower(
+        &self,
+        idx: usize,
+    ) -> Option<f64> {
+        self.lower_bound(idx)
+    }
     //}}}
     //{{{ fn: get_higher
     /// Returns the upper bound for `idx`, if present.
     #[trace_fn]
-    pub fn get_upper(
+    pub fn upper_bound(
         &self,
         idx: usize,
     ) -> Option<f64> {
@@ -180,11 +248,20 @@ impl BoundsConstraints {
         }
         None
     }
+
+    /// Deprecated name for [`Self::upper_bound`].
+    #[deprecated(since = "0.0.0", note = "renamed to `upper_bound`")]
+    pub fn get_upper(
+        &self,
+        idx: usize,
+    ) -> Option<f64> {
+        self.upper_bound(idx)
+    }
     //}}}
-    //{{{ fn: num_ieq_constraints
+    //{{{ fn: num_inequality_constraints
     /// Counts the scalar inequality constraints represented by the bounds.
     #[trace_fn]
-    pub fn num_ieq_constraints(&self) -> usize {
+    pub fn num_inequality_constraints(&self) -> usize {
         let mut num_constraints = 0;
         for (lower_bound, upper_bound) in self.bounds.values() {
             if lower_bound.is_some() {
@@ -196,14 +273,29 @@ impl BoundsConstraints {
         }
         num_constraints
     }
+
+    /// Deprecated name for [`Self::num_inequality_constraints`].
+    #[deprecated(since = "0.0.0", note = "renamed to `num_inequality_constraints`")]
+    pub fn num_ieq_constraints(&self) -> usize {
+        self.num_inequality_constraints()
+    }
     //}}}
     //{{{ fn: clamp
-    /// Projects a point into the feasible box.
+    /// Projects a point into the feasible box in place.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `x` does not have the dimension supplied to [`Self::new`].
     #[trace_fn]
     pub fn clamp(
         &self,
         x: &mut Vector,
     ) {
+        assert_eq!(
+            x.len(),
+            self.dimension_domain(),
+            "point dimension must match bound dimension"
+        );
         for (variable_index, (opt_low_bound, opt_high_bound)) in self.bounds.iter() {
             if let Some(low_bound) = opt_low_bound {
                 let xi = x[*variable_index];
@@ -218,6 +310,10 @@ impl BoundsConstraints {
     //}}}
     //{{{ fn: projected_direction
     /// Returns the feasible displacement after projecting a trial step.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `location` or `direction` does not have the bound dimension.
     #[trace_fn]
     pub fn projected_direction(
         &self,
@@ -225,6 +321,16 @@ impl BoundsConstraints {
         direction: &Vector,
         alpha: f64,
     ) -> Vector {
+        assert_eq!(
+            location.len(),
+            self.dimension_domain(),
+            "location dimension must match bound dimension"
+        );
+        assert_eq!(
+            direction.len(),
+            self.dimension_domain(),
+            "direction dimension must match bound dimension"
+        );
         let mut new_location: Vector = (location + alpha * direction).into();
         self.clamp(&mut new_location);
         new_location -= location.clone();
@@ -233,6 +339,10 @@ impl BoundsConstraints {
     //}}}
     //{{{ fn: max_feasible_step
     /// Returns the largest nonnegative step before a bound is reached.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `location` or `direction` does not have the bound dimension.
     #[trace_fn]
     pub fn max_feasible_step(
         &self,
@@ -248,6 +358,13 @@ impl BoundsConstraints {
     //}}}
     //{{{ fn: cauchy_path
     /// Computes breakpoints along the projected search path.
+    ///
+    /// Breakpoints are sorted by increasing step length, then by variable
+    /// index.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `location` or `direction` does not have the bound dimension.
     #[trace_fn]
     pub fn cauchy_path(
         &self,
@@ -286,8 +403,7 @@ impl BoundsConstraints {
         }
         breakpoints.sort_by(|a, b| {
             a.alpha
-                .partial_cmp(&b.alpha)
-                .unwrap()
+                .total_cmp(&b.alpha)
                 .then_with(|| a.variable_index.cmp(&b.variable_index))
         });
         breakpoints
@@ -295,6 +411,11 @@ impl BoundsConstraints {
     //}}}
     //{{{ fn: bound_statuses
     /// Classifies variables as free or active at the current point.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `location` or a supplied `direction` does not have the bound
+    /// dimension.
     #[trace_fn]
     pub fn bound_statuses(
         &self,
@@ -349,11 +470,20 @@ impl BoundsConstraints {
     //}}}
     //{{{ fn active_signature
     /// Builds a stable signature of the bounds active at `x`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `x` does not have the bound dimension.
     #[trace_fn]
     pub fn active_signature(
         &self,
         x: &Vector,
     ) -> BoundSignature {
+        assert_eq!(
+            x.len(),
+            self.dimension_domain(),
+            "point dimension must match bound dimension"
+        );
         let mut sig = Vec::<(usize, BoundSide)>::with_capacity(self.bounds.len());
 
         for (&idx, (lower, upper)) in &self.bounds {
@@ -372,12 +502,26 @@ impl BoundsConstraints {
     //}}}
     //{{{ fn: mask_gradient_in_place
     /// Zeros gradient components that cannot move into the feasible region.
+    ///
+    /// # Panics
+    ///
+    /// Panics if either vector does not have the bound dimension.
     #[trace_fn]
     pub fn mask_gradient_in_place(
         &self,
         x: &Vector,
         grad_f: &mut Vector,
     ) {
+        assert_eq!(
+            x.len(),
+            self.dimension_domain(),
+            "point dimension must match bound dimension"
+        );
+        assert_eq!(
+            grad_f.len(),
+            self.dimension_domain(),
+            "gradient dimension must match bound dimension"
+        );
         for (&idx, (lower, upper)) in &self.bounds {
             let xi = x[idx];
 
@@ -389,6 +533,10 @@ impl BoundsConstraints {
     //}}}
     //{{{ fn: masked_gradient
     /// Returns a gradient with active-bound components masked.
+    ///
+    /// # Panics
+    ///
+    /// Panics if either vector does not have the bound dimension.
     #[trace_fn]
     pub fn masked_gradient(
         &self,
@@ -403,11 +551,20 @@ impl BoundsConstraints {
     //}}}
     //{{{ fn: minimum_distance
     /// Returns the smallest distance from `x` to any bound.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `x` does not have the bound dimension.
     #[trace_fn]
     pub fn minimum_distance(
         &self,
         x: &Vector,
     ) -> f64 {
+        assert_eq!(
+            x.len(),
+            self.dimension_domain(),
+            "point dimension must match bound dimension"
+        );
         let mut min_dist = f64::MAX;
         for (idx, (opt_lower, opt_upper)) in self.bounds.iter() {
             let xi = x[*idx];
@@ -429,11 +586,20 @@ impl BoundsConstraints {
     //}}}
     //{{{ fn: all_distances
     /// Returns each variable's distance to its nearest bound.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `x` does not have the bound dimension.
     #[trace_fn]
     pub fn all_distances(
         &self,
         x: &Vector,
     ) -> Vector {
+        assert_eq!(
+            x.len(),
+            self.dimension_domain(),
+            "point dimension must match bound dimension"
+        );
         let mut distances = Vector::from_value_vec(f64::INFINITY, x.len(), VecType::Col);
         for (idx, (opt_lower, opt_upper)) in self.bounds.iter() {
             let xi = x[*idx];
@@ -455,8 +621,8 @@ impl BoundsConstraints {
     //}}}
 }
 //}}}
-//{{{ impl: RealVectorFn for BoundsConstraints
-impl crate::DifferentiableFn for BoundsConstraints {
+//{{{ impl: RealVectorFn for BoundConstraints
+impl crate::DifferentiableFn for BoundConstraints {
     type Input = Vector;
     type Output = Vector;
     type Derivative = Matrix;
@@ -467,7 +633,7 @@ impl crate::DifferentiableFn for BoundsConstraints {
 
     #[trace_fn]
     fn dimension_range(&self) -> usize {
-        self.num_ieq_constraints()
+        self.num_inequality_constraints()
     }
 
     #[trace_fn]

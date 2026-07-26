@@ -4,7 +4,8 @@
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
-use crate::common::RealFn1;
+use crate::common::{validate_nonzero, validate_positive_finite, RealFn1};
+use crate::ValidationError;
 //}}}
 //{{{ std imports
 //}}}
@@ -15,55 +16,109 @@ use topohedral_tracing::{trace, trace_fn};
 //--------------------------------------------------------------------------------------------------
 
 /// Errors reported by scalar minimization and bracketing.
-#[derive(Error, Debug)]
+#[derive(Error, Debug, PartialEq)]
+#[non_exhaustive]
 pub enum Error {
     /// The bracketing iteration limit was reached.
-    #[error("Maximum iterations of {0} reached")]
+    #[error("maximum number of iterations ({0}) reached")]
     MaxIterations(usize),
     /// Bracketing terminated without a valid triple.
     #[error(
-        "The algorithm terminated without finding a valid bracket, consider trying different \
+        "algorithm terminated without finding a valid bracket; consider trying different \
          initial points"
     )]
     InvalidBracket,
     /// A bound was not finite.
-    #[error("Optimization bounds must be finite scalars, got lower = {0}, upper = {1}")]
+    #[error("optimization bounds must be finite scalars; got lower = {0}, upper = {1}")]
     NonFiniteBounds(f64, f64),
     /// The lower bound exceeded the upper bound.
-    #[error("The lower bound {0} exceeds the upper bound {1}")]
+    #[error("lower bound {0} exceeds upper bound {1}")]
     InvalidBounds(f64, f64),
     /// A function evaluation returned NaN.
-    #[error("Function evaluation returned NaN")]
+    #[error("function evaluation returned NaN")]
     NaN,
     /// Bracket points were not ordered correctly.
     #[error(
-        "Bracketing values (xa, xb, xc) = ({0}, {1}, {2}) do not fulfill this requirement: \
+        "bracketing values (xa, xb, xc) = ({0}, {1}, {2}) do not fulfill this requirement: \
          (xa < xb) and (xb < xc)"
     )]
     InvalidBracketOrder(f64, f64, f64),
     /// The middle bracket value was not lower than both endpoints.
     #[error(
-        "Bracketing values (xa, xb, xc) do not fulfill this requirement: (f(xb) < f(xa)) and \
+        "bracketing values (xa, xb, xc) do not fulfill this requirement: (f(xb) < f(xa)) and \
          (f(xb) < f(xc))"
     )]
     InvalidBracketValues,
+    /// A scalar minimizer argument or option was invalid.
+    #[error(transparent)]
+    Validation(#[from] ValidationError),
 }
 
 /// Options controlling automatic bracket growth.
-#[derive(Copy, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct BracketOptions {
     /// Maximum growth factor for a bracket step.
-    pub grow_limit: f64,
+    pub(crate) grow_limit: f64,
     /// Maximum number of growth steps.
-    pub max_iter: usize,
+    pub(crate) max_iter: usize,
+}
+
+impl BracketOptions {
+    /// Creates automatic-bracketing options.
+    pub const fn new(
+        grow_limit: f64,
+        max_iter: usize,
+    ) -> Self {
+        Self {
+            grow_limit,
+            max_iter,
+        }
+    }
+
+    /// Returns the maximum bracket growth factor.
+    pub const fn grow_limit(&self) -> f64 {
+        self.grow_limit
+    }
+
+    /// Returns the maximum number of growth steps.
+    pub const fn max_iter(&self) -> usize {
+        self.max_iter
+    }
+
+    /// Returns options with a different growth limit.
+    pub const fn with_grow_limit(
+        mut self,
+        grow_limit: f64,
+    ) -> Self {
+        self.grow_limit = grow_limit;
+        self
+    }
+
+    /// Returns options with a different iteration limit.
+    pub const fn with_max_iter(
+        mut self,
+        max_iter: usize,
+    ) -> Self {
+        self.max_iter = max_iter;
+        self
+    }
+
+    /// Validates the automatic-bracketing options.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ValidationError`] unless `grow_limit` is finite and greater
+    /// than zero and `max_iter` is nonzero.
+    pub fn validate(&self) -> Result<(), ValidationError> {
+        validate_positive_finite("grow_limit", self.grow_limit)?;
+        validate_nonzero("max_iter", self.max_iter as u64)
+    }
 }
 
 impl Default for BracketOptions {
     fn default() -> Self {
-        Self {
-            grow_limit: 110.0,
-            max_iter: 1000,
-        }
+        Self::new(110.0, 1_000)
     }
 }
 
@@ -74,6 +129,7 @@ impl Default for BracketOptions {
 /// lies between `xa` and `xc`, and the corresponding function values satisfy
 /// `fb < fa` and `fb < fc`, i.e. `(xa, fa)`, `(xb, fb)`, `(xc, fc)` bracket a
 /// local minimum of the function.
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct BracketResult {
     /// First bracket point.
@@ -116,6 +172,31 @@ pub fn bracket<F: RealFn1>(
     b: f64,
     opts: BracketOptions,
 ) -> Result<BracketResult, Error> {
+    opts.validate()?;
+    if !a.is_finite() {
+        return Err(ValidationError::InvalidFloat {
+            parameter: "a",
+            value: a,
+            requirement: "must be finite",
+        }
+        .into());
+    }
+    if !b.is_finite() {
+        return Err(ValidationError::InvalidFloat {
+            parameter: "b",
+            value: b,
+            requirement: "must be finite and different from a",
+        }
+        .into());
+    }
+    if a == b {
+        return Err(ValidationError::InvalidFloat {
+            parameter: "b",
+            value: b,
+            requirement: "must be different from a",
+        }
+        .into());
+    }
     const GOLD: f64 = 1.618034;
     const VERY_SMALL_NUM: f64 = 1e-21;
 
@@ -236,7 +317,9 @@ pub fn bracket<F: RealFn1>(
 //}}}
 //{{{ enum: Bracket
 /// Specifies how the initial bracketing triple is obtained.
-#[derive(Copy, Clone, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
+#[non_exhaustive]
 pub enum Bracket {
     /// Search for a bracket automatically, starting from the default points `(0, 1)`.
     #[default]

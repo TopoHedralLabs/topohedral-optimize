@@ -40,10 +40,17 @@ pub use factory::Method as ScalarMethod;
 
 #[trace_fn]
 /// Minimizes a differentiable scalar function using the selected method.
+///
+/// # Errors
+///
+/// Returns [`ScalarError`] if the method configuration or bracket is invalid,
+/// the objective evaluates to NaN, or the algorithm reaches its iteration
+/// limit.
 pub fn minimize<F: RealFn1 + ?Sized>(
     fcn: &mut F,
     method: ScalarMethod,
 ) -> Result<ScalarReturns, ScalarError> {
+    method.validate()?;
     let minimizer = factory::create(fcn, method);
     minimizer?.minimize()
 }

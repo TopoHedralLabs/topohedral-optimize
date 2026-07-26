@@ -10,7 +10,7 @@ use super::conjugate_gradient::Options as ConjugateGradientOptions;
 use super::quasi_newton::Options as QuasiNewtonOptions;
 use super::quasi_newton::QuasiNewton;
 use crate::common::Minimizer;
-use crate::{RealFn, Vector, VectorReturns};
+use crate::{RealFn, ValidationError, Vector, VectorReturns};
 //}}}
 //{{{ std imports
 //}}}
@@ -21,7 +21,9 @@ use topohedral_tracing::trace_fn;
 
 //{{{ enum: Method
 /// Selects an unconstrained optimization algorithm.
-#[derive(Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
+#[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub enum Method {
     /// Conjugate-gradient method.
     ConjugateGradient(ConjugateGradientOptions),
@@ -46,6 +48,18 @@ impl Method {
         match self {
             Method::ConjugateGradient(cg_opts) => &cg_opts.uncon_opts,
             Method::QuasiNewton(qn_opts) => &qn_opts.uncon_opts,
+        }
+    }
+
+    /// Validates the selected optimizer's complete configuration.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ValidationError`] if any nested option is invalid.
+    pub fn validate(&self) -> Result<(), ValidationError> {
+        match self {
+            Self::ConjugateGradient(options) => options.validate(),
+            Self::QuasiNewton(options) => options.validate(),
         }
     }
 }

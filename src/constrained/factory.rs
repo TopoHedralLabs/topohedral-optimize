@@ -10,8 +10,8 @@ use crate::{
         augmented_lagrangian::AugmentedLagrangian, common::Error, AugmentedLagrangianOptions,
         ConstrainedOptions,
     },
-    constraints::BoundsConstraints,
-    RealFn, RealVectorFn, Vector, VectorReturns,
+    constraints::BoundConstraints,
+    RealFn, RealVectorFn, ValidationError, Vector, VectorReturns,
 };
 //}}}
 //{{{ std imports
@@ -22,8 +22,10 @@ use topohedral_tracing::trace_fn;
 //--------------------------------------------------------------------------------------------------
 
 //{{{ enum: Method
-#[derive(Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
+#[derive(Clone, Debug, PartialEq)]
 /// Selects a constrained optimization algorithm and its options.
+#[non_exhaustive]
 pub enum Method {
     /// Augmented-Lagrangian method.
     AugmentedLagrangian(AugmentedLagrangianOptions),
@@ -44,6 +46,17 @@ impl Method {
             Method::AugmentedLagrangian(opts) => &mut opts.constrained_opts,
         }
     }
+
+    /// Validates the selected optimizer's complete configuration.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ValidationError`] if any nested option is invalid.
+    pub fn validate(&self) -> Result<(), ValidationError> {
+        match self {
+            Self::AugmentedLagrangian(options) => options.validate(),
+        }
+    }
 }
 //}}}
 
@@ -52,7 +65,7 @@ impl Method {
 /// Constructs the selected constrained optimizer.
 pub fn create<'a, F1: RealFn + 'a, F2: RealVectorFn + 'a, F3: RealVectorFn + 'a>(
     fcn: F1,
-    bounds: Option<BoundsConstraints>,
+    bounds: Option<BoundConstraints>,
     eq_constraints: Option<F2>,
     ieq_constraints: Option<F3>,
     x0: Vector,

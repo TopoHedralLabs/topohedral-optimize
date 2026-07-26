@@ -4,7 +4,8 @@
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
-use crate::{RealFn, RealFn1, Vector};
+use crate::common::{validate_nonnegative_finite, validate_positive_finite};
+use crate::{RealFn, RealFn1, ValidationError, Vector};
 //}}}
 //{{{ std imports
 //}}}
@@ -83,28 +84,32 @@ impl<F: RealFn + ?Sized> crate::DifferentiableFn for LineSearchFcn<'_, F> {
 //{{{ enum: Error
 /// Errors returned by a line-search algorithm.
 #[derive(PartialEq, Error, Debug)]
+#[non_exhaustive]
 pub enum Error {
     /// The initial direction is not descending.
-    #[error("Not decreasing")]
+    #[error("initial direction is not decreasing")]
     NotDecreasing,
     /// The Armijo condition was not satisfied.
-    #[error("Fails Armijo condition")]
+    #[error("step does not satisfy the Armijo condition")]
     Armijo,
     /// The curvature condition was not satisfied.
-    #[error("Fails curvature condition")]
+    #[error("step does not satisfy the curvature condition")]
     Curvature,
     /// The iteration limit was reached.
-    #[error("Max iterations reached")]
+    #[error("maximum number of iterations reached")]
     MaxIterations,
     /// The step became too small.
-    #[error("Step size too small")]
+    #[error("step size is too small")]
     StepSizeSmall,
     /// The step became too large.
-    #[error("Step size too large")]
+    #[error("step size is too large")]
     StepSizeLarge,
     /// No acceptable step was found.
-    #[error("No step found")]
+    #[error("no acceptable step was found")]
     NoStepFound,
+    /// A line-search argument or option was invalid.
+    #[error(transparent)]
+    Validation(#[from] ValidationError),
 }
 //}}}
 //{{{ struct: Options
@@ -115,16 +120,126 @@ pub enum Error {
 /// and the Armijo and curvature conditions (`c1` and `c2`). The `method` field
 /// specifies the line search method to use, which can be one of `FixedStep`, `Quadratic`,
 /// or `Inexact`.
-#[derive(Debug, Copy, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Options {
     /// Armijo sufficient-decrease constant.
-    pub c1: f64,
+    pub(crate) c1: f64,
     /// Curvature constant.
-    pub c2: f64,
+    pub(crate) c2: f64,
     /// Minimum permitted step.
-    pub step_min: f64,
+    pub(crate) step_min: f64,
     /// Maximum permitted step.
-    pub step_max: f64,
+    pub(crate) step_max: f64,
+}
+//}}}
+//{{{ impl: Options
+impl Options {
+    /// Creates shared line-search conditions and step limits.
+    pub const fn new(
+        c1: f64,
+        c2: f64,
+        step_min: f64,
+        step_max: f64,
+    ) -> Self {
+        Self {
+            c1,
+            c2,
+            step_min,
+            step_max,
+        }
+    }
+
+    /// Returns the Armijo sufficient-decrease constant.
+    pub const fn c1(&self) -> f64 {
+        self.c1
+    }
+
+    /// Returns the curvature constant.
+    pub const fn c2(&self) -> f64 {
+        self.c2
+    }
+
+    /// Returns the minimum permitted step.
+    pub const fn step_min(&self) -> f64 {
+        self.step_min
+    }
+
+    /// Returns the maximum permitted step.
+    pub const fn step_max(&self) -> f64 {
+        self.step_max
+    }
+
+    /// Returns options with a different Armijo constant.
+    pub const fn with_c1(
+        mut self,
+        c1: f64,
+    ) -> Self {
+        self.c1 = c1;
+        self
+    }
+
+    /// Returns options with a different curvature constant.
+    pub const fn with_c2(
+        mut self,
+        c2: f64,
+    ) -> Self {
+        self.c2 = c2;
+        self
+    }
+
+    /// Returns options with a different minimum step.
+    pub const fn with_step_min(
+        mut self,
+        step_min: f64,
+    ) -> Self {
+        self.step_min = step_min;
+        self
+    }
+
+    /// Returns options with a different maximum step.
+    pub const fn with_step_max(
+        mut self,
+        step_max: f64,
+    ) -> Self {
+        self.step_max = step_max;
+        self
+    }
+
+    /// Validates the line-search conditions and step range.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ValidationError`] unless `0 < c1 < c2 < 1` and
+    /// `0 <= step_min < step_max`, with all four values finite.
+    pub fn validate(&self) -> Result<(), ValidationError> {
+        validate_positive_finite("c1", self.c1)?;
+        validate_positive_finite("c2", self.c2)?;
+        validate_nonnegative_finite("step_min", self.step_min)?;
+        validate_positive_finite("step_max", self.step_max)?;
+        if self.c1 >= self.c2 {
+            return Err(ValidationError::InvalidFloat {
+                parameter: "c1",
+                value: self.c1,
+                requirement: "must be less than c2",
+            });
+        }
+        if self.c2 >= 1.0 {
+            return Err(ValidationError::InvalidFloat {
+                parameter: "c2",
+                value: self.c2,
+                requirement: "must be less than one",
+            });
+        }
+        if self.step_min >= self.step_max {
+            return Err(ValidationError::InvalidFloat {
+                parameter: "step_min",
+                value: self.step_min,
+                requirement: "must be less than step_max",
+            });
+        }
+        Ok(())
+    }
 }
 //}}}
 //{{{ impl: Default for Options
@@ -146,7 +261,8 @@ impl Default for Options {
 /// This struct contains the following fields:
 /// - `alpha`: The step size found by the line search.
 /// - `phi_alpha`: The function value at the step size `alpha`.
-#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Returns {
     pub alpha: f64,
     pub phi_alpha: f64,
@@ -155,6 +271,12 @@ pub struct Returns {
 //{{{ trait: LineSearch
 pub trait LineSearch {
     type Function: RealFn1;
+    /// Searches for an acceptable step.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error`] when the initial direction or configuration is
+    /// invalid, or when the algorithm cannot find an acceptable step.
     fn search(
         &mut self,
         phi0: f64,

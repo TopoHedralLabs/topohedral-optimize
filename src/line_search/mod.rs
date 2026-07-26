@@ -7,7 +7,7 @@ use crate::RealFn1;
 
 //{{{ crate imports
 use super::common::{RealFn, Vector};
-use crate::IterData;
+use crate::{IterData, ValidationError};
 //}}}
 //{{{ std imports
 //}}}
@@ -44,13 +44,42 @@ pub use utils::initial_step;
 //{{{ pub fn: search
 #[trace_fn]
 /// Searches along a vector direction from the current iterate.
-pub fn search<F: RealFn + ?Sized>(
+///
+/// # Errors
+///
+/// Returns [`LineSearchError`] if the method configuration, initial step, or
+/// vector dimensions are invalid, or if no acceptable step can be found.
+pub fn line_search<F: RealFn + ?Sized>(
     fcn: &mut F,
     iter_data: &IterData,
     dir: &Vector,
     alpha_init: f64,
     method: LineSearchMethod,
 ) -> Result<IterData, LineSearchError> {
+    method.validate()?;
+    if !alpha_init.is_finite() || alpha_init <= 0.0 {
+        return Err(ValidationError::InvalidFloat {
+            parameter: "alpha_init",
+            value: alpha_init,
+            requirement: "must be finite and greater than zero",
+        }
+        .into());
+    }
+    let expected = fcn.dimension_domain();
+    for (parameter, actual) in [
+        ("iter_data.x", iter_data.x.len()),
+        ("iter_data.grad_fx", iter_data.grad_fx.len()),
+        ("dir", dir.len()),
+    ] {
+        if actual != expected {
+            return Err(ValidationError::DimensionMismatch {
+                parameter,
+                expected,
+                actual,
+            }
+            .into());
+        }
+    }
     //{{{ trace
     trace!(target: "ls", "Running with parameters:");
     trace!(target: "ls","iter_data: {iter_data}");
@@ -83,11 +112,25 @@ pub fn search<F: RealFn + ?Sized>(
 //{{{ pub fn: search1d
 #[trace_fn]
 /// Searches for a step using a scalar line-search function.
-pub fn search1d<F: RealFn1 + ?Sized>(
+///
+/// # Errors
+///
+/// Returns [`LineSearchError`] if the method configuration or initial step is
+/// invalid, or if no acceptable step can be found.
+pub fn line_search_1d<F: RealFn1 + ?Sized>(
     fcn: &mut F,
     alpha_init: f64,
     method: LineSearchMethod,
 ) -> Result<LineSearchReturns, LineSearchError> {
+    method.validate()?;
+    if !alpha_init.is_finite() || alpha_init <= 0.0 {
+        return Err(ValidationError::InvalidFloat {
+            parameter: "alpha_init",
+            value: alpha_init,
+            requirement: "must be finite and greater than zero",
+        }
+        .into());
+    }
     let phi0 = fcn.eval(&0.0);
     let dphi0 = fcn.derivative(&0.0);
     let mut line_searcher = factory::create(fcn, method);

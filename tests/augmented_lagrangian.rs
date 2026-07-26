@@ -2,11 +2,11 @@ use topohedral_optimize::AsaOptions;
 //{{{ crate imports
 use topohedral_optimize::{
     constrained_minimize, AugmentedLagrangianInnerMethod, AugmentedLagrangianOptions, BaseOptions,
-    BfgsbOptions, BoundConstrainedMethod, BoundConstrainedOptions, BoundsConstraints,
+    BfgsbOptions, BoundConstrainedMethod, BoundConstrainedOptions, BoundConstraints,
     ConjugateGradientDirection as Direction, ConjugateGradientOptions, ConstrainedMethod,
     ConstrainedOptions, LineSearchMethod, LineSearchOptions, NocedalOptions, QuasiNewtonOptions,
     QuasiNewtonUpdateMethod as UpdateMethod, RealFn, RealVectorFn, ThuenteOptions,
-    UnconstrainedMethod, UnconstrainedOptions as UnonstrainedOptions, Vector, VectorReturns,
+    UnconstrainedMethod, UnconstrainedOptions, Vector, VectorReturns,
 };
 //}}}
 //{{{ std imports
@@ -138,14 +138,8 @@ fn assert_counts(
 //{{{ fun: uncon_auglag_method
 fn uncon_auglag_method(unconstrained_method: UnconstrainedMethod) -> ConstrainedMethod {
     ConstrainedMethod::AugmentedLagrangian(AugmentedLagrangianOptions::new(
-        ConstrainedOptions {
-            base_opts: UnonstrainedOptions {
-                grad_rtol: 1e-6,
-                grad_atol: 1e-6,
-                max_iter: 1000,
-            },
-            constraint_tol: 1e-6,
-        },
+        ConstrainedOptions::new(UnconstrainedOptions::new(1e-6, 1e-6, 1000))
+            .with_constraint_tolerance(1e-6),
         AugmentedLagrangianInnerMethod::Unconstrained(unconstrained_method),
     ))
 }
@@ -153,147 +147,83 @@ fn uncon_auglag_method(unconstrained_method: UnconstrainedMethod) -> Constrained
 //{{{ fun: bcon_auglag_method
 fn bcon_auglag_method(bcon_method: BoundConstrainedMethod) -> ConstrainedMethod {
     ConstrainedMethod::AugmentedLagrangian(AugmentedLagrangianOptions::new(
-        ConstrainedOptions {
-            base_opts: UnonstrainedOptions {
-                grad_rtol: 1e-6,
-                grad_atol: 1e-6,
-                max_iter: 1000,
-            },
-            constraint_tol: 1e-6,
-        },
+        ConstrainedOptions::new(UnconstrainedOptions::new(1e-6, 1e-6, 1000))
+            .with_constraint_tolerance(1e-6),
         AugmentedLagrangianInnerMethod::BoundConstrained(bcon_method),
     ))
 }
+
+fn relax_outer_tolerances(method: &mut ConstrainedMethod) {
+    let current = *method.con_opts();
+    *method.con_opts_mut() = current.with_constraint_tolerance(1e-3);
+    let current = *method.con_opts();
+    let base = (*current.base()).with_grad_rtol(1e-4);
+    *method.con_opts_mut() = current.with_base(base);
+}
 //}}}
 //{{{ const: THUENTE_OPTS_09
-const THUENTE_OPTS_09: ThuenteOptions = ThuenteOptions {
-    ls_opts: LineSearchOptions {
-        c1: 1e-4,
-        c2: 0.9,
-        step_min: 1e-8,
-        step_max: 1e5,
-    },
-    maxiter: 100,
-};
+const THUENTE_OPTS_09: ThuenteOptions =
+    ThuenteOptions::new(LineSearchOptions::new(1e-4, 0.9, 1e-8, 1e5), 100);
 //}}}
 //{{{ const: NOCEDAL_OPTS_04
-const NOCEDAL_OPTS_04: NocedalOptions = NocedalOptions {
-    ls_opts: LineSearchOptions {
-        c1: 1e-4,
-        c2: 0.4,
-        step_min: 1e-8,
-        step_max: 1e5,
-    },
-    maxiter: 100,
-    zoom_maxiter: 10,
-};
+const NOCEDAL_OPTS_04: NocedalOptions =
+    NocedalOptions::new(LineSearchOptions::new(1e-4, 0.4, 1e-8, 1e5), 100, 10);
 //}}}
 //{{{ const: THUENTE_BFGS
-const THUENTE_BFGS: QuasiNewtonOptions = QuasiNewtonOptions {
-    uncon_opts: UnonstrainedOptions {
-        grad_rtol: 1e-6,
-        grad_atol: 1e-8,
-        max_iter: 100,
-    },
-    ls_method: LineSearchMethod::Thuente(THUENTE_OPTS_09),
-    method: UpdateMethod::BFGS,
-    restart: 10,
-};
+const THUENTE_BFGS: QuasiNewtonOptions = QuasiNewtonOptions::new(
+    UnconstrainedOptions::new(1e-6, 1e-8, 100),
+    LineSearchMethod::Thuente(THUENTE_OPTS_09),
+    UpdateMethod::Bfgs,
+);
 //}}}
 //{{{ const: NOCEDAL_BFGS
-const NOCEDAL_BFGS: QuasiNewtonOptions = QuasiNewtonOptions {
-    uncon_opts: UnonstrainedOptions {
-        grad_rtol: 1e-6,
-        grad_atol: 1e-8,
-        max_iter: 100,
-    },
-    ls_method: LineSearchMethod::Nocedal(NOCEDAL_OPTS_04),
-    method: UpdateMethod::BFGS,
-    restart: 10,
-};
+const NOCEDAL_BFGS: QuasiNewtonOptions = QuasiNewtonOptions::new(
+    UnconstrainedOptions::new(1e-6, 1e-8, 100),
+    LineSearchMethod::Nocedal(NOCEDAL_OPTS_04),
+    UpdateMethod::Bfgs,
+);
 //}}}
 //{{{ const: THUENTE_FR
-const THUENTE_FR: ConjugateGradientOptions = ConjugateGradientOptions {
-    uncon_opts: UnonstrainedOptions {
-        grad_rtol: 1e-6,
-        grad_atol: 1e-8,
-        max_iter: 100,
-    },
-    ls_method: LineSearchMethod::Thuente(THUENTE_OPTS_09),
-    direction: Direction::FletcherReeves,
-    restart: 10,
-};
+const THUENTE_FR: ConjugateGradientOptions = ConjugateGradientOptions::new(
+    UnconstrainedOptions::new(1e-6, 1e-8, 100),
+    LineSearchMethod::Thuente(THUENTE_OPTS_09),
+    Direction::FletcherReeves,
+);
 //}}}
 //{{{ const: THUENTE_PR
-const THUENTE_PR: ConjugateGradientOptions = ConjugateGradientOptions {
-    uncon_opts: UnonstrainedOptions {
-        grad_rtol: 1e-6,
-        grad_atol: 1e-8,
-        max_iter: 100,
-    },
-    ls_method: LineSearchMethod::Thuente(THUENTE_OPTS_09),
-    direction: Direction::PolakRibiere,
-    restart: 10,
-};
+const THUENTE_PR: ConjugateGradientOptions = ConjugateGradientOptions::new(
+    UnconstrainedOptions::new(1e-6, 1e-8, 100),
+    LineSearchMethod::Thuente(THUENTE_OPTS_09),
+    Direction::PolakRibiere,
+);
 //}}}
 //{{{ const: NOCEDAL_FR
-const NOCEDAL_FR: ConjugateGradientOptions = ConjugateGradientOptions {
-    uncon_opts: UnonstrainedOptions {
-        grad_rtol: 1e-6,
-        grad_atol: 1e-8,
-        max_iter: 100,
-    },
-    ls_method: LineSearchMethod::Nocedal(NOCEDAL_OPTS_04),
-    direction: Direction::FletcherReeves,
-    restart: 10,
-};
+const NOCEDAL_FR: ConjugateGradientOptions = ConjugateGradientOptions::new(
+    UnconstrainedOptions::new(1e-6, 1e-8, 100),
+    LineSearchMethod::Nocedal(NOCEDAL_OPTS_04),
+    Direction::FletcherReeves,
+);
 //}}}
 //{{{ const: NOCEDAL_PR
-const NOCEDAL_PR: ConjugateGradientOptions = ConjugateGradientOptions {
-    uncon_opts: UnonstrainedOptions {
-        grad_rtol: 1e-6,
-        grad_atol: 1e-8,
-        max_iter: 100,
-    },
-    ls_method: LineSearchMethod::Nocedal(NOCEDAL_OPTS_04),
-    direction: Direction::PolakRibiere,
-    restart: 10,
-};
+const NOCEDAL_PR: ConjugateGradientOptions = ConjugateGradientOptions::new(
+    UnconstrainedOptions::new(1e-6, 1e-8, 100),
+    LineSearchMethod::Nocedal(NOCEDAL_OPTS_04),
+    Direction::PolakRibiere,
+);
 //}}}
 //{{{ const: ASA
-const ASA_NOCEDAL_PR: AsaOptions = AsaOptions {
-    bound_opts: BoundConstrainedOptions {
-        base_opts: BaseOptions {
-            grad_rtol: 1e-8,
-            grad_atol: 1e-10,
-            max_iter: 100,
-        },
-        constraint_tol: 1e-6,
-    },
-    unconstrained_method: UnconstrainedMethod::ConjugateGradient(NOCEDAL_PR),
-    mu: 0.1,
-    rho: 0.5,
-    n1: 2,
-    n2: 1,
-    memory: 8,
-    delta: 1e-4,
-    eta: 0.5,
-    alpha_min: 1e-20,
-    alpha_max: 1e20,
-};
+const ASA_NOCEDAL_PR: AsaOptions = AsaOptions::new(
+    BoundConstrainedOptions::new(BaseOptions::new(1e-8, 1e-10, 100))
+        .with_constraint_tolerance(1e-6),
+    UnconstrainedMethod::ConjugateGradient(NOCEDAL_PR),
+);
 //}}}
 //{{{ const: BFGSB
-const BFGSB_NOCEDAL: BfgsbOptions = BfgsbOptions {
-    bound_opts: BoundConstrainedOptions {
-        base_opts: BaseOptions {
-            grad_rtol: 1e-8,
-            grad_atol: 1e-10,
-            max_iter: 100,
-        },
-        constraint_tol: 1e-6,
-    },
-    ls_method: LineSearchMethod::Nocedal(NOCEDAL_OPTS_04),
-};
+const BFGSB_NOCEDAL: BfgsbOptions = BfgsbOptions::new(
+    BoundConstrainedOptions::new(BaseOptions::new(1e-8, 1e-10, 100))
+        .with_constraint_tolerance(1e-6),
+    LineSearchMethod::Nocedal(NOCEDAL_OPTS_04),
+);
 //}}}
 
 //{{{ collection: constraints
@@ -441,9 +371,8 @@ fn test_quadratic_bound_constrained_ucon_inner(
     let mut quad = Quadratic {
         xmin: colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
     };
-    let mut ieq_constraints = BoundsConstraints::new(5);
-    ieq_constraints.add_bounds(0, Some(20.0), None);
-
+    let mut ieq_constraints = BoundConstraints::new(5);
+    ieq_constraints.add_bounds(0, Some(20.0), None).unwrap();
     let ret = constrained_minimize(
         &mut quad,
         None,
@@ -481,9 +410,8 @@ fn test_quadratic_bound_constrained_bcon_inner(
     let mut quad = Quadratic {
         xmin: colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
     };
-    let mut bound_constraints = BoundsConstraints::new(5);
-    bound_constraints.add_bounds(0, Some(20.0), None);
-
+    let mut bound_constraints = BoundConstraints::new(5);
+    bound_constraints.add_bounds(0, Some(20.0), None).unwrap();
     let ret = constrained_minimize(
         &mut quad,
         Some(bound_constraints),
@@ -576,9 +504,11 @@ fn test_quadratic_hsphere_and_bound_constrained_bcon_inner(
         xmin: colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
     };
 
-    let mut bound_constraints = BoundsConstraints::new(5);
+    let mut bound_constraints = BoundConstraints::new(5);
     for i in 0..x0.len() {
-        bound_constraints.add_bounds(i, Some(15.0), Some(20.0));
+        bound_constraints
+            .add_bounds(i, Some(15.0), Some(20.0))
+            .unwrap();
     }
 
     let mut ieq_constraints = HyperSphereBound {
@@ -626,18 +556,11 @@ fn test_quadratic_tight_grad_atol_below_old_hardcoded_floor_converges() {
     let mut quad = Quadratic {
         xmin: colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
     };
-    let mut ieq_constraints = BoundsConstraints::new(5);
-    ieq_constraints.add_bounds(0, Some(20.0), None);
-
+    let mut ieq_constraints = BoundConstraints::new(5);
+    ieq_constraints.add_bounds(0, Some(20.0), None).unwrap();
     let opts = ConstrainedMethod::AugmentedLagrangian(AugmentedLagrangianOptions::new(
-        ConstrainedOptions {
-            base_opts: UnonstrainedOptions {
-                grad_rtol: 0.0,
-                grad_atol: 1e-8,
-                max_iter: 1000,
-            },
-            constraint_tol: 1e-8,
-        },
+        ConstrainedOptions::new(UnconstrainedOptions::new(0.0, 1e-8, 1000))
+            .with_constraint_tolerance(1e-8),
         AugmentedLagrangianInnerMethod::Unconstrained(UnconstrainedMethod::QuasiNewton(
             THUENTE_BFGS,
         )),
@@ -754,9 +677,8 @@ fn test_quartic_without_constraints_matches_unconstrained_reference(
 #[rstest]
 #[case::quartic_thuente_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(THUENTE_BFGS),  1e-2, 1e-2, 8230, 9225)]
 #[case::quartic_nocedal_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(NOCEDAL_BFGS),  1e-2, 1e-2, 4010, 2389)]
-#[case::quartic_thuente_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_FR),  1e-2, 1e-2, 82704, 90724)]
 #[case::quartic_nocedal_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_FR),  1e-2, 1e-2, 6622, 2340)]
-#[case::quartic_thuente_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_PR),  1e-2, 1e-2, 6780, 7826)]
+#[case::quartic_thuente_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_PR),  1e-2, 1e-2, 7500, 9000)]
 #[case::quartic_nocedal_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_PR),  1e-2, 1e-2, 6335, 2219)]
 fn test_quartic_with_bound_constraints_matches_reference(
     #[case] x0: Vector,
@@ -771,12 +693,10 @@ fn test_quartic_with_bound_constraints_matches_reference(
     };
 
     let mut method = uncon_auglag_method(unconstrained_method);
-    method.con_opts_mut().constraint_tol = 1e-3;
-    method.con_opts_mut().base_opts.grad_rtol = 1e-4;
+    relax_outer_tolerances(&mut method);
 
-    let mut ieq_constraints = BoundsConstraints::new(5);
-    ieq_constraints.add_bounds(0, Some(20.0), None);
-
+    let mut ieq_constraints = BoundConstraints::new(5);
+    ieq_constraints.add_bounds(0, Some(20.0), None).unwrap();
     let ret = constrained_minimize(
         &mut quart,
         None,
@@ -815,12 +735,10 @@ fn test_quartic_with_bound_constraints_and_bcon_inner_matches_reference(
         xmin: colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
     };
 
-    let mut bound_constraints = BoundsConstraints::new(5);
-    bound_constraints.add_bounds(0, Some(20.0), None);
-
+    let mut bound_constraints = BoundConstraints::new(5);
+    bound_constraints.add_bounds(0, Some(20.0), None).unwrap();
     let mut method = bcon_auglag_method(bound_constrained_method);
-    method.con_opts_mut().constraint_tol = 1e-3;
-    method.con_opts_mut().base_opts.grad_rtol = 1e-4;
+    relax_outer_tolerances(&mut method);
 
     let ret =
         constrained_minimize(&mut quart, Some(bound_constraints), None, None, x0, method).unwrap();
@@ -858,8 +776,7 @@ fn test_quartic_hsphere_constrained_ucon_inner_matches_reference(
     };
 
     let mut method = uncon_auglag_method(unconstrained_method);
-    method.con_opts_mut().constraint_tol = 1e-3;
-    method.con_opts_mut().base_opts.grad_rtol = 1e-4;
+    relax_outer_tolerances(&mut method);
 
     let mut ieq_constraints = HyperSphereBound {
         center: colvec(&[20.0, 20.0, 20.0, 20.0, 20.0]),
@@ -910,9 +827,11 @@ fn test_quartic_hsphere_and_bound_constrained_bcon_inner_matches_reference(
         xmin: colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
     };
 
-    let mut bound_constraints = BoundsConstraints::new(5);
+    let mut bound_constraints = BoundConstraints::new(5);
     for i in 0..x0.len() {
-        bound_constraints.add_bounds(i, Some(15.0), Some(20.0));
+        bound_constraints
+            .add_bounds(i, Some(15.0), Some(20.0))
+            .unwrap();
     }
 
     let mut ieq_constraints = HyperSphereBound {

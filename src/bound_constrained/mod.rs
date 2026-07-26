@@ -1,15 +1,19 @@
 //! Algorithms for minimizing functions subject to simple variable bounds.
 //!
-//! The module exposes active-set and L-BFGS-B style methods through one entry point.
+//! The module exposes active-set and BFGS-B methods through one entry point.
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
-use crate::common::{Evaluator, RealFn, Vector, VectorReturns as BoundConstrainedReturns};
-use crate::constraints::BoundsConstraints;
+use crate::common::{
+    DifferentiableFn, Evaluator, RealFn, Vector, VectorReturns as BoundConstrainedReturns,
+};
+use crate::constraints::BoundConstraints;
+use crate::ValidationError;
 //}}}
 //{{{ std imports
 //}}}
 //{{{ dep imports
+use topohedral_linalg::VectorOps;
 use topohedral_tracing::*;
 //}}}
 //--------------------------------------------------------------------------------------------------
@@ -36,9 +40,15 @@ pub use factory::Method as BoundConstrainedMethod;
 
 #[trace_fn]
 /// Minimizes a differentiable function subject to bound constraints.
+///
+/// # Errors
+///
+/// Returns [`BoundConstrainedError`] if the method configuration or dimensions
+/// are invalid, an inner solve or line search fails, or the iteration limit is
+/// reached.
 pub fn minimize<F: RealFn + ?Sized>(
     fcn: &mut F,
-    bounds: BoundsConstraints,
+    bounds: BoundConstraints,
     x0: Vector,
     method: BoundConstrainedMethod,
 ) -> Result<BoundConstrainedReturns, BoundConstrainedError> {
@@ -51,10 +61,22 @@ pub fn minimize<F: RealFn + ?Sized>(
 
 pub(crate) fn minimize_impl<F: RealFn + ?Sized>(
     fcn: &mut F,
-    bounds: BoundsConstraints,
+    bounds: BoundConstraints,
     x0: Vector,
     method: BoundConstrainedMethod,
 ) -> Result<BoundConstrainedReturns, BoundConstrainedError> {
+    method.validate()?;
+    let expected = fcn.dimension_domain();
+    for (parameter, actual) in [("x0", x0.len()), ("bounds", bounds.dimension_domain())] {
+        if actual != expected {
+            return Err(ValidationError::DimensionMismatch {
+                parameter,
+                expected,
+                actual,
+            }
+            .into());
+        }
+    }
     let mut minimizer = factory::create(fcn, bounds, x0, method);
     minimizer.minimize()
 }
