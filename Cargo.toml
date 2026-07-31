@@ -1,19 +1,32 @@
 [package]
 name = "topohedral-optimize"
-version = "0.0.0"
+version = "0.1.0"
 edition = "2021"
+rust-version = "1.70"
+publish = ["cloudsmith"]
+authors = ["John Ferguson <JAFerguson952@gmail.com>"]
+description = "Differentiable scalar, unconstrained, bound-constrained, and generally constrained optimization algorithms"
+license = "MIT"
+repository = "https://github.com/TopoHedralLabs/topohedral-optimize"
+documentation = "https://topohedrallabs.github.io/topohedral-optimize/api/topohedral_optimize/"
+readme = "README.md"
+keywords = ["optimization", "numerics", "line-search", "bfgs", "constrained"]
+categories = ["algorithms", "mathematics", "science"]
+exclude = ["/.DS_Store", "/.claude/", "/.vscode/", "/assets/", "/activate.zsh"]
+
 [features]
+default = []
+serde = ["dep:serde"]
 trace = ["topohedral-tracing/trace"]
 
 [dependencies]
-approx = "0.5.1"
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-log = "0.4.29"
+serde = { version = "1.0", features = ["derive"], optional = true }
 thiserror = "2.0.17"
-topohedral-tracing = { version = "0.2.0", registry = "cloudsmith"}
-topohedral-linalg= { version = "4.1.0", registry = "cloudsmith"}
+topohedral-tracing = { version = "0.2.0", registry = "cloudsmith" }
+topohedral-linalg = { version = "4.1.0", registry = "cloudsmith" }
 
 [dev-dependencies]
+approx = "0.5.1"
 ctor = "0.6.3"
 rstest = "0.26.1"
+serde_json = "1.0"

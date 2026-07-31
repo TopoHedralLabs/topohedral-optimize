@@ -4,7 +4,7 @@
 
 //{{{ crate imports
 use topohedral_optimize::{
-    scalar_minimze as minimize, BoundedOptions, Bracket, BrentOptions, GoldenOptions, ScalarError,
+    scalar_minimize as minimize, BoundedOptions, Bracket, BrentOptions, GoldenOptions, ScalarError,
     ScalarMethod,
 };
 //}}}
@@ -103,15 +103,15 @@ impl ScalarSolver {
     ) -> ScalarMethod {
         match self {
             ScalarSolver::Brent => {
-                let mut opts = BrentOptions::new(bracket);
-                opts.xtol = xtol;
-                opts.max_iter = max_iter;
+                let opts = BrentOptions::new(bracket)
+                    .with_x_tolerance(xtol)
+                    .with_max_iter(max_iter);
                 ScalarMethod::Brent(opts)
             }
             ScalarSolver::Golden => {
-                let mut opts = GoldenOptions::new(bracket);
-                opts.xtol = xtol;
-                opts.max_iter = max_iter;
+                let opts = GoldenOptions::new(bracket)
+                    .with_x_tolerance(xtol)
+                    .with_max_iter(max_iter);
                 ScalarMethod::Golden(opts)
             }
         }
@@ -243,9 +243,10 @@ fn test_bounded_non_finite_bounds() {
 #[test]
 fn test_bounded_max_iterations_exceeded() {
     let mut f = ScalarFunction::new(parabola);
-    let mut opts = BoundedOptions::new(-4.0, 4.0).unwrap();
-    opts.xatol = 1e-12;
-    opts.max_iter = 2;
+    let opts = BoundedOptions::new(-4.0, 4.0)
+        .unwrap()
+        .with_x_abs_tolerance(1e-12)
+        .with_max_iter(2);
     let result = minimize(&mut f, ScalarMethod::Bounded(opts));
     assert!(matches!(result, Err(ScalarError::MaxIterations(2))));
 }

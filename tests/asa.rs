@@ -2,9 +2,9 @@
 use topohedral_optimize::DifferentiableFn;
 use topohedral_optimize::{
     bound_constrained_minimize, AsaOptions, BaseOptions, BoundConstrainedMethod,
-    BoundConstrainedOptions, BoundsConstraints, LineSearchMethod, LineSearchOptions,
+    BoundConstrainedOptions, BoundConstraints, LineSearchMethod, LineSearchOptions,
     QuasiNewtonOptions, QuasiNewtonUpdateMethod as UpdateMethod, RealFn, ThuenteOptions,
-    UnconstrainedMethod, UnconstrainedOptions as UnonstrainedOptions, Vector, VectorReturns,
+    UnconstrainedMethod, UnconstrainedOptions, Vector, VectorReturns,
 };
 //}}}
 //{{{ std imports
@@ -80,10 +80,10 @@ fn add_uniform_bounds(
     n: usize,
     lower: Option<f64>,
     upper: Option<f64>,
-) -> BoundsConstraints {
-    let mut bounds = BoundsConstraints::new(n);
+) -> BoundConstraints {
+    let mut bounds = BoundConstraints::new(n);
     for i in 0..n {
-        bounds.add_bounds(i, lower, upper);
+        bounds.add_bounds(i, lower, upper).unwrap();
     }
     bounds
 }
@@ -113,32 +113,16 @@ fn kkt_residual<F: RealFn + ?Sized>(
 //{{{ fun: asa_options
 fn asa_options(max_iter: u64) -> AsaOptions {
     AsaOptions::new(
-        BoundConstrainedOptions {
-            base_opts: BaseOptions {
-                grad_rtol: 1e-8,
-                grad_atol: 1e-8,
-                max_iter,
-            },
-            constraint_tol: 1e-8,
-        },
-        UnconstrainedMethod::QuasiNewton(QuasiNewtonOptions {
-            uncon_opts: UnonstrainedOptions {
-                grad_rtol: 1e-8,
-                grad_atol: 1e-8,
-                max_iter: 100,
-            },
-            ls_method: LineSearchMethod::Thuente(ThuenteOptions {
-                ls_opts: LineSearchOptions {
-                    c1: 1.0e-4,
-                    c2: 0.9,
-                    step_min: 1e-12,
-                    step_max: 1e5,
-                },
-                maxiter: 50,
-            }),
-            method: UpdateMethod::BFGS,
-            restart: 10,
-        }),
+        BoundConstrainedOptions::new(BaseOptions::new(1e-8, 1e-8, max_iter))
+            .with_constraint_tolerance(1e-8),
+        UnconstrainedMethod::QuasiNewton(QuasiNewtonOptions::new(
+            UnconstrainedOptions::new(1e-8, 1e-8, 100),
+            LineSearchMethod::Thuente(ThuenteOptions::new(
+                LineSearchOptions::new(1.0e-4, 0.9, 1e-12, 1e5),
+                50,
+            )),
+            UpdateMethod::Bfgs,
+        )),
     )
 }
 //}}}
@@ -146,7 +130,7 @@ fn asa_options(max_iter: u64) -> AsaOptions {
 fn solve_asa<F: RealFn + ?Sized>(
     fcn: &mut F,
     x0: Vector,
-    bounds: BoundsConstraints,
+    bounds: BoundConstraints,
     max_iter: u64,
 ) -> VectorReturns {
     bound_constrained_minimize(

@@ -5,8 +5,8 @@
 //{{{ crate imports
 use super::common::Error as ScalarError;
 use crate::{
-    common::{Minimizer, ScalarReturns},
-    ConvergedReason, RealFn1,
+    common::{validate_nonzero, validate_positive_finite, Minimizer, ScalarReturns},
+    ConvergedReason, RealFn1, ValidationError,
 };
 //}}}
 //{{{ std imports
@@ -16,23 +16,29 @@ use topohedral_tracing::{trace, trace_fn};
 //}}}
 //--------------------------------------------------------------------------------------------------
 
-const DEFUALT_XTOL: f64 = 1e-5;
-const DEFUALT_MAX_ITER: usize = 100;
+const DEFAULT_XTOL: f64 = 1e-5;
+const DEFAULT_MAX_ITER: usize = 100;
 
 //{{{ struct: Options
-#[derive(Copy, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
+#[derive(Copy, Clone, Debug, PartialEq)]
 /// Options for bounded scalar minimization.
 pub struct Options {
     /// Bounds
-    pub bounds: (f64, f64),
+    pub(crate) bounds: (f64, f64),
     /// Absolute tolerance on `x` used as the termination criterion.
-    pub xatol: f64,
+    pub(crate) xatol: f64,
     /// Maximum number of function evaluations.
-    pub max_iter: usize,
+    pub(crate) max_iter: usize,
 }
 //}}}
 impl Options {
     /// Creates options for the interval `[lower, upper]`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ScalarError::NonFiniteBounds`] if either endpoint is not
+    /// finite, or [`ScalarError::InvalidBounds`] if `lower > upper`.
     pub fn new(
         lower: f64,
         upper: f64,
@@ -45,9 +51,53 @@ impl Options {
         }
         Ok(Self {
             bounds: (lower, upper),
-            xatol: DEFUALT_XTOL,
-            max_iter: DEFUALT_MAX_ITER,
+            xatol: DEFAULT_XTOL,
+            max_iter: DEFAULT_MAX_ITER,
         })
+    }
+
+    /// Returns the inclusive search interval.
+    pub const fn bounds(&self) -> (f64, f64) {
+        self.bounds
+    }
+
+    /// Returns the absolute tolerance on the minimizer.
+    pub const fn x_abs_tolerance(&self) -> f64 {
+        self.xatol
+    }
+
+    /// Returns the maximum number of function evaluations.
+    pub const fn max_iter(&self) -> usize {
+        self.max_iter
+    }
+
+    /// Returns options with a different absolute tolerance.
+    pub const fn with_x_abs_tolerance(
+        mut self,
+        tolerance: f64,
+    ) -> Self {
+        self.xatol = tolerance;
+        self
+    }
+
+    /// Returns options with a different function-evaluation limit.
+    pub const fn with_max_iter(
+        mut self,
+        max_iter: usize,
+    ) -> Self {
+        self.max_iter = max_iter;
+        self
+    }
+
+    /// Validates the complete bounded-minimization configuration.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ValidationError`] if the tolerance is non-positive or
+    /// non-finite, or if the iteration limit is zero.
+    pub fn validate(&self) -> Result<(), ValidationError> {
+        validate_positive_finite("x_abs_tolerance", self.xatol)?;
+        validate_nonzero("max_iter", self.max_iter as u64)
     }
 }
 //{{{ struct: Bounded

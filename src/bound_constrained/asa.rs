@@ -8,12 +8,13 @@ use super::common::Options as BoundConstrainedOptions;
 use super::common::{lift, restrict};
 use super::utils::CircularBuffer;
 use crate::bound_constrained::asa::Phase::Ua;
+use crate::common::{validate_nonzero, validate_positive_finite};
 use crate::common::{Minimizer, Vector};
-use crate::constraints::BoundsConstraints;
+use crate::constraints::BoundConstraints;
 use crate::constraints::{BoundSignature, BoundStatus};
 use crate::unconstrained::{minimize_impl, UnconstrainedMethod};
 use crate::ConvergedReason;
-use crate::{IterData, RealFn};
+use crate::{IterData, RealFn, ValidationError};
 //}}}
 //{{{ dep imports
 #[allow(unused_imports)]
@@ -26,7 +27,7 @@ use topohedral_tracing::*;
 const ALPHA: f64 = 0.5;
 const BETA: f64 = 1.5;
 const SMALL: f64 = 1e-20;
-const DEFUALT_MU: f64 = 0.1;
+const DEFAULT_MU: f64 = 0.1;
 const DEFAULT_RHO: f64 = 0.5;
 const DEFAULT_N1: usize = 2;
 const DEFAULT_N2: usize = 1;
@@ -37,44 +38,45 @@ const DEFAULT_ALPHA_MIN: f64 = 1e-20;
 const DEFAULT_ALPHA_MAX: f64 = 1e20;
 
 //{{{ struct: Options
-#[derive(Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
+#[derive(Clone, Debug, PartialEq)]
 /// Options for the active-set bound-constrained algorithm.
 pub struct Options {
     /// Common bound-constrained stopping options.
-    pub bound_opts: BoundConstrainedOptions,
+    pub(crate) bound_opts: BoundConstrainedOptions,
     /// Settings for internal minimization
-    pub unconstrained_method: UnconstrainedMethod,
+    pub(crate) unconstrained_method: UnconstrainedMethod,
     /// Tolerance for ||g_I|| < mu * ||d^1|| means "face solved enough"
-    pub mu: f64,
+    pub(crate) mu: f64,
     /// Decay factor applied to mu when test triggers
-    pub rho: f64,
+    pub(crate) rho: f64,
     /// First counter controlling switch phase
-    pub n1: usize,
+    pub(crate) n1: usize,
     /// Second counter controlling switch phase
-    pub n2: usize,
+    pub(crate) n2: usize,
     /// No. of previous steps stored in memory
-    pub memory: usize,
+    pub(crate) memory: usize,
     /// Armijo descent constant
-    pub delta: f64,
+    pub(crate) delta: f64,
     /// Backtracking factor
-    pub eta: f64,
+    pub(crate) eta: f64,
     /// Minimum allowed step
-    pub alpha_min: f64,
+    pub(crate) alpha_min: f64,
     /// Maximum allowed step
-    pub alpha_max: f64,
+    pub(crate) alpha_max: f64,
 }
 //}}}
 //{{{ impl Optoins
 impl Options {
     /// Creates options with the algorithm's default tuning parameters.
-    pub fn new(
+    pub const fn new(
         bound_opts: BoundConstrainedOptions,
         unconstrained_method: UnconstrainedMethod,
     ) -> Self {
         Self {
             bound_opts,
             unconstrained_method,
-            mu: DEFUALT_MU,
+            mu: DEFAULT_MU,
             rho: DEFAULT_RHO,
             n1: DEFAULT_N1,
             n2: DEFAULT_N2,
@@ -85,6 +87,189 @@ impl Options {
             alpha_max: DEFAULT_ALPHA_MAX,
         }
     }
+
+    /// Returns the common bound-constrained options.
+    pub const fn bound_constrained(&self) -> &BoundConstrainedOptions {
+        &self.bound_opts
+    }
+
+    /// Returns the optimizer used on each free-variable subspace.
+    pub const fn unconstrained_method(&self) -> &UnconstrainedMethod {
+        &self.unconstrained_method
+    }
+
+    /// Returns the face-stationarity factor.
+    pub const fn mu(&self) -> f64 {
+        self.mu
+    }
+
+    /// Returns the face-stationarity decay factor.
+    pub const fn rho(&self) -> f64 {
+        self.rho
+    }
+
+    /// Returns the first switching counter.
+    pub const fn n1(&self) -> usize {
+        self.n1
+    }
+
+    /// Returns the second switching counter.
+    pub const fn n2(&self) -> usize {
+        self.n2
+    }
+
+    /// Returns the number of previous steps retained.
+    pub const fn memory(&self) -> usize {
+        self.memory
+    }
+
+    /// Returns the Armijo descent constant.
+    pub const fn delta(&self) -> f64 {
+        self.delta
+    }
+
+    /// Returns the backtracking factor.
+    pub const fn eta(&self) -> f64 {
+        self.eta
+    }
+
+    /// Returns the minimum permitted step.
+    pub const fn alpha_min(&self) -> f64 {
+        self.alpha_min
+    }
+
+    /// Returns the maximum permitted step.
+    pub const fn alpha_max(&self) -> f64 {
+        self.alpha_max
+    }
+
+    /// Returns options with different common bound-constrained settings.
+    pub const fn with_bound_constrained(
+        mut self,
+        options: BoundConstrainedOptions,
+    ) -> Self {
+        self.bound_opts = options;
+        self
+    }
+
+    /// Returns options with a different free-subspace optimizer.
+    pub fn with_unconstrained_method(
+        mut self,
+        method: UnconstrainedMethod,
+    ) -> Self {
+        self.unconstrained_method = method;
+        self
+    }
+
+    /// Returns options with a different face-stationarity factor.
+    pub const fn with_mu(
+        mut self,
+        mu: f64,
+    ) -> Self {
+        self.mu = mu;
+        self
+    }
+
+    /// Returns options with a different face-stationarity decay factor.
+    pub const fn with_rho(
+        mut self,
+        rho: f64,
+    ) -> Self {
+        self.rho = rho;
+        self
+    }
+
+    /// Returns options with different switching counters.
+    pub const fn with_switch_counters(
+        mut self,
+        n1: usize,
+        n2: usize,
+    ) -> Self {
+        self.n1 = n1;
+        self.n2 = n2;
+        self
+    }
+
+    /// Returns options with a different history length.
+    pub const fn with_memory(
+        mut self,
+        memory: usize,
+    ) -> Self {
+        self.memory = memory;
+        self
+    }
+
+    /// Returns options with a different Armijo descent constant.
+    pub const fn with_delta(
+        mut self,
+        delta: f64,
+    ) -> Self {
+        self.delta = delta;
+        self
+    }
+
+    /// Returns options with a different backtracking factor.
+    pub const fn with_eta(
+        mut self,
+        eta: f64,
+    ) -> Self {
+        self.eta = eta;
+        self
+    }
+
+    /// Returns options with different permitted step limits.
+    pub const fn with_step_limits(
+        mut self,
+        alpha_min: f64,
+        alpha_max: f64,
+    ) -> Self {
+        self.alpha_min = alpha_min;
+        self.alpha_max = alpha_max;
+        self
+    }
+
+    /// Validates this configuration.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ValidationError`] if a nested method is invalid, an iteration
+    /// counter is zero, a tuning parameter is outside `(0, 1)`, or the step
+    /// interval is invalid.
+    pub fn validate(&self) -> Result<(), ValidationError> {
+        self.bound_opts.validate()?;
+        self.unconstrained_method.validate()?;
+        validate_positive_finite("mu", self.mu)?;
+        validate_unit_interval("rho", self.rho)?;
+        validate_nonzero("n1", self.n1 as u64)?;
+        validate_nonzero("n2", self.n2 as u64)?;
+        validate_nonzero("memory", self.memory as u64)?;
+        validate_unit_interval("delta", self.delta)?;
+        validate_unit_interval("eta", self.eta)?;
+        validate_positive_finite("alpha_min", self.alpha_min)?;
+        validate_positive_finite("alpha_max", self.alpha_max)?;
+        if self.alpha_min >= self.alpha_max {
+            return Err(ValidationError::InvalidFloat {
+                parameter: "alpha_min",
+                value: self.alpha_min,
+                requirement: "must be less than alpha_max",
+            });
+        }
+        Ok(())
+    }
+}
+
+fn validate_unit_interval(
+    parameter: &'static str,
+    value: f64,
+) -> Result<(), ValidationError> {
+    if !value.is_finite() || value <= 0.0 || value >= 1.0 {
+        return Err(ValidationError::InvalidFloat {
+            parameter,
+            value,
+            requirement: "must be finite and strictly between zero and one",
+        });
+    }
+    Ok(())
 }
 
 //}}}
@@ -157,7 +342,7 @@ impl<F: RealFn> crate::DifferentiableFn for RestrictedFunction<F> {
 //{{{ struct: ActiveSetAlgorithm
 pub struct ActiveSetAlgorithm<'a, F: RealFn + ?Sized> {
     fcn: &'a mut F,
-    bounds: BoundsConstraints,
+    bounds: BoundConstraints,
     x_init: Vector,
     norm_grad_fx_init: f64,
     opts: Options,
@@ -178,7 +363,7 @@ impl<'a, F: RealFn + ?Sized> ActiveSetAlgorithm<'a, F> {
     #[trace_fn]
     pub fn new(
         fcn: &'a mut F,
-        bounds: BoundsConstraints,
+        bounds: BoundConstraints,
         mut x0: Vector,
         opts: Options,
     ) -> Self {

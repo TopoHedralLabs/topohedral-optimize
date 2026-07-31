@@ -6,7 +6,8 @@
 use super::common as com;
 use super::common::{Error, LineSearch, Returns};
 use super::utils::{cubicmin3, quadmin, satisfies_armijo};
-use crate::RealFn1;
+use crate::common::validate_nonzero;
+use crate::{RealFn1, ValidationError};
 //}}}
 //{{{ std imports
 //}}}
@@ -16,20 +17,96 @@ use topohedral_tracing::*;
 //--------------------------------------------------------------------------------------------------
 
 //{{{ struct: Options
-#[derive(Copy, Clone, Default, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
+#[derive(Copy, Clone, Debug, PartialEq)]
 /// Options for the Nocedal line search.
 pub struct Options {
     /// Shared line-search conditions and step limits.
-    pub ls_opts: com::Options,
+    pub(crate) ls_opts: com::Options,
     /// Maximum number of outer iterations.
-    pub maxiter: usize,
+    pub(crate) max_iter: usize,
     /// Maximum number of zoom iterations.
-    pub zoom_maxiter: usize,
+    pub(crate) zoom_max_iter: usize,
 }
 //}}}
+impl Options {
+    /// Creates Nocedal line-search options.
+    pub const fn new(
+        line_search: com::Options,
+        max_iter: usize,
+        zoom_max_iter: usize,
+    ) -> Self {
+        Self {
+            ls_opts: line_search,
+            max_iter,
+            zoom_max_iter,
+        }
+    }
+
+    /// Returns the shared line-search options.
+    pub const fn line_search(&self) -> &com::Options {
+        &self.ls_opts
+    }
+
+    /// Returns the outer iteration limit.
+    pub const fn max_iter(&self) -> usize {
+        self.max_iter
+    }
+
+    /// Returns the zoom iteration limit.
+    pub const fn zoom_max_iter(&self) -> usize {
+        self.zoom_max_iter
+    }
+
+    /// Returns options with different shared line-search settings.
+    pub const fn with_line_search(
+        mut self,
+        line_search: com::Options,
+    ) -> Self {
+        self.ls_opts = line_search;
+        self
+    }
+
+    /// Returns options with a different outer iteration limit.
+    pub const fn with_max_iter(
+        mut self,
+        max_iter: usize,
+    ) -> Self {
+        self.max_iter = max_iter;
+        self
+    }
+
+    /// Returns options with a different zoom iteration limit.
+    pub const fn with_zoom_max_iter(
+        mut self,
+        zoom_max_iter: usize,
+    ) -> Self {
+        self.zoom_max_iter = zoom_max_iter;
+        self
+    }
+
+    /// Validates this configuration.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ValidationError`] when the shared settings are invalid or an
+    /// iteration limit is zero.
+    pub fn validate(&self) -> Result<(), ValidationError> {
+        self.ls_opts.validate()?;
+        validate_nonzero("max_iter", self.max_iter as u64)?;
+        validate_nonzero("zoom_max_iter", self.zoom_max_iter as u64)?;
+        Ok(())
+    }
+}
+
+impl Default for Options {
+    fn default() -> Self {
+        Self::new(com::Options::default(), 100, 100)
+    }
+}
 //{{{ struct: Nocedal
 pub struct Nocedal<F: RealFn1> {
-    pub opts: Options,
+    pub(crate) opts: Options,
     pub(crate) f: F,
 }
 //}}}
@@ -72,7 +149,7 @@ impl<F: RealFn1> LineSearch for Nocedal<F> {
         let mut dphi_a1 = 0.0;
         let _ = dphi_a1;
         let mut phi_a1 = self.f.eval(&alpha1);
-        let max_iter = self.opts.maxiter;
+        let max_iter = self.opts.max_iter;
 
         for i in 0..max_iter {
             //{{{ trace
@@ -111,7 +188,7 @@ impl<F: RealFn1> LineSearch for Nocedal<F> {
                     dphi0,
                     c1,
                     c2,
-                    self.opts.zoom_maxiter,
+                    self.opts.zoom_max_iter,
                 );
 
                 let (alpha_tmp, phi_tmp, _dphi_tmp) = match zoom_result {
@@ -164,7 +241,7 @@ impl<F: RealFn1> LineSearch for Nocedal<F> {
                     dphi0,
                     c1,
                     c2,
-                    self.opts.zoom_maxiter,
+                    self.opts.zoom_max_iter,
                 );
                 let (alpha_tmp, phi_tmp, _dphi_tmp) = match zoom_result {
                     None => {

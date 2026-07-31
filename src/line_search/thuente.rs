@@ -5,7 +5,8 @@
 //{{{ crate imports
 use super::common as com;
 use super::common::{Error, LineSearch, Returns};
-use crate::RealFn1;
+use crate::common::validate_nonzero;
+use crate::{RealFn1, ValidationError};
 //}}}
 //{{{ std imports
 //}}}
@@ -17,15 +18,73 @@ const XTRAPL: f64 = 1.1;
 const XTRAPU: f64 = 4.0;
 
 //{{{ struct: Options
-#[derive(Default, Copy, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
+#[derive(Debug, Copy, Clone, PartialEq)]
 /// Options for the More-Thuente line search.
 pub struct Options {
     /// Shared line-search conditions and step limits.
-    pub ls_opts: com::Options,
+    pub(crate) ls_opts: com::Options,
     /// Maximum number of iterations.
-    pub maxiter: usize,
+    pub(crate) max_iter: usize,
 }
 //}}}
+impl Options {
+    /// Creates More-Thuente line-search options.
+    pub const fn new(
+        line_search: com::Options,
+        max_iter: usize,
+    ) -> Self {
+        Self {
+            ls_opts: line_search,
+            max_iter,
+        }
+    }
+
+    /// Returns the shared line-search options.
+    pub const fn line_search(&self) -> &com::Options {
+        &self.ls_opts
+    }
+
+    /// Returns the iteration limit.
+    pub const fn max_iter(&self) -> usize {
+        self.max_iter
+    }
+
+    /// Returns options with different shared line-search settings.
+    pub const fn with_line_search(
+        mut self,
+        line_search: com::Options,
+    ) -> Self {
+        self.ls_opts = line_search;
+        self
+    }
+
+    /// Returns options with a different iteration limit.
+    pub const fn with_max_iter(
+        mut self,
+        max_iter: usize,
+    ) -> Self {
+        self.max_iter = max_iter;
+        self
+    }
+
+    /// Validates this configuration.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ValidationError`] when the shared settings are invalid or
+    /// `max_iter` is zero.
+    pub fn validate(&self) -> Result<(), ValidationError> {
+        self.ls_opts.validate()?;
+        validate_nonzero("max_iter", self.max_iter as u64)
+    }
+}
+
+impl Default for Options {
+    fn default() -> Self {
+        Self::new(com::Options::default(), 100)
+    }
+}
 //{{{ struct: Values
 #[derive(Debug, Default, Copy, Clone)]
 struct Values {
@@ -71,7 +130,7 @@ struct ThuenteData {
 //{{{ struct: Thuente
 #[derive(Default)]
 pub struct Thuente<F: RealFn1> {
-    pub opts: Options,
+    pub(crate) opts: Options,
     pub(crate) f: F,
     interval_endpoint1: Values,
     interval_endpoint2: Values,
@@ -313,7 +372,7 @@ impl<F: RealFn1> LineSearch for Thuente<F> {
             dphi: self.f.derivative(&alpha1),
         };
 
-        for _iter in 0..self.opts.maxiter {
+        for _iter in 0..self.opts.max_iter {
             //{{{ trace
             trace!(target: "ls", ".................................... iter = {_iter}");
             trace!(target: "ls", "{cur_step:?}");

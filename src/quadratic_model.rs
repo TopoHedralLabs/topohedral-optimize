@@ -15,23 +15,31 @@ use topohedral_tracing::*;
 //--------------------------------------------------------------------------------------------------
 
 /// Quadratic model maintained by quasi-Newton optimizers.
+///
+/// The model keeps its direct and inverse Hessian approximations internally
+/// consistent. Read-only accessors expose the current state without allowing
+/// callers to replace one component independently of the others.
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
+#[derive(Clone, Debug)]
 pub struct QuadraticModel {
     /// Current iterate.
-    pub xk: Vector,
+    pub(crate) xk: Vector,
     /// Function value at the current iterate.
-    pub fk: f64,
+    pub(crate) fk: f64,
     /// Gradient at the current iterate.
-    pub grad_fk: Vector,
+    pub(crate) grad_fk: Vector,
     /// Hessian approximation.
-    pub hess_k: Matrix,
+    pub(crate) hess_k: Matrix,
     /// Inverse Hessian approximation.
-    pub inv_hess_k: Matrix,
+    pub(crate) inv_hess_k: Matrix,
     /// Whether the first curvature-based scaling has been applied.
-    pub had_first_update: bool,
+    pub(crate) had_first_update: bool,
 }
 
-#[derive(PartialEq, Eq, Copy, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
+#[derive(PartialEq, Eq, Copy, Clone, Debug, Hash)]
 /// Selects which Hessian approximation an update changes.
+#[non_exhaustive]
 pub enum UpdateType {
     /// Update the direct Hessian.
     Direct,
@@ -55,6 +63,36 @@ impl QuadraticModel {
         }
     }
 
+    /// Returns the current iterate.
+    pub fn iterate(&self) -> &Vector {
+        &self.xk
+    }
+
+    /// Returns the function value at the current iterate.
+    pub fn function_value(&self) -> f64 {
+        self.fk
+    }
+
+    /// Returns the gradient at the current iterate.
+    pub fn gradient(&self) -> &Vector {
+        &self.grad_fk
+    }
+
+    /// Returns the direct Hessian approximation.
+    pub fn hessian(&self) -> &Matrix {
+        &self.hess_k
+    }
+
+    /// Returns the inverse Hessian approximation.
+    pub fn inverse_hessian(&self) -> &Matrix {
+        &self.inv_hess_k
+    }
+
+    /// Reports whether curvature-based scaling has been applied.
+    pub fn has_updated(&self) -> bool {
+        self.had_first_update
+    }
+
     /// Resets both Hessian approximations to the identity.
     #[trace_fn]
     pub fn reset(&mut self) {
@@ -69,6 +107,10 @@ impl QuadraticModel {
     }
 
     /// Stores the current iterate and its function data.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `xk` or `grad_fk` does not have the model's dimension.
     #[trace_fn]
     pub fn update_iterate(
         &mut self,
@@ -82,6 +124,13 @@ impl QuadraticModel {
     }
 
     /// Applies a curvature-checked quasi-Newton update.
+    ///
+    /// Returns `false` without changing the requested approximation when the
+    /// supplied curvature does not satisfy the positive-curvature checks.
+    ///
+    /// # Panics
+    ///
+    /// Panics if either vector does not have the model's dimension.
     #[trace_fn]
     pub fn try_update(
         &mut self,

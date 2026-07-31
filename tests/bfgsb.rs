@@ -4,7 +4,7 @@ use topohedral_linalg::{DMatrix, DVector, MatMul, ReduceOps, VecType, VectorOps}
 use topohedral_optimize::DifferentiableFn;
 use topohedral_optimize::{
     bound_constrained_minimize, BaseOptions, BfgsbOptions, BoundConstrainedMethod,
-    BoundConstrainedOptions, BoundsConstraints, LineSearchMethod, LineSearchOptions, Matrix,
+    BoundConstrainedOptions, BoundConstraints, LineSearchMethod, LineSearchOptions, Matrix,
     NocedalOptions, RealFn, Vector, VectorReturns,
 };
 use topohedral_tracing::*;
@@ -34,37 +34,26 @@ fn bfgsb_options(
     ftol: f64,
     max_iter: u64,
 ) -> BfgsbOptions {
-    BfgsbOptions {
-        bound_opts: BoundConstrainedOptions {
-            base_opts: BaseOptions {
-                grad_rtol: 0.0,
-                grad_atol: pgtol,
-                max_iter,
-            },
-            constraint_tol: ftol,
-        },
-        ls_method: LineSearchMethod::Nocedal(NocedalOptions {
-            ls_opts: LineSearchOptions {
-                c1: 1.0e-4,
-                c2: 0.9,
-                step_min: 1e-20,
-                step_max: 1e20,
-            },
-            maxiter: 50,
-            zoom_maxiter: 50,
-        }),
-    }
+    BfgsbOptions::new(
+        BoundConstrainedOptions::new(BaseOptions::new(0.0, pgtol, max_iter))
+            .with_constraint_tolerance(ftol),
+        LineSearchMethod::Nocedal(NocedalOptions::new(
+            LineSearchOptions::new(1.0e-4, 0.9, 1e-20, 1e20),
+            50,
+            50,
+        )),
+    )
 }
 
-fn empty_bounds(n: usize) -> BoundsConstraints {
-    BoundsConstraints::new(n)
+fn empty_bounds(n: usize) -> BoundConstraints {
+    BoundConstraints::new(n)
 }
 
-fn bounds_from_pairs(pairs: &[(Option<f64>, Option<f64>)]) -> BoundsConstraints {
-    let mut bounds = BoundsConstraints::new(pairs.len());
+fn bounds_from_pairs(pairs: &[(Option<f64>, Option<f64>)]) -> BoundConstraints {
+    let mut bounds = BoundConstraints::new(pairs.len());
     for (i, (lower, upper)) in pairs.iter().enumerate() {
         if lower.is_some() || upper.is_some() {
-            bounds.add_bounds(i, *lower, *upper);
+            bounds.add_bounds(i, *lower, *upper).unwrap();
         }
     }
     bounds
@@ -73,7 +62,7 @@ fn bounds_from_pairs(pairs: &[(Option<f64>, Option<f64>)]) -> BoundsConstraints 
 fn solve_bfgsb<F: RealFn>(
     mut fcn: F,
     x0: Vector,
-    bounds: BoundsConstraints,
+    bounds: BoundConstraints,
     pgtol: f64,
     ftol: f64,
     max_iter: u64,
@@ -90,7 +79,7 @@ fn solve_bfgsb<F: RealFn>(
 fn kkt_residual<F: RealFn>(
     mut fcn: F,
     x: &Vector,
-    bounds: &BoundsConstraints,
+    bounds: &BoundConstraints,
 ) -> f64 {
     let grad = fcn.derivative(x);
     let projected = bounds.projected_direction(x, &(-grad), 1.0);

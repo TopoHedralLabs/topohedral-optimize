@@ -5,10 +5,11 @@
 
 //{{{ crate imports
 use super::common::Error;
+use crate::common::validate_nonzero;
 use crate::common::BaseOptions;
 use crate::common::Minimizer;
 use crate::line_search::{self as ls, LineSearchMethod};
-use crate::{ConvergedReason, IterData, RealFn, Vector, VectorReturns};
+use crate::{ConvergedReason, IterData, RealFn, ValidationError, Vector, VectorReturns};
 //}}}
 //{{{ std imports
 //}}}
@@ -22,10 +23,13 @@ use topohedral_tracing::*;
 //--------------------------------------------------------------------------------------------------
 
 //{{{ enum: Direction
-#[derive(Copy, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, Hash)]
 /// Formula used to update conjugate-gradient directions.
+#[non_exhaustive]
 pub enum Direction {
     /// Steepest descent direction.
+    #[default]
     Steepest,
     /// Fletcher-Reeves update.
     FletcherReeves,
@@ -34,19 +38,103 @@ pub enum Direction {
 }
 //}}}
 //{{{ struct: Options
-#[derive(Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
+#[derive(Clone, Debug, PartialEq)]
 /// Options for conjugate-gradient minimization.
 pub struct Options {
     /// Common stopping options.
-    pub uncon_opts: BaseOptions,
+    pub(crate) uncon_opts: BaseOptions,
     /// Line-search algorithm.
-    pub ls_method: LineSearchMethod,
+    pub(crate) ls_method: LineSearchMethod,
     /// Direction update formula.
-    pub direction: Direction,
+    pub(crate) direction: Direction,
     /// Restart interval in iterations.
-    pub restart: u64,
+    pub(crate) restart: u64,
 }
 //}}}
+impl Options {
+    /// Creates conjugate-gradient options with a restart interval of 10.
+    pub const fn new(
+        unconstrained: BaseOptions,
+        line_search: LineSearchMethod,
+        direction: Direction,
+    ) -> Self {
+        Self {
+            uncon_opts: unconstrained,
+            ls_method: line_search,
+            direction,
+            restart: 10,
+        }
+    }
+
+    /// Returns the common unconstrained stopping options.
+    pub const fn unconstrained(&self) -> &BaseOptions {
+        &self.uncon_opts
+    }
+
+    /// Returns the configured line-search method.
+    pub const fn line_search(&self) -> &LineSearchMethod {
+        &self.ls_method
+    }
+
+    /// Returns the direction-update formula.
+    pub const fn direction(&self) -> Direction {
+        self.direction
+    }
+
+    /// Returns the restart interval.
+    pub const fn restart(&self) -> u64 {
+        self.restart
+    }
+
+    /// Returns options with a different common stopping configuration.
+    pub const fn with_unconstrained(
+        mut self,
+        options: BaseOptions,
+    ) -> Self {
+        self.uncon_opts = options;
+        self
+    }
+
+    /// Returns options with a different line-search method.
+    pub fn with_line_search(
+        mut self,
+        method: LineSearchMethod,
+    ) -> Self {
+        self.ls_method = method;
+        self
+    }
+
+    /// Returns options with a different direction-update formula.
+    pub const fn with_direction(
+        mut self,
+        direction: Direction,
+    ) -> Self {
+        self.direction = direction;
+        self
+    }
+
+    /// Returns options with a different restart interval.
+    pub const fn with_restart(
+        mut self,
+        restart: u64,
+    ) -> Self {
+        self.restart = restart;
+        self
+    }
+
+    /// Validates this configuration.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ValidationError`] if a nested option is invalid or the
+    /// restart interval is zero.
+    pub fn validate(&self) -> Result<(), ValidationError> {
+        self.uncon_opts.validate()?;
+        self.ls_method.validate()?;
+        validate_nonzero("restart", self.restart)
+    }
+}
 //{{{ struct: ConjugateGradient
 /// Stateful conjugate-gradient optimizer.
 pub struct ConjugateGradient<'a, F: RealFn + ?Sized> {
@@ -81,7 +169,7 @@ impl<'a, F: RealFn + ?Sized> ConjugateGradient<'a, F> {
         grad_fk: &Vector,
         dir_k: &mut Vector,
     ) {
-        let needs_restart = k.is_multiple_of(self.opts.restart);
+        let needs_restart = k % self.opts.restart == 0;
         let is_increasing = grad_fk.dot(dir_k) >= 0.0;
         if needs_restart || is_increasing {
             *dir_k = -grad_fk.clone();
@@ -197,7 +285,7 @@ impl<F: RealFn + ?Sized> Minimizer for ConjugateGradient<'_, F> {
 
             iter_k_prev = iter_k;
 
-            iter_k = ls::search(
+            iter_k = ls::line_search(
                 &mut *self.fcn,
                 &iter_k_prev,
                 &dir_k,

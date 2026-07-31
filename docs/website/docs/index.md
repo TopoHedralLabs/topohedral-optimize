@@ -6,7 +6,7 @@ vector-valued problems. The public API covers:
 - one-dimensional minimization with bounded, Brent, and golden-section methods;
 - vector line searches using More-Thuente and Nocedal-style algorithms;
 - unconstrained conjugate-gradient and quasi-Newton minimization;
-- simple bound-constrained minimization with ASA and L-BFGS-B;
+- bound-constrained minimization with ASA and BFGS-B;
 - equality and inequality constrained minimization with an augmented Lagrangian.
 
 The algorithms operate on `f64` values and `topohedral_linalg::DVector<f64>`

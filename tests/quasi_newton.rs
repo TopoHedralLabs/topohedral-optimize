@@ -3,7 +3,7 @@ use topohedral_optimize::{
     unconstrained_minimize as minimize, ConvergedReason as UnconstrainedConvergedReason,
     DifferentiableFn, LineSearchMethod, LineSearchOptions, NocedalOptions, QuasiNewtonOptions,
     QuasiNewtonUpdateMethod as UpdateMethod, RealFn, ThuenteOptions, UnconstrainedMethod,
-    UnconstrainedOptions as UnonstrainedOptions, Vector, VectorReturns as UnconstrainedReturns,
+    UnconstrainedOptions, Vector, VectorReturns as UnconstrainedReturns,
 };
 //}}}
 //{{{ std imports
@@ -222,45 +222,25 @@ fn assert_returns(
 }
 //}}}
 //{{{ const: THUENTE_BFGS
-const THUENTE_BFGS: QuasiNewtonOptions = QuasiNewtonOptions {
-    uncon_opts: UnonstrainedOptions {
-        grad_rtol: 1e-6,
-        grad_atol: 1e-8,
-        max_iter: 100,
-    },
-    ls_method: LineSearchMethod::Thuente(ThuenteOptions {
-        ls_opts: LineSearchOptions {
-            c1: 1.0e-4,
-            c2: 0.9,
-            step_min: 1e-8,
-            step_max: 1e5,
-        },
-        maxiter: 10,
-    }),
-    method: UpdateMethod::BFGS,
-    restart: 10,
-};
+const THUENTE_BFGS: QuasiNewtonOptions = QuasiNewtonOptions::new(
+    UnconstrainedOptions::new(1e-6, 1e-8, 100),
+    LineSearchMethod::Thuente(ThuenteOptions::new(
+        LineSearchOptions::new(1.0e-4, 0.9, 1e-8, 1e5),
+        10,
+    )),
+    UpdateMethod::Bfgs,
+);
 //}}}
 //{{{ const: NOCEDAL_BFGS
-const NOCEDAL_BFGS: QuasiNewtonOptions = QuasiNewtonOptions {
-    uncon_opts: UnonstrainedOptions {
-        grad_rtol: 1e-6,
-        grad_atol: 1e-8,
-        max_iter: 100,
-    },
-    ls_method: LineSearchMethod::Nocedal(NocedalOptions {
-        ls_opts: LineSearchOptions {
-            c1: 1.0e-4,
-            c2: 0.9,
-            step_min: 1e-8,
-            step_max: 1e5,
-        },
-        maxiter: 10,
-        zoom_maxiter: 10,
-    }),
-    method: UpdateMethod::BFGS,
-    restart: 10,
-};
+const NOCEDAL_BFGS: QuasiNewtonOptions = QuasiNewtonOptions::new(
+    UnconstrainedOptions::new(1e-6, 1e-8, 100),
+    LineSearchMethod::Nocedal(NocedalOptions::new(
+        LineSearchOptions::new(1.0e-4, 0.9, 1e-8, 1e5),
+        10,
+        10,
+    )),
+    UpdateMethod::Bfgs,
+);
 //}}}
 
 //{{{ test: quadratic
@@ -344,9 +324,11 @@ fn test_quartic(
     let mut quart = Quartic {
         xmin: colvec(&[10.0, 10.0, 10.0, 10.0, 10.0]),
     };
-    opts.uncon_opts.grad_rtol = 1e-12;
-    opts.uncon_opts.grad_atol = 1e-12;
-    opts.uncon_opts.max_iter = 1000;
+    let unconstrained = (*opts.unconstrained())
+        .with_grad_rtol(1e-12)
+        .with_grad_atol(1e-12)
+        .with_max_iter(1000);
+    opts = opts.with_unconstrained(unconstrained);
     let ret = minimize(&mut quart, x0, UnconstrainedMethod::QuasiNewton(opts)).unwrap();
     println!("{ret:?}");
     assert_returns(&ret, &exp_ret, 5e-2, 1e-5);
@@ -389,9 +371,11 @@ fn test_rosenbrock(
 ) {
     let mut rosenbrock = Rosenbrock::new();
 
-    opts.uncon_opts.grad_rtol = 1e-6;
-    opts.uncon_opts.grad_atol = 1e-10;
-    opts.uncon_opts.max_iter = 10000;
+    let unconstrained = (*opts.unconstrained())
+        .with_grad_rtol(1e-6)
+        .with_grad_atol(1e-10)
+        .with_max_iter(10000);
+    opts = opts.with_unconstrained(unconstrained);
 
     // let mut qn = QuasiNewton::new(rosenbrock, x0, opts);
     let ret = minimize(&mut rosenbrock, x0, UnconstrainedMethod::QuasiNewton(opts)).unwrap();

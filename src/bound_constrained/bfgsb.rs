@@ -1,4 +1,4 @@
-//! Limited-memory BFGS method for bound-constrained minimization.
+//! Limited-memory Bfgs method for bound-constrained minimization.
 //!
 //! It combines a projected Cauchy point, subspace minimization, and a capped line search.
 //--------------------------------------------------------------------------------------------------
@@ -8,10 +8,10 @@ use super::common::Error;
 use crate::bound_constrained::BoundConstrainedOptions;
 use crate::common::ConvergedReason;
 use crate::common::Minimizer;
-use crate::constraints::{BoundStatus, BoundsConstraints, CauchyPathPoint};
+use crate::constraints::{BoundConstraints, BoundStatus, CauchyPathPoint};
 use crate::line_search::{self as ls, LineSearchError, LineSearchMethod};
 use crate::quadratic_model::{QuadraticModel, UpdateType::Direct};
-use crate::{IterData, RealFn, Vector};
+use crate::{IterData, RealFn, ValidationError, Vector};
 //}}}
 //{{{ std imports
 //}}}
@@ -34,7 +34,7 @@ struct CauchyPoint {
 //{{{ fn: cauchy_point
 #[trace_fn]
 fn cauchy_point(
-    bounds: &BoundsConstraints,
+    bounds: &BoundConstraints,
     quadratic_model: &QuadraticModel,
 ) -> CauchyPoint {
     let QuadraticModel {
@@ -180,7 +180,7 @@ fn cauchy_point(
 //{{{ fn: subspace_minimize
 #[trace_fn]
 fn subspace_minimize(
-    bounds: &BoundsConstraints,
+    bounds: &BoundConstraints,
     quadratic_model: &QuadraticModel,
     cauchy_point: &CauchyPoint,
 ) -> Vector {
@@ -257,7 +257,7 @@ fn subspace_minimize(
 //{{{ fn: projected_gradient_inf_norm
 #[trace_fn]
 fn projected_gradient_inf_norm(
-    bounds: &BoundsConstraints,
+    bounds: &BoundConstraints,
     x: &Vector,
     grad: &Vector,
 ) -> f64 {
@@ -294,19 +294,70 @@ fn capped_line_search_method(
 }
 //}}}
 //{{{ struct: Options
-#[derive(Clone)]
-/// Options for the L-BFGS-B algorithm.
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
+#[derive(Clone, Debug, PartialEq)]
+/// Options for the BFGS-B algorithm.
 pub struct Options {
     /// Common bound-constrained stopping options.
-    pub bound_opts: BoundConstrainedOptions,
+    pub(crate) bound_opts: BoundConstrainedOptions,
     /// Line-search method used for free-variable steps.
-    pub ls_method: LineSearchMethod,
+    pub(crate) ls_method: LineSearchMethod,
 }
 //}}}
+impl Options {
+    /// Creates BFGS-B options.
+    pub const fn new(
+        bound_constrained: BoundConstrainedOptions,
+        line_search: LineSearchMethod,
+    ) -> Self {
+        Self {
+            bound_opts: bound_constrained,
+            ls_method: line_search,
+        }
+    }
+
+    /// Returns the common bound-constrained options.
+    pub const fn bound_constrained(&self) -> &BoundConstrainedOptions {
+        &self.bound_opts
+    }
+
+    /// Returns the configured line-search method.
+    pub const fn line_search(&self) -> &LineSearchMethod {
+        &self.ls_method
+    }
+
+    /// Returns options with different common bound-constrained settings.
+    pub const fn with_bound_constrained(
+        mut self,
+        options: BoundConstrainedOptions,
+    ) -> Self {
+        self.bound_opts = options;
+        self
+    }
+
+    /// Returns options with a different line-search method.
+    pub fn with_line_search(
+        mut self,
+        method: LineSearchMethod,
+    ) -> Self {
+        self.ls_method = method;
+        self
+    }
+
+    /// Validates this configuration.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ValidationError`] if any nested option is invalid.
+    pub fn validate(&self) -> Result<(), ValidationError> {
+        self.bound_opts.validate()?;
+        self.ls_method.validate()
+    }
+}
 //{{{ struct: Bfgsb
 pub struct Bfgsb<'a, F: RealFn + ?Sized> {
     fcn: &'a mut F,
-    bounds: BoundsConstraints,
+    bounds: BoundConstraints,
     x_init: Vector,
     norm_grad_fx_init: f64,
     opts: Options,
@@ -318,7 +369,7 @@ impl<'a, F: RealFn + ?Sized> Bfgsb<'a, F> {
     #[trace_fn]
     pub fn new(
         fcn: &'a mut F,
-        bounds: BoundsConstraints,
+        bounds: BoundConstraints,
         mut x0: Vector,
         opts: Options,
     ) -> Self {
@@ -554,7 +605,7 @@ impl<F: RealFn + ?Sized> Minimizer for Bfgsb<'_, F> {
             //{{{ trace
             debug!(target: "bfgsb", "Starting line search: alpha_init = {alpha_init:.4e}, gᵀd = {gd:.4e}");
             //}}}
-            let search_result = ls::search(
+            let search_result = ls::line_search(
                 &mut *self.fcn,
                 &iter_k,
                 &dir,
@@ -711,10 +762,9 @@ mod tests {
         let gk = colvec(&[2.0, -1.0]);
         let bmatk = DMatrix::<f64>::from_row_slice(&[4.0, 0.0, 0.0, 2.0], 2, 2);
         let qm = test_quadratic_model(fk, &gk, &bmatk, &xk);
-        let mut bounds = BoundsConstraints::new(2);
-        bounds.add_bounds(0, Some(-10.0), Some(10.0));
-        bounds.add_bounds(1, Some(-10.0), Some(10.0));
-
+        let mut bounds = BoundConstraints::new(2);
+        bounds.add_bounds(0, Some(-10.0), Some(10.0)).unwrap();
+        bounds.add_bounds(1, Some(-10.0), Some(10.0)).unwrap();
         let result = cauchy_point(&bounds, &qm);
         let expected_alpha = 5.0 / 18.0;
         let expected = colvec(&[
@@ -742,10 +792,9 @@ mod tests {
         let xk = colvec(&[0.0, 0.0]);
         let gk = colvec(&[-2.0, -1.0]);
         let bmatk = DMatrix::<f64>::from_row_slice(&[2.0, 0.5, 0.5, 1.0], 2, 2);
-        let mut bounds = BoundsConstraints::new(2);
-        bounds.add_bounds(0, Some(-1.0), Some(0.5));
-        bounds.add_bounds(1, Some(-1.0), Some(2.0));
-
+        let mut bounds = BoundConstraints::new(2);
+        bounds.add_bounds(0, Some(-1.0), Some(0.5)).unwrap();
+        bounds.add_bounds(1, Some(-1.0), Some(2.0)).unwrap();
         let qm = test_quadratic_model(fk, &gk, &bmatk, &xk);
 
         let result = cauchy_point(&bounds, &qm);
@@ -771,10 +820,9 @@ mod tests {
         let gk = colvec(&[1.0, -2.0]);
         let bmatk = DMatrix::<f64>::from_row_slice(&[2.0, 0.25, 0.25, 3.0], 2, 2);
         let qm = test_quadratic_model(fk, &gk, &bmatk, &xk);
-        let mut bounds = BoundsConstraints::new(2);
-        bounds.add_bounds(0, Some(0.0), Some(2.0));
-        bounds.add_bounds(1, Some(-1.0), Some(1.0));
-
+        let mut bounds = BoundConstraints::new(2);
+        bounds.add_bounds(0, Some(0.0), Some(2.0)).unwrap();
+        bounds.add_bounds(1, Some(-1.0), Some(1.0)).unwrap();
         let result = cauchy_point(&bounds, &qm);
 
         assert_vector_close(&result.cauchy_point, &xk);

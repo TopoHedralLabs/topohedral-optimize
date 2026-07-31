@@ -9,9 +9,9 @@ use crate::{
     bound_constrained::{minimize_impl as bcon_minimize, BoundConstrainedMethod},
     common::{self, ConvergedReason, IterData, VectorReturns},
     constrained::{ConstrainedError, ConstrainedOptions},
-    constraints::BoundsConstraints,
+    constraints::BoundConstraints,
     unconstrained::{minimize_impl as uncon_minimize, UnconstrainedMethod},
-    DifferentiableFn, Matrix, RealFn, RealVectorFn, Vector,
+    DifferentiableFn, Matrix, RealFn, RealVectorFn, ValidationError, Vector,
 };
 use core::f64;
 //}}}
@@ -29,8 +29,8 @@ use topohedral_tracing::*;
 //--------------------------------------------------------------------------------------------------
 
 //{{{ collection: constants
-const DEFUALT_INITIAL_PENALTY: f64 = 1.0;
-const DEFUALT_CONSTRAINT_IMPROVEMENT_FACTOR: f64 = 0.9;
+const DEFAULT_INITIAL_PENALTY: f64 = 1.0;
+const DEFAULT_CONSTRAINT_IMPROVEMENT_FACTOR: f64 = 0.9;
 const DEFAULT_PENALTY_GROWTH_FACTOR: f64 = 2.5;
 /// Ceiling for ω_k (inner stationarity tolerance) on the very first outer
 /// iteration — matches the old `set_inner_tolerances` atol upper clamp.
@@ -39,7 +39,9 @@ const DEFAULT_PENALTY_GROWTH_FACTOR: f64 = 2.5;
 const OMEGA_INIT_CEIL: f64 = 1e-2;
 //}}}
 //{{{ enum: LagrangianType
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum LagrangianType {
     /// Augmented Lagrangian with quadratic penalty terms.
     AugmentedLagrangian,
@@ -49,49 +51,152 @@ pub enum LagrangianType {
 //}}}
 
 //{{{ struct Options
-#[derive(Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
+#[derive(Clone, Debug, PartialEq)]
 /// Options for augmented-Lagrangian constrained optimization.
 pub struct Options {
     /// Common constrained stopping options.
-    pub constrained_opts: ConstrainedOptions,
+    pub(crate) constrained_opts: ConstrainedOptions,
     /// Algorithm used for inner minimization.
-    pub inner_method: InnerMethod,
+    pub(crate) inner_method: InnerMethod,
     /// Initial constraint penalty.
-    pub initial_penalty: f64,
+    pub(crate) initial_penalty: f64,
     /// Required improvement before increasing a penalty.
-    pub constraint_improvement_factor: f64,
+    pub(crate) constraint_improvement_factor: f64,
     /// Multiplicative penalty growth factor.
-    pub penalty_growth_factor: f64,
+    pub(crate) penalty_growth_factor: f64,
 }
 //}}}
 //{{{ impl: Options
 impl Options {
     /// Creates options with default penalty parameters.
-    #[trace_fn]
-    pub fn new(
+    pub const fn new(
         constrained_opts: ConstrainedOptions,
         inner_method: InnerMethod,
     ) -> Self {
         Self {
             constrained_opts,
             inner_method,
-            initial_penalty: DEFUALT_INITIAL_PENALTY,
-            constraint_improvement_factor: DEFUALT_CONSTRAINT_IMPROVEMENT_FACTOR,
+            initial_penalty: DEFAULT_INITIAL_PENALTY,
+            constraint_improvement_factor: DEFAULT_CONSTRAINT_IMPROVEMENT_FACTOR,
             penalty_growth_factor: DEFAULT_PENALTY_GROWTH_FACTOR,
         }
+    }
+
+    /// Returns the shared constrained options.
+    pub const fn constrained(&self) -> &ConstrainedOptions {
+        &self.constrained_opts
+    }
+
+    /// Returns the optimizer used for inner subproblems.
+    pub const fn inner_method(&self) -> &InnerMethod {
+        &self.inner_method
+    }
+
+    /// Returns the initial penalty coefficient.
+    pub const fn initial_penalty(&self) -> f64 {
+        self.initial_penalty
+    }
+
+    /// Returns the required constraint-improvement factor.
+    pub const fn constraint_improvement_factor(&self) -> f64 {
+        self.constraint_improvement_factor
+    }
+
+    /// Returns the multiplicative penalty-growth factor.
+    pub const fn penalty_growth_factor(&self) -> f64 {
+        self.penalty_growth_factor
+    }
+
+    /// Returns options with different shared constrained settings.
+    pub const fn with_constrained(
+        mut self,
+        options: ConstrainedOptions,
+    ) -> Self {
+        self.constrained_opts = options;
+        self
+    }
+
+    /// Returns options with a different inner optimizer.
+    pub fn with_inner_method(
+        mut self,
+        method: InnerMethod,
+    ) -> Self {
+        self.inner_method = method;
+        self
+    }
+
+    /// Returns options with a different initial penalty.
+    pub const fn with_initial_penalty(
+        mut self,
+        penalty: f64,
+    ) -> Self {
+        self.initial_penalty = penalty;
+        self
+    }
+
+    /// Returns options with a different constraint-improvement factor.
+    pub const fn with_constraint_improvement_factor(
+        mut self,
+        factor: f64,
+    ) -> Self {
+        self.constraint_improvement_factor = factor;
+        self
+    }
+
+    /// Returns options with a different penalty-growth factor.
+    pub const fn with_penalty_growth_factor(
+        mut self,
+        factor: f64,
+    ) -> Self {
+        self.penalty_growth_factor = factor;
+        self
+    }
+
+    /// Validates this configuration.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ValidationError`] if a nested method is invalid or a penalty
+    /// parameter is outside its documented range.
+    pub fn validate(&self) -> Result<(), ValidationError> {
+        self.constrained_opts.validate()?;
+        self.inner_method.validate()?;
+        crate::common::validate_positive_finite("initial_penalty", self.initial_penalty)?;
+        validate_unit_interval(
+            "constraint_improvement_factor",
+            self.constraint_improvement_factor,
+        )?;
+        if !self.penalty_growth_factor.is_finite() || self.penalty_growth_factor <= 1.0 {
+            return Err(ValidationError::InvalidFloat {
+                parameter: "penalty_growth_factor",
+                value: self.penalty_growth_factor,
+                requirement: "must be finite and greater than one",
+            });
+        }
+        Ok(())
     }
 
     #[trace_fn]
     pub(crate) fn inner_method_mut(&mut self) -> &mut InnerMethod {
         &mut self.inner_method
     }
-
-    #[trace_fn]
-    pub(crate) fn inner_method(&self) -> &InnerMethod {
-        &self.inner_method
-    }
 }
 //}}}
+
+fn validate_unit_interval(
+    parameter: &'static str,
+    value: f64,
+) -> Result<(), ValidationError> {
+    if !value.is_finite() || value <= 0.0 || value >= 1.0 {
+        return Err(ValidationError::InvalidFloat {
+            parameter,
+            value,
+            requirement: "must be finite and strictly between zero and one",
+        });
+    }
+    Ok(())
+}
 
 //{{{ struct: LagrangianPenaltyData
 #[derive(Debug)]
@@ -426,7 +531,7 @@ struct CachedValues {
     fcn_value: f64,
     fcn_grad: Vector,
     eq_constraint_value: f64,
-    eq_constriant_grad: Vector,
+    eq_constraint_grad: Vector,
     ieq_constraint_value: f64,
     ieq_constraint_grad: Vector,
     all_constraint_value: f64,
@@ -445,7 +550,7 @@ impl CachedValues {
             fcn_value: 0.0,
             fcn_grad: zero_vector.clone(),
             eq_constraint_value: 0.0,
-            eq_constriant_grad: zero_vector.clone(),
+            eq_constraint_grad: zero_vector.clone(),
             ieq_constraint_value: 0.0,
             ieq_constraint_grad: zero_vector.clone(),
             all_constraint_value: 0.0,
@@ -702,7 +807,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> crate::DifferentiableFn
         {
             let cached_value = self.get_cached_values_mut();
             cached_value.fcn_grad = fcn_grad;
-            cached_value.eq_constriant_grad = eq_penalty_grad.clone();
+            cached_value.eq_constraint_grad = eq_penalty_grad.clone();
             cached_value.ieq_constraint_grad = ieq_penalty_grad.clone();
             cached_value.all_constraint_grad = (&eq_penalty_grad + &ieq_penalty_grad).into();
             cached_value.auglag_grad = grad_aug_lag.clone();
@@ -722,7 +827,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> crate::DifferentiableFn
 pub struct AugmentedLagrangian<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> {
     fcn: AugmentedLagrangianFcn<F1, F2, F3>,
     x_init: Vector,
-    bounds: Option<BoundsConstraints>,
+    bounds: Option<BoundConstraints>,
     opts: Options,
     omega_k: f64,
     /// Scheduling-only ramp used by `compute_omega_k`; grows every outer
@@ -740,7 +845,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
     #[trace_fn]
     pub fn new(
         fcn: F1,
-        bounds: Option<BoundsConstraints>,
+        bounds: Option<BoundConstraints>,
         eq_constraints: Option<F2>,
         ieq_constraints: Option<F3>,
         x0: Vector,
@@ -971,7 +1076,9 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
 //}}}
 //{{{ enum: InnerMethod
 /// Selects the optimizer used for an augmented-Lagrangian inner problem.
-#[derive(Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
+#[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub enum InnerMethod {
     /// Use an unconstrained inner optimizer.
     Unconstrained(UnconstrainedMethod),
@@ -979,10 +1086,23 @@ pub enum InnerMethod {
     BoundConstrained(BoundConstrainedMethod),
 }
 //}}}
+impl InnerMethod {
+    /// Validates the selected inner optimizer.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ValidationError`] if the inner configuration is invalid.
+    pub fn validate(&self) -> Result<(), ValidationError> {
+        match self {
+            Self::Unconstrained(method) => method.validate(),
+            Self::BoundConstrained(method) => method.validate(),
+        }
+    }
+}
 //{{{ fn: inner_minimize
 fn inner_minimize<F: RealFn + ?Sized>(
     fcn: &mut F,
-    bounds: Option<BoundsConstraints>,
+    bounds: Option<BoundConstraints>,
     x0: Vector,
     inner_method: InnerMethod,
 ) -> Result<common::VectorReturns, ConstrainedError> {

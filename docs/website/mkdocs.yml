@@ -11,6 +11,10 @@ markdown_extensions:
   - pymdownx.superfences
   - pymdownx.highlight:
       anchor_linenums: true
+  - pymdownx.snippets:
+      base_path:
+        - ../..
+      check_paths: true
   - pymdownx.arithmatex:
       generic: true
 
@@ -36,7 +40,7 @@ nav:
           - Inequality Constraints: user-guide/examples/inequality-constraints.md
           - Parabola: user-guide/examples/scalar-parabola.md
           - Rosenbrock: user-guide/examples/unconstrained-rosenbrock.md
-          - Bound-Constrained Box: user-guide/examples/bound-constrained-box.md
+          - Bound-Constrained Quadratic: user-guide/examples/bound-constrained-box.md
           - Generally-Constrained Hypersphere: user-guide/examples/generally-constrained-hypersphere.md
           - One-Dimensional Line Search: user-guide/examples/line-search-quadratic.md
   - API Docs: api/

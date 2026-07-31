@@ -1,7 +1,7 @@
 //{{{ crate imports
 use topohedral_optimize::BoundStatus::{self, AtLower, AtUpper};
 use topohedral_optimize::DifferentiableFn;
-use topohedral_optimize::{BoundsConstraints, CauchyPathPoint, Matrix, NoConstraints, Vector};
+use topohedral_optimize::{BoundConstraints, CauchyPathPoint, Matrix, NoConstraints, Vector};
 //}}}
 //{{{ std imports
 //}}}
@@ -107,11 +107,10 @@ fn test_no_constraints_is_empty_and_noop() {
 //{{{ test: mixed bounds
 #[test]
 fn test_bounds_constraints_mixed_bounds_eval_and_grad_match_public_contract() {
-    let mut constraints = BoundsConstraints::new(4);
-    constraints.add_bounds(0, Some(-1.0), Some(2.0));
-    constraints.add_bounds(2, Some(0.5), None);
-    constraints.add_bounds(3, None, Some(4.5));
-
+    let mut constraints = BoundConstraints::new(4);
+    constraints.add_bounds(0, Some(-1.0), Some(2.0)).unwrap();
+    constraints.add_bounds(2, Some(0.5), None).unwrap();
+    constraints.add_bounds(3, None, Some(4.5)).unwrap();
     assert_eq!(constraints.dimension_domain(), 4);
     assert_eq!(constraints.dimension_range(), 4);
 
@@ -131,9 +130,8 @@ fn test_bounds_constraints_mixed_bounds_eval_and_grad_match_public_contract() {
 //{{{ test: cauchy path upper bound
 #[test]
 fn test_cauchy_path_single_upper_bound_hit() {
-    let mut constraints = BoundsConstraints::new(1);
-    constraints.add_bounds(0, Some(0.0), Some(1.0));
-
+    let mut constraints = BoundConstraints::new(1);
+    constraints.add_bounds(0, Some(0.0), Some(1.0)).unwrap();
     let x = colvec(&[0.5]);
     let d = colvec(&[1.0]);
     let path = constraints.cauchy_path(&x, &d);
@@ -145,9 +143,8 @@ fn test_cauchy_path_single_upper_bound_hit() {
 //{{{ test: cauchy path lower bound
 #[test]
 fn test_cauchy_path_single_lower_bound_hit() {
-    let mut constraints = BoundsConstraints::new(1);
-    constraints.add_bounds(0, Some(0.0), Some(1.0));
-
+    let mut constraints = BoundConstraints::new(1);
+    constraints.add_bounds(0, Some(0.0), Some(1.0)).unwrap();
     let x = colvec(&[0.5]);
     let d = colvec(&[-1.0]);
     let path = constraints.cauchy_path(&x, &d);
@@ -160,9 +157,8 @@ fn test_cauchy_path_single_lower_bound_hit() {
 #[test]
 fn test_cauchy_path_direction_away_from_only_bound_returns_empty_path() {
     // Only a lower bound; direction is positive (moving away from it).
-    let mut constraints = BoundsConstraints::new(1);
-    constraints.add_bounds(0, Some(0.0), None);
-
+    let mut constraints = BoundConstraints::new(1);
+    constraints.add_bounds(0, Some(0.0), None).unwrap();
     let x = colvec(&[0.5]);
     let d = colvec(&[1.0]);
     let path = constraints.cauchy_path(&x, &d);
@@ -179,11 +175,10 @@ fn test_cauchy_path_multiple_variables_sorted_by_t() {
     // var 2: hits upper at t = (2 - 1.5) / 1 = 0.5
     // Sorted as kink records:
     //   (0.5, 2), (1.5, 0), (2.0, 1)
-    let mut constraints = BoundsConstraints::new(3);
-    constraints.add_bounds(0, Some(0.0), Some(2.0));
-    constraints.add_bounds(1, Some(0.0), Some(2.0));
-    constraints.add_bounds(2, Some(0.0), Some(2.0));
-
+    let mut constraints = BoundConstraints::new(3);
+    constraints.add_bounds(0, Some(0.0), Some(2.0)).unwrap();
+    constraints.add_bounds(1, Some(0.0), Some(2.0)).unwrap();
+    constraints.add_bounds(2, Some(0.0), Some(2.0)).unwrap();
     let x = colvec(&[0.5, 0.0, 1.5]);
     let d = colvec(&[1.0, 1.0, 1.0]);
     let path = constraints.cauchy_path(&x, &d);
@@ -199,9 +194,8 @@ fn test_cauchy_path_multiple_variables_sorted_by_t() {
 fn test_cauchy_path_infeasible_start_uses_clamped_location() {
     // x = [1.5] is outside upper bound 1.0; clamped to [1.0].
     // d = [-1.0], lower = 0.0 → t = (0.0 - 1.0) / (-1.0) = 1.0
-    let mut constraints = BoundsConstraints::new(1);
-    constraints.add_bounds(0, Some(0.0), Some(1.0));
-
+    let mut constraints = BoundConstraints::new(1);
+    constraints.add_bounds(0, Some(0.0), Some(1.0)).unwrap();
     let x = colvec(&[1.5]);
     let d = colvec(&[-1.0]);
     let path = constraints.cauchy_path(&x, &d);
@@ -214,9 +208,8 @@ fn test_cauchy_path_infeasible_start_uses_clamped_location() {
 #[test]
 fn test_cauchy_path_at_lower_bound_direction_into_bound_returns_t_zero() {
     // x is at the lower bound; d pushes into it → t = 0.
-    let mut constraints = BoundsConstraints::new(1);
-    constraints.add_bounds(0, Some(0.0), Some(1.0));
-
+    let mut constraints = BoundConstraints::new(1);
+    constraints.add_bounds(0, Some(0.0), Some(1.0)).unwrap();
     let x = colvec(&[0.0]);
     let d = colvec(&[-1.0]);
     let path = constraints.cauchy_path(&x, &d);
@@ -228,11 +221,10 @@ fn test_cauchy_path_at_lower_bound_direction_into_bound_returns_t_zero() {
 //{{{ test: max feasible step first bound
 #[test]
 fn test_max_feasible_step_returns_first_bound_hit() {
-    let mut constraints = BoundsConstraints::new(3);
-    constraints.add_bounds(0, Some(0.0), Some(2.0));
-    constraints.add_bounds(1, Some(0.0), Some(2.0));
-    constraints.add_bounds(2, Some(0.0), Some(2.0));
-
+    let mut constraints = BoundConstraints::new(3);
+    constraints.add_bounds(0, Some(0.0), Some(2.0)).unwrap();
+    constraints.add_bounds(1, Some(0.0), Some(2.0)).unwrap();
+    constraints.add_bounds(2, Some(0.0), Some(2.0)).unwrap();
     let x = colvec(&[0.5, 0.0, 1.5]);
     let d = colvec(&[1.0, 1.0, 1.0]);
 
@@ -242,9 +234,8 @@ fn test_max_feasible_step_returns_first_bound_hit() {
 //{{{ test: max feasible step no bound hit
 #[test]
 fn test_max_feasible_step_returns_infinity_when_direction_stays_feasible() {
-    let mut constraints = BoundsConstraints::new(1);
-    constraints.add_bounds(0, Some(0.0), None);
-
+    let mut constraints = BoundConstraints::new(1);
+    constraints.add_bounds(0, Some(0.0), None).unwrap();
     let x = colvec(&[0.5]);
     let d = colvec(&[1.0]);
 
@@ -254,9 +245,8 @@ fn test_max_feasible_step_returns_infinity_when_direction_stays_feasible() {
 //{{{ test: max feasible step blocked at bound
 #[test]
 fn test_max_feasible_step_returns_zero_when_already_blocked_at_bound() {
-    let mut constraints = BoundsConstraints::new(1);
-    constraints.add_bounds(0, Some(0.0), Some(1.0));
-
+    let mut constraints = BoundConstraints::new(1);
+    constraints.add_bounds(0, Some(0.0), Some(1.0)).unwrap();
     let x = colvec(&[0.0]);
     let d = colvec(&[-1.0]);
 
@@ -266,7 +256,7 @@ fn test_max_feasible_step_returns_zero_when_already_blocked_at_bound() {
 //{{{ test: bound_statuses — no bounded variables → all free
 #[test]
 fn test_bound_statuses_no_bounds_all_free() {
-    let constraints = BoundsConstraints::new(3);
+    let constraints = BoundConstraints::new(3);
     let x = colvec(&[1.0, 2.0, 3.0]);
     let d = colvec(&[-1.0, 0.0, 1.0]);
 
@@ -278,9 +268,8 @@ fn test_bound_statuses_no_bounds_all_free() {
 //{{{ test: bound_statuses — interior lower-bounded variable remains free
 #[test]
 fn test_bound_statuses_lower_bound_negative_direction_interior_is_free() {
-    let mut constraints = BoundsConstraints::new(1);
-    constraints.add_bounds(0, Some(0.0), None);
-
+    let mut constraints = BoundConstraints::new(1);
+    constraints.add_bounds(0, Some(0.0), None).unwrap();
     let x = colvec(&[0.5]);
     let d = colvec(&[-1.0]);
 
@@ -292,9 +281,8 @@ fn test_bound_statuses_lower_bound_negative_direction_interior_is_free() {
 //{{{ test: bound_statuses — lower-bounded variable constrained at lower bound
 #[test]
 fn test_bound_statuses_lower_bound_negative_direction_at_bound_is_at_lower() {
-    let mut constraints = BoundsConstraints::new(1);
-    constraints.add_bounds(0, Some(0.0), None);
-
+    let mut constraints = BoundConstraints::new(1);
+    constraints.add_bounds(0, Some(0.0), None).unwrap();
     let x = colvec(&[0.0]);
     let d = colvec(&[-1.0]);
 
@@ -306,9 +294,8 @@ fn test_bound_statuses_lower_bound_negative_direction_at_bound_is_at_lower() {
 //{{{ test: bound_statuses — lower bound with positive direction → free
 #[test]
 fn test_bound_statuses_lower_bound_positive_direction_is_free() {
-    let mut constraints = BoundsConstraints::new(1);
-    constraints.add_bounds(0, Some(0.0), None);
-
+    let mut constraints = BoundConstraints::new(1);
+    constraints.add_bounds(0, Some(0.0), None).unwrap();
     let x = colvec(&[0.5]);
     let d = colvec(&[1.0]);
 
@@ -320,9 +307,8 @@ fn test_bound_statuses_lower_bound_positive_direction_is_free() {
 //{{{ test: bound_statuses — interior upper-bounded variable remains free
 #[test]
 fn test_bound_statuses_upper_bound_positive_direction_interior_is_free() {
-    let mut constraints = BoundsConstraints::new(1);
-    constraints.add_bounds(0, None, Some(1.0));
-
+    let mut constraints = BoundConstraints::new(1);
+    constraints.add_bounds(0, None, Some(1.0)).unwrap();
     let x = colvec(&[0.5]);
     let d = colvec(&[1.0]);
 
@@ -334,9 +320,8 @@ fn test_bound_statuses_upper_bound_positive_direction_interior_is_free() {
 //{{{ test: bound_statuses — upper-bounded variable constrained at upper bound
 #[test]
 fn test_bound_statuses_upper_bound_positive_direction_at_bound_is_at_upper() {
-    let mut constraints = BoundsConstraints::new(1);
-    constraints.add_bounds(0, None, Some(1.0));
-
+    let mut constraints = BoundConstraints::new(1);
+    constraints.add_bounds(0, None, Some(1.0)).unwrap();
     let x = colvec(&[1.0]);
     let d = colvec(&[1.0]);
 
@@ -348,10 +333,9 @@ fn test_bound_statuses_upper_bound_positive_direction_at_bound_is_at_upper() {
 //{{{ test: bound_statuses — infeasible start uses clamped boundary
 #[test]
 fn test_bound_statuses_infeasible_start_uses_clamped_boundary() {
-    let mut constraints = BoundsConstraints::new(2);
-    constraints.add_bounds(0, Some(0.0), None);
-    constraints.add_bounds(1, None, Some(1.0));
-
+    let mut constraints = BoundConstraints::new(2);
+    constraints.add_bounds(0, Some(0.0), None).unwrap();
+    constraints.add_bounds(1, None, Some(1.0)).unwrap();
     let x = colvec(&[-0.5, 1.5]);
     let d = colvec(&[-1.0, 1.0]);
 
@@ -363,9 +347,8 @@ fn test_bound_statuses_infeasible_start_uses_clamped_boundary() {
 //{{{ test: bound_statuses — upper bound with negative direction → free
 #[test]
 fn test_bound_statuses_upper_bound_negative_direction_is_free() {
-    let mut constraints = BoundsConstraints::new(1);
-    constraints.add_bounds(0, None, Some(1.0));
-
+    let mut constraints = BoundConstraints::new(1);
+    constraints.add_bounds(0, None, Some(1.0)).unwrap();
     let x = colvec(&[0.5]);
     let d = colvec(&[-1.0]);
 
@@ -377,9 +360,8 @@ fn test_bound_statuses_upper_bound_negative_direction_is_free() {
 //{{{ test: bound_statuses — zero direction → free regardless of bounds
 #[test]
 fn test_bound_statuses_zero_direction_is_free() {
-    let mut constraints = BoundsConstraints::new(1);
-    constraints.add_bounds(0, Some(0.0), Some(1.0));
-
+    let mut constraints = BoundConstraints::new(1);
+    constraints.add_bounds(0, Some(0.0), Some(1.0)).unwrap();
     let x = colvec(&[0.5]);
     let d = colvec(&[0.0]);
 
@@ -395,11 +377,10 @@ fn test_bound_statuses_mixed_variables() {
     // var 1: lower bound [0.0, _], x[1] = 0.0   → active (at lower, pushing lower)
     // var 2: upper bound [_, 2.0], x[2] = 2.0   → active (at upper, pushing upper)
     // var 3: both bounds [0.0, 2.0], d[3] = 0.0 → inactive (zero direction)
-    let mut constraints = BoundsConstraints::new(4);
-    constraints.add_bounds(1, Some(0.0), None);
-    constraints.add_bounds(2, None, Some(2.0));
-    constraints.add_bounds(3, Some(0.0), Some(2.0));
-
+    let mut constraints = BoundConstraints::new(4);
+    constraints.add_bounds(1, Some(0.0), None).unwrap();
+    constraints.add_bounds(2, None, Some(2.0)).unwrap();
+    constraints.add_bounds(3, Some(0.0), Some(2.0)).unwrap();
     let x = colvec(&[5.0, 0.0, 2.0, 1.0]);
     let d = colvec(&[3.0, -1.0, 1.0, 0.0]);
 
@@ -423,11 +404,10 @@ fn test_bound_statuses_no_direction_uses_position_only() {
     // var 1: lower bound [0.0, _], x[1] = 0.0 → active at lower
     // var 2: upper bound [_, 2.0], x[2] = 2.5 → active at upper
     // var 3: both bounds [0.0, 2.0], interior → inactive
-    let mut constraints = BoundsConstraints::new(4);
-    constraints.add_bounds(1, Some(0.0), None);
-    constraints.add_bounds(2, None, Some(2.0));
-    constraints.add_bounds(3, Some(0.0), Some(2.0));
-
+    let mut constraints = BoundConstraints::new(4);
+    constraints.add_bounds(1, Some(0.0), None).unwrap();
+    constraints.add_bounds(2, None, Some(2.0)).unwrap();
+    constraints.add_bounds(3, Some(0.0), Some(2.0)).unwrap();
     let x = colvec(&[5.0, 0.0, 2.5, 1.0]);
 
     let statuses = constraints.bound_statuses(&x, None);
@@ -446,10 +426,9 @@ fn test_bound_statuses_no_direction_uses_position_only() {
 //{{{ test: bound_statuses — omitted direction does not use clamped direction
 #[test]
 fn test_bound_statuses_no_direction_marks_infeasible_position_constrained() {
-    let mut constraints = BoundsConstraints::new(2);
-    constraints.add_bounds(0, Some(0.0), Some(1.0));
-    constraints.add_bounds(1, Some(0.0), Some(1.0));
-
+    let mut constraints = BoundConstraints::new(2);
+    constraints.add_bounds(0, Some(0.0), Some(1.0)).unwrap();
+    constraints.add_bounds(1, Some(0.0), Some(1.0)).unwrap();
     let x = colvec(&[-0.5, 1.5]);
 
     let statuses = constraints.bound_statuses(&x, None);
@@ -459,7 +438,7 @@ fn test_bound_statuses_no_direction_marks_infeasible_position_constrained() {
 //}}}
 //{{{ fun: project_at
 fn project_at(
-    constraints: &BoundsConstraints,
+    constraints: &BoundConstraints,
     x: &Vector,
     d: &Vector,
     t: f64,
@@ -483,11 +462,10 @@ fn test_cauchy_path_geometric_projected_path_kinks_at_breakpoints() {
     //
     // Between breakpoints the path is linear in each free variable; at each
     // breakpoint one component "kinks" onto its bound and stays there.
-    let mut constraints = BoundsConstraints::new(3);
-    constraints.add_bounds(0, Some(0.0), Some(2.0));
-    constraints.add_bounds(1, Some(0.0), Some(2.0));
-    constraints.add_bounds(2, Some(0.0), Some(2.0));
-
+    let mut constraints = BoundConstraints::new(3);
+    constraints.add_bounds(0, Some(0.0), Some(2.0)).unwrap();
+    constraints.add_bounds(1, Some(0.0), Some(2.0)).unwrap();
+    constraints.add_bounds(2, Some(0.0), Some(2.0)).unwrap();
     let x = colvec(&[0.5, 0.0, 1.5]);
     let d = colvec(&[1.0, 1.0, 1.0]);
 
@@ -549,9 +527,8 @@ fn test_cauchy_path_geometric_projected_path_kinks_at_breakpoints() {
 //{{{ test: zero stale matrix entries
 #[test]
 fn test_bounds_constraints_grad_clears_stale_matrix_entries() {
-    let mut constraints = BoundsConstraints::new(3);
-    constraints.add_bounds(1, Some(-2.0), Some(3.0));
-
+    let mut constraints = BoundConstraints::new(3);
+    constraints.add_bounds(1, Some(-2.0), Some(3.0)).unwrap();
     let x = colvec(&[10.0, 1.5, -4.0]);
     let gradient = constraints.derivative(&x);
 

@@ -5,12 +5,13 @@
 
 //{{{ crate imports
 use super::common::{Error, Options as UnconstrainedOptions};
+use crate::common::validate_nonzero;
 use crate::common::Minimizer;
 use crate::common::Vector;
 use crate::line_search as ls;
 use crate::line_search::LineSearchMethod;
 use crate::quadratic_model::{QuadraticModel, UpdateType::Inverse};
-use crate::{ConvergedReason, IterData, RealFn, VectorReturns};
+use crate::{ConvergedReason, IterData, RealFn, ValidationError, VectorReturns};
 //}}}
 //{{{ std imports
 #[allow(unused_imports)]
@@ -23,29 +24,127 @@ use topohedral_tracing::*;
 //--------------------------------------------------------------------------------------------------
 
 //{{{ enum: UpdateMethod
-#[derive(Copy, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, Hash)]
 /// Hessian approximation update used by a quasi-Newton method.
+#[non_exhaustive]
 pub enum UpdateMethod {
-    /// BFGS update.
-    BFGS,
-    /// DFP update.
-    DFP,
+    /// Bfgs update.
+    #[default]
+    Bfgs,
+    /// Dfp update.
+    Dfp,
 }
 //}}}
 //{{{ struct: Options
-#[derive(Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
+#[derive(Clone, Debug, PartialEq)]
 /// Options for quasi-Newton minimization.
 pub struct Options {
     /// Common stopping options.
-    pub uncon_opts: UnconstrainedOptions,
+    pub(crate) uncon_opts: UnconstrainedOptions,
     /// Line-search algorithm.
-    pub ls_method: LineSearchMethod,
+    pub(crate) ls_method: LineSearchMethod,
     /// Hessian update formula.
-    pub method: UpdateMethod,
+    pub(crate) method: UpdateMethod,
     /// Restart interval in iterations.
-    pub restart: u64,
+    pub(crate) restart: u64,
 }
 //}}}
+impl Options {
+    /// Creates quasi-Newton options with a restart interval of 10.
+    pub const fn new(
+        unconstrained: UnconstrainedOptions,
+        line_search: LineSearchMethod,
+        update: UpdateMethod,
+    ) -> Self {
+        Self {
+            uncon_opts: unconstrained,
+            ls_method: line_search,
+            method: update,
+            restart: 10,
+        }
+    }
+
+    /// Returns the common unconstrained stopping options.
+    pub const fn unconstrained(&self) -> &UnconstrainedOptions {
+        &self.uncon_opts
+    }
+
+    /// Returns the configured line-search method.
+    pub const fn line_search(&self) -> &LineSearchMethod {
+        &self.ls_method
+    }
+
+    /// Returns the Hessian-update formula.
+    pub const fn update_method(&self) -> UpdateMethod {
+        self.method
+    }
+
+    /// Returns the restart interval.
+    pub const fn restart(&self) -> u64 {
+        self.restart
+    }
+
+    /// Returns options with a different common stopping configuration.
+    pub const fn with_unconstrained(
+        mut self,
+        options: UnconstrainedOptions,
+    ) -> Self {
+        self.uncon_opts = options;
+        self
+    }
+
+    /// Returns options with a different line-search method.
+    pub fn with_line_search(
+        mut self,
+        method: LineSearchMethod,
+    ) -> Self {
+        self.ls_method = method;
+        self
+    }
+
+    /// Returns options with a different Hessian-update formula.
+    pub const fn with_update_method(
+        mut self,
+        method: UpdateMethod,
+    ) -> Self {
+        self.method = method;
+        self
+    }
+
+    /// Returns options with a different restart interval.
+    pub const fn with_restart(
+        mut self,
+        restart: u64,
+    ) -> Self {
+        self.restart = restart;
+        self
+    }
+
+    /// Validates this configuration.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ValidationError`] if a nested option is invalid or the
+    /// restart interval is zero.
+    pub fn validate(&self) -> Result<(), ValidationError> {
+        self.uncon_opts.validate()?;
+        self.ls_method.validate()?;
+        validate_nonzero("restart", self.restart)
+    }
+}
+impl UpdateMethod {
+    /// Deprecated spelling retained for source compatibility.
+    #[allow(non_upper_case_globals)]
+    #[deprecated(since = "0.0.0", note = "renamed to `Bfgs`")]
+    pub const BFGS: Self = Self::Bfgs;
+
+    /// Deprecated spelling retained for source compatibility.
+    #[allow(non_upper_case_globals)]
+    #[deprecated(since = "0.0.0", note = "renamed to `Dfp`")]
+    pub const DFP: Self = Self::Dfp;
+}
 //{{{ struct: QuasiNewton
 /// Stateful quasi-Newton optimizer.
 pub struct QuasiNewton<'a, F: RealFn + ?Sized> {
@@ -83,7 +182,7 @@ impl<'a, F: RealFn + ?Sized> QuasiNewton<'a, F> {
         grad_fk: &Vector,
         dir_k: &mut Vector,
     ) {
-        let needs_restart = k.is_multiple_of(self.opts.restart);
+        let needs_restart = k % self.opts.restart == 0;
         let is_increasing = grad_fk.dot(dir_k) >= 0.0;
         if needs_restart || is_increasing {
             *dir_k = -grad_fk.clone();
@@ -116,12 +215,12 @@ impl<'a, F: RealFn + ?Sized> QuasiNewton<'a, F> {
         grad_fk: &Vector,
     ) -> bool {
         match self.opts.method {
-            UpdateMethod::BFGS => {
+            UpdateMethod::Bfgs => {
                 let sk: Vector = (xk - xk_prev).into();
                 let yk: Vector = (grad_fk - grad_fk_prev).into();
                 self.quadratic_model.try_update(&sk, &yk, Inverse)
             }
-            UpdateMethod::DFP => {
+            UpdateMethod::Dfp => {
                 todo!()
             }
         }
@@ -186,7 +285,7 @@ impl<F: RealFn + ?Sized> Minimizer for QuasiNewton<'_, F> {
             let fx_prev = iter_prev_k.fx;
             iter_prev_k = iter_k;
 
-            let search_result = ls::search(
+            let search_result = ls::line_search(
                 &mut *self.fcn,
                 &iter_prev_k,
                 &dir_k,
@@ -201,7 +300,7 @@ impl<F: RealFn + ?Sized> Minimizer for QuasiNewton<'_, F> {
                     dir_k = -iter_prev_k.grad_fx.clone();
                     let alpha_init =
                         ls::initial_step(iter_prev_k.fx, fx_prev, iter_prev_k.grad_fx.dot(&dir_k));
-                    ls::search(
+                    ls::line_search(
                         &mut *self.fcn,
                         &iter_prev_k,
                         &dir_k,
@@ -243,8 +342,8 @@ impl<F: RealFn + ?Sized> Minimizer for QuasiNewton<'_, F> {
             }
         }
         //{{{ trace
-        let _maxiter = self.opts.uncon_opts.max_iter;
-        info!(target: "qn", "Did not converge within {_maxiter} iterations");
+        let _max_iter = self.opts.uncon_opts.max_iter;
+        info!(target: "qn", "Did not converge within {_max_iter} iterations");
         //}}}
         Err(Error::MaxIterations(self.opts.uncon_opts.max_iter as usize))
     }
