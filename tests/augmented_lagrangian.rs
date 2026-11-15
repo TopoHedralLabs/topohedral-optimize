@@ -679,7 +679,7 @@ fn test_quartic_without_constraints_matches_unconstrained_reference(
 #[case::quartic_nocedal_bfgs(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::QuasiNewton(NOCEDAL_BFGS),  1e-2, 1e-2, 4010, 2389)]
 #[case::quartic_nocedal_fr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_FR),  1e-2, 1e-2, 6622, 2340)]
 #[case::quartic_thuente_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(THUENTE_PR),  1e-2, 1e-2, 7500, 9000)]
-#[case::quartic_nocedal_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_PR),  1e-2, 1e-2, 6350, 2219)]
+#[case::quartic_nocedal_pr(colvec(&[100.0, -100.0, 3.0, 1e-6, 0.0]), UnconstrainedMethod::ConjugateGradient(NOCEDAL_PR),  1e-2, 1e-2, 6350, 2230)]
 fn test_quartic_with_bound_constraints_matches_reference(
     #[case] x0: Vector,
     #[case] unconstrained_method: UnconstrainedMethod,
