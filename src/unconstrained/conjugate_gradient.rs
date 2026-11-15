@@ -5,9 +5,9 @@
 
 //{{{ crate imports
 use super::common::Error;
-use crate::common::validate_nonzero;
 use crate::common::BaseOptions;
 use crate::common::Minimizer;
+use crate::common::validate_nonzero;
 use crate::line_search::{self as ls, LineSearchMethod};
 use crate::{ConvergedReason, IterData, RealFn, ValidationError, Vector, VectorReturns};
 //}}}

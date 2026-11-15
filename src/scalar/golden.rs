@@ -7,11 +7,11 @@
 
 //{{{ crate imports
 use super::common::{
-    resolve_bracket, Bracket, BracketOptions, BracketResult, Error as ScalarError,
+    Bracket, BracketOptions, BracketResult, Error as ScalarError, resolve_bracket,
 };
 use crate::{
-    common::{validate_nonzero, validate_positive_finite, Minimizer, ScalarReturns},
     ConvergedReason, RealFn1, ValidationError,
+    common::{Minimizer, ScalarReturns, validate_nonzero, validate_positive_finite},
 };
 //}}}
 //{{{ std imports

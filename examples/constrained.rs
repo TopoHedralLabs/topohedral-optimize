@@ -1,8 +1,8 @@
 use topohedral_linalg::{DVector, VecType};
 use topohedral_optimize::{
-    constrained_minimize, AugmentedLagrangianInnerMethod, AugmentedLagrangianOptions, BaseOptions,
-    ConstrainedMethod, ConstrainedOptions, DifferentiableFn, LineSearchMethod, Matrix,
-    QuasiNewtonOptions, QuasiNewtonUpdateMethod, ThuenteOptions, UnconstrainedMethod, Vector,
+    AugmentedLagrangianInnerMethod, AugmentedLagrangianOptions, BaseOptions, ConstrainedMethod,
+    ConstrainedOptions, DifferentiableFn, LineSearchMethod, Matrix, QuasiNewtonOptions,
+    QuasiNewtonUpdateMethod, ThuenteOptions, UnconstrainedMethod, Vector, constrained_minimize,
 };
 
 fn vector(values: &[f64]) -> Vector {

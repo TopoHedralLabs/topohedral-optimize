@@ -1,6 +1,6 @@
 //{{{ crate imports
 use topohedral_optimize::{
-    line_search_1d, LineSearchMethod, LineSearchOptions, NocedalOptions, ThuenteOptions,
+    LineSearchMethod, LineSearchOptions, NocedalOptions, ThuenteOptions, line_search_1d,
 };
 //}}}
 //{{{ std imports

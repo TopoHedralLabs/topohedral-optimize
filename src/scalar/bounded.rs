@@ -5,8 +5,8 @@
 //{{{ crate imports
 use super::common::Error as ScalarError;
 use crate::{
-    common::{validate_nonzero, validate_positive_finite, Minimizer, ScalarReturns},
     ConvergedReason, RealFn1, ValidationError,
+    common::{Minimizer, ScalarReturns, validate_nonzero, validate_positive_finite},
 };
 //}}}
 //{{{ std imports

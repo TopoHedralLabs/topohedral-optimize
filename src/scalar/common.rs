@@ -4,8 +4,8 @@
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
-use crate::common::{validate_nonzero, validate_positive_finite, RealFn1};
 use crate::ValidationError;
+use crate::common::{RealFn1, validate_nonzero, validate_positive_finite};
 //}}}
 //{{{ std imports
 //}}}

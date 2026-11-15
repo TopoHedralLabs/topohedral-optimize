@@ -4,9 +4,9 @@
 
 //{{{ crate imports
 use crate::{
+    ValidationError,
     common::{DifferentiableFn, Evaluator, RealFn, RealVectorFn, Vector, VectorReturns},
     constraints::BoundConstraints,
-    ValidationError,
 };
 //}}}
 //{{{ std imports

@@ -3,9 +3,9 @@ use ctor::ctor;
 use topohedral_linalg::{DMatrix, DVector, MatMul, ReduceOps, VecType, VectorOps};
 use topohedral_optimize::DifferentiableFn;
 use topohedral_optimize::{
-    bound_constrained_minimize, BaseOptions, BfgsbOptions, BoundConstrainedMethod,
-    BoundConstrainedOptions, BoundConstraints, LineSearchMethod, LineSearchOptions, Matrix,
-    NocedalOptions, RealFn, Vector, VectorReturns,
+    BaseOptions, BfgsbOptions, BoundConstrainedMethod, BoundConstrainedOptions, BoundConstraints,
+    LineSearchMethod, LineSearchOptions, Matrix, NocedalOptions, RealFn, Vector, VectorReturns,
+    bound_constrained_minimize,
 };
 use topohedral_tracing::*;
 

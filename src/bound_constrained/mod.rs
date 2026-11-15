@@ -4,11 +4,11 @@
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
+use crate::ValidationError;
 use crate::common::{
     DifferentiableFn, Evaluator, RealFn, Vector, VectorReturns as BoundConstrainedReturns,
 };
 use crate::constraints::BoundConstraints;
-use crate::ValidationError;
 //}}}
 //{{{ std imports
 //}}}

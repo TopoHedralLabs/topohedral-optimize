@@ -6,12 +6,12 @@
 //{{{ crate imports
 use crate::common::Minimizer;
 use crate::{
+    RealFn, RealVectorFn, ValidationError, Vector, VectorReturns,
     constrained::{
-        augmented_lagrangian::AugmentedLagrangian, common::Error, AugmentedLagrangianOptions,
-        ConstrainedOptions,
+        AugmentedLagrangianOptions, ConstrainedOptions, augmented_lagrangian::AugmentedLagrangian,
+        common::Error,
     },
     constraints::BoundConstraints,
-    RealFn, RealVectorFn, ValidationError, Vector, VectorReturns,
 };
 //}}}
 //{{{ std imports
