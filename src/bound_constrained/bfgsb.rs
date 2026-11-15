@@ -229,10 +229,10 @@ fn subspace_minimize(
     //}}}
 
     let reduced_bmat = bmatk
-        .subview_indices(&free_variable_indices, &free_variable_indices)
+        .subview_indices_from_slices(&free_variable_indices, &free_variable_indices)
         .to_dmatrix();
 
-    let Ok(reduced_direction) = reduced_bmat.solve(&reduced_gradient) else {
+    let Ok(reduced_direction) = reduced_bmat.solve(reduced_gradient) else {
         //{{{ trace
         debug!(target: "bfgsb", "Subspace linear solve failed; using Cauchy point");
         //}}}
@@ -240,7 +240,7 @@ fn subspace_minimize(
     };
     let mut full_direction = Vector::zeros_vec(xk.len(), Col);
     full_direction
-        .rows_indices_mut(&free_variable_indices)
+        .rows_indices_mut(free_variable_indices)
         .copy_from(&reduced_direction);
 
     let alpha_min = bounds.max_feasible_step(x_cauchy, &full_direction).min(1.0);
