@@ -376,7 +376,7 @@ impl<F: RealVectorFn> crate::DifferentiableFn for EqPenalty<F> {
                 //}}}
 
                 let mut shifted_h: Vector = (&self.data.values + &self.data.shifts).into();
-                shifted_h.transform(|hi| hi.powi(2));
+                shifted_h.transform_mut(|hi| hi.powi(2));
                 0.5 * self.data.penalties.dot(&shifted_h)
             }
             LagrangianType::Lagrangian => {
@@ -494,7 +494,7 @@ impl<F: RealVectorFn> crate::DifferentiableFn for IeqPenalty<F> {
         match self.lagrangian_type {
             LagrangianType::AugmentedLagrangian => {
                 let mut shifted_g: Vector = (&self.data.values + &self.data.shifts).into();
-                shifted_g.transform(|value| value.max(0.0).powi(2));
+                shifted_g.transform_mut(|value| value.max(0.0).powi(2));
                 0.5 * self.data.penalties.dot(&shifted_g)
             }
             LagrangianType::Lagrangian => {
@@ -514,7 +514,7 @@ impl<F: RealVectorFn> crate::DifferentiableFn for IeqPenalty<F> {
         let weighted_constraint_values: Vector = match self.lagrangian_type {
             LagrangianType::AugmentedLagrangian => {
                 let mut shifted_values: Vector = (&self.data.values + &self.data.shifts).into();
-                shifted_values.pos();
+                shifted_values.pos_mut();
                 (&self.data.penalties * &shifted_values).into()
             }
             LagrangianType::Lagrangian => self.data.compute_lagrange_multiplier_estimates(),
@@ -896,7 +896,7 @@ impl<F1: RealFn, F2: RealVectorFn, F3: RealVectorFn> AugmentedLagrangian<F1, F2,
             0.0
         };
         let norm_ieq = if let Some(ieq_penalty) = &self.fcn.ieq_penalty {
-            ieq_penalty.data.values.posed().abs_max().unwrap()
+            ieq_penalty.data.values.to_pos().abs_max().unwrap()
         } else {
             0.0
         };

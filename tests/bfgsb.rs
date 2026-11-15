@@ -247,7 +247,10 @@ fn rosenbrock_gradient_matches_finite_difference() {
 fn unconstrained_quadratic_matches_analytic_minimum() {
     let a = DMatrix::<f64>::from_row_slice(&[3.0, 0.5, 0.5, 2.0], 2, 2);
     let b = colvec(&[1.0, 2.0]);
-    let x_star = a.solve(&b).expect("quadratic system should solve");
+    let x_star = a
+        .clone()
+        .solve(b.clone())
+        .expect("quadratic system should solve");
     let ret = solve_bfgsb(
         Quadratic {
             a: a.clone(),
@@ -269,7 +272,10 @@ fn unconstrained_quadratic_matches_analytic_minimum() {
 fn inactive_bounds_recover_unconstrained_quadratic_minimum() {
     let a = DMatrix::<f64>::from_row_slice(&[3.0, 0.5, 0.5, 2.0], 2, 2);
     let b = colvec(&[1.0, 2.0]);
-    let x_star = a.solve(&b).expect("quadratic system should solve");
+    let x_star = a
+        .clone()
+        .solve(b.clone())
+        .expect("quadratic system should solve");
     let ret = solve_bfgsb(
         Quadratic { a, b },
         colvec(&[4.0, -4.0]),

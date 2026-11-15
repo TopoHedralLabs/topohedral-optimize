@@ -23,7 +23,7 @@ trace = ["topohedral-tracing/trace"]
 serde = { version = "1.0", features = ["derive"], optional = true }
 thiserror = "2.0.17"
 topohedral-tracing = { version = "0.2.0", registry = "cloudsmith" }
-topohedral-linalg = { version = "4.1.0", registry = "cloudsmith" }
+topohedral-linalg = { version = "0.0.1", registry = "cloudsmith" }
 
 [dev-dependencies]
 approx = "0.5.1"
