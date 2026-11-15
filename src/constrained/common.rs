@@ -4,10 +4,10 @@
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
+use crate::ValidationError;
 use crate::bound_constrained::BoundConstrainedError;
 use crate::common::BaseOptions;
 use crate::unconstrained::UnconstrainedError;
-use crate::ValidationError;
 //}}}
 //{{{ dep imports
 use thiserror::Error;

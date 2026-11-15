@@ -1,7 +1,7 @@
 use topohedral_linalg::{DVector, VecType};
 use topohedral_optimize::{
-    unconstrained_minimize, BaseOptions, DifferentiableFn, LineSearchMethod, QuasiNewtonOptions,
-    QuasiNewtonUpdateMethod, ThuenteOptions, UnconstrainedError, UnconstrainedMethod, Vector,
+    BaseOptions, DifferentiableFn, LineSearchMethod, QuasiNewtonOptions, QuasiNewtonUpdateMethod,
+    ThuenteOptions, UnconstrainedError, UnconstrainedMethod, Vector, unconstrained_minimize,
 };
 
 struct Rosenbrock;

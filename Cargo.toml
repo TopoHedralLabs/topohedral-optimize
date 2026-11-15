@@ -1,8 +1,8 @@
 [package]
 name = "topohedral-optimize"
-version = "0.1.0"
-edition = "2021"
-rust-version = "1.70"
+version = "0.1.1"
+edition = "2024"
+rust-version = "1.85"
 publish = ["cloudsmith"]
 authors = ["John Ferguson <JAFerguson952@gmail.com>"]
 description = "Differentiable scalar, unconstrained, bound-constrained, and generally constrained optimization algorithms"
@@ -22,8 +22,8 @@ trace = ["topohedral-tracing/trace"]
 [dependencies]
 serde = { version = "1.0", features = ["derive"], optional = true }
 thiserror = "2.0.17"
-topohedral-tracing = { version = "0.2.0", registry = "cloudsmith" }
-topohedral-linalg = { version = "0.0.1", registry = "cloudsmith" }
+topohedral-tracing = { version = "0.3.1", registry = "cloudsmith" }
+topohedral-linalg = { version = "0.0.2", registry = "cloudsmith" }
 
 [dev-dependencies]
 approx = "0.5.1"

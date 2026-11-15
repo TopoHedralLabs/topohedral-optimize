@@ -76,8 +76,8 @@ mod unconstrained;
 //}}}
 //{{{ pub use: bound_constrained exports
 pub use bound_constrained::{
-    minimize as bound_constrained_minimize, AsaOptions, BfgsbOptions, BoundConstrainedError,
-    BoundConstrainedMethod, BoundConstrainedOptions,
+    AsaOptions, BfgsbOptions, BoundConstrainedError, BoundConstrainedMethod,
+    BoundConstrainedOptions, minimize as bound_constrained_minimize,
 };
 //}}}
 //{{{ pub use: common exports
@@ -88,8 +88,8 @@ pub use common::{
 //}}}
 //{{{ pub use: constrained
 pub use constrained::{
-    minimize as constrained_minimize, AugmentedLagrangianInnerMethod, AugmentedLagrangianOptions,
-    ConstrainedError, ConstrainedMethod, ConstrainedOptions,
+    AugmentedLagrangianInnerMethod, AugmentedLagrangianOptions, ConstrainedError,
+    ConstrainedMethod, ConstrainedOptions, minimize as constrained_minimize,
 };
 //}}}
 //{{{ pub use constraints
@@ -105,21 +105,21 @@ pub use quadratic_model::{QuadraticModel, UpdateType};
 //}}}
 //{{{ pub use line_search
 pub use line_search::{
-    line_search, line_search_1d, LineSearchError, LineSearchMethod, LineSearchOptions,
-    NocedalOptions, ThuenteOptions,
+    LineSearchError, LineSearchMethod, LineSearchOptions, NocedalOptions, ThuenteOptions,
+    line_search, line_search_1d,
 };
 //}}}
 //{{{ pub use scalar
 pub use scalar::{
-    bracket, minimize as scalar_minimize, BoundedOptions, Bracket, BracketOptions, BracketResult,
-    BrentOptions, GoldenOptions, ScalarError, ScalarMethod,
+    BoundedOptions, Bracket, BracketOptions, BracketResult, BrentOptions, GoldenOptions,
+    ScalarError, ScalarMethod, bracket, minimize as scalar_minimize,
 };
 //}}}
 //{{{ pub use unconstrained
 pub use unconstrained::{
-    minimize as unconstrained_minimize, ConjugateGradientOptions,
-    Direction as ConjugateGradientDirection, QuasiNewtonOptions, UnconstrainedError,
-    UnconstrainedMethod, UnconstrainedOptions, UpdateMethod as QuasiNewtonUpdateMethod,
+    ConjugateGradientOptions, Direction as ConjugateGradientDirection, QuasiNewtonOptions,
+    UnconstrainedError, UnconstrainedMethod, UnconstrainedOptions,
+    UpdateMethod as QuasiNewtonUpdateMethod, minimize as unconstrained_minimize,
 };
 
 /// Deprecated misspelling of [`scalar_minimize`].

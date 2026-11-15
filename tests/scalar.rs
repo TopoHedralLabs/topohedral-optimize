@@ -4,8 +4,8 @@
 
 //{{{ crate imports
 use topohedral_optimize::{
-    scalar_minimize as minimize, BoundedOptions, Bracket, BrentOptions, GoldenOptions, ScalarError,
-    ScalarMethod,
+    BoundedOptions, Bracket, BrentOptions, GoldenOptions, ScalarError, ScalarMethod,
+    scalar_minimize as minimize,
 };
 //}}}
 //{{{ std imports

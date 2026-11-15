@@ -1,10 +1,10 @@
 //{{{ crate imports
 use topohedral_optimize::DifferentiableFn;
 use topohedral_optimize::{
-    bound_constrained_minimize, AsaOptions, BaseOptions, BoundConstrainedMethod,
-    BoundConstrainedOptions, BoundConstraints, LineSearchMethod, LineSearchOptions,
-    QuasiNewtonOptions, QuasiNewtonUpdateMethod as UpdateMethod, RealFn, ThuenteOptions,
-    UnconstrainedMethod, UnconstrainedOptions, Vector, VectorReturns,
+    AsaOptions, BaseOptions, BoundConstrainedMethod, BoundConstrainedOptions, BoundConstraints,
+    LineSearchMethod, LineSearchOptions, QuasiNewtonOptions,
+    QuasiNewtonUpdateMethod as UpdateMethod, RealFn, ThuenteOptions, UnconstrainedMethod,
+    UnconstrainedOptions, Vector, VectorReturns, bound_constrained_minimize,
 };
 //}}}
 //{{{ std imports

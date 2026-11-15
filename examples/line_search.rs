@@ -1,5 +1,5 @@
 use topohedral_optimize::{
-    line_search_1d, DifferentiableFn, LineSearchError, LineSearchMethod, ThuenteOptions,
+    DifferentiableFn, LineSearchError, LineSearchMethod, ThuenteOptions, line_search_1d,
 };
 
 struct Quadratic;

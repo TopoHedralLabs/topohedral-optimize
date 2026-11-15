@@ -6,12 +6,12 @@
 //{{{ crate imports
 use crate::common::Minimizer;
 use crate::{
-    bound_constrained::{minimize_impl as bcon_minimize, BoundConstrainedMethod},
+    DifferentiableFn, Matrix, RealFn, RealVectorFn, ValidationError, Vector,
+    bound_constrained::{BoundConstrainedMethod, minimize_impl as bcon_minimize},
     common::{self, ConvergedReason, IterData, VectorReturns},
     constrained::{ConstrainedError, ConstrainedOptions},
     constraints::BoundConstraints,
-    unconstrained::{minimize_impl as uncon_minimize, UnconstrainedMethod},
-    DifferentiableFn, Matrix, RealFn, RealVectorFn, ValidationError, Vector,
+    unconstrained::{UnconstrainedMethod, minimize_impl as uncon_minimize},
 };
 use core::f64;
 //}}}

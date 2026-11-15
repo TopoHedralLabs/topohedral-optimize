@@ -1,5 +1,5 @@
 use topohedral_optimize::{
-    scalar_minimize, BoundedOptions, DifferentiableFn, ScalarError, ScalarMethod,
+    BoundedOptions, DifferentiableFn, ScalarError, ScalarMethod, scalar_minimize,
 };
 
 struct Parabola;

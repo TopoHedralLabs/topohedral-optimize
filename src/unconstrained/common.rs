@@ -4,8 +4,8 @@
 //--------------------------------------------------------------------------------------------------
 
 //{{{ crate imports
-use crate::line_search::LineSearchError;
 use crate::ValidationError;
+use crate::line_search::LineSearchError;
 //}}}
 //{{{ dep imports
 use thiserror::Error;

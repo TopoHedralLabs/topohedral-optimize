@@ -29,7 +29,7 @@ pub use bounded::Options as BoundedOptions;
 pub use brent::Options as BrentOptions;
 //}}}
 //{{{ pub use: common exports
-pub use common::{bracket, Bracket, BracketOptions, BracketResult, Error as ScalarError};
+pub use common::{Bracket, BracketOptions, BracketResult, Error as ScalarError, bracket};
 //}}}
 //{{{ pub use: golden exports
 pub use golden::Options as GoldenOptions;

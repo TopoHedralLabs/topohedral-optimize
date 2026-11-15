@@ -7,13 +7,13 @@
 use super::common::Options as BoundConstrainedOptions;
 use super::common::{lift, restrict};
 use super::utils::CircularBuffer;
+use crate::ConvergedReason;
 use crate::bound_constrained::asa::Phase::Ua;
-use crate::common::{validate_nonzero, validate_positive_finite};
 use crate::common::{Minimizer, Vector};
+use crate::common::{validate_nonzero, validate_positive_finite};
 use crate::constraints::BoundConstraints;
 use crate::constraints::{BoundSignature, BoundStatus};
-use crate::unconstrained::{minimize_impl, UnconstrainedMethod};
-use crate::ConvergedReason;
+use crate::unconstrained::{UnconstrainedMethod, minimize_impl};
 use crate::{IterData, RealFn, ValidationError};
 //}}}
 //{{{ dep imports

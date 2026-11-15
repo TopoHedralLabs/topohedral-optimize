@@ -5,9 +5,9 @@
 
 //{{{ crate imports
 use super::common::{Error, Options as UnconstrainedOptions};
-use crate::common::validate_nonzero;
 use crate::common::Minimizer;
 use crate::common::Vector;
+use crate::common::validate_nonzero;
 use crate::line_search as ls;
 use crate::line_search::LineSearchMethod;
 use crate::quadratic_model::{QuadraticModel, UpdateType::Inverse};

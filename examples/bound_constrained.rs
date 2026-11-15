@@ -1,8 +1,7 @@
 use topohedral_linalg::{DVector, VecType};
 use topohedral_optimize::{
-    bound_constrained_minimize, BaseOptions, BfgsbOptions, BoundConstrainedMethod,
-    BoundConstrainedOptions, BoundConstraints, DifferentiableFn, LineSearchMethod, NocedalOptions,
-    Vector,
+    BaseOptions, BfgsbOptions, BoundConstrainedMethod, BoundConstrainedOptions, BoundConstraints,
+    DifferentiableFn, LineSearchMethod, NocedalOptions, Vector, bound_constrained_minimize,
 };
 
 struct ShiftedQuadratic;
